@@ -1,0 +1,135 @@
+# 熟悉Docker(先get started簡單跑過) https://docs.docker.com/guides/get-started/
+# 熟悉k8s(概念跟getting started簡單跑過) https://kubernetes.io/docs/home/
+# 熟悉agones(getting started簡單跑過) https://kubernetes.io/docs/home/
+# 測試時建議開一個新的google帳戶有免費額度可以用(機器有點小貴)
+
+# 使用此批次檔執行Agones服務 在powershell中執行.\Dev_RunAgonesSystem.bat
+# 詳細的Agones服務建立可以參考官方文件 https://agones.dev/site/docs/installation/install-agones/helm/
+
+# 初始化gcloud, 安裝k8s元件, 設定專案, 登入
+gcloud init 
+gcloud components install kubectl
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+
+
+# =========建立cluster步驟=========
+# Dev版使用zone就可以, 區域可以參考: https://cloud.google.com/compute/docs/regions-zones/#available
+# Channel選擇官方推薦的regular
+# tag使用game-server (之後建立防火牆規則的目標是這個tag)
+# node用2台就好
+# 機器類型使用e2-standard-4, 這是相對便宜的機器, 機器類型可以參考 https://cloud.google.com/compute/docs/general-purpose-machines
+# --workload-pool是啟用Workload Identity(用於讓k8s下的pod能使用GCP的服務), 使用方式為--workload-pool PROJECT_ID.svc.id.goog
+gcloud container clusters create cluster-gladiators --zone=asia-east1-c --release-channel=regular --tags=gladiators --scopes=gke-default --num-nodes=1 --enable-image-streaming --machine-type=e2-standard-4 --workload-pool=fourth-waters-410202.svc.id.goog
+# 官方建議新建一個Agones專用的node pool, 避免跟遊戲server的機器共用, 但是Dev環境可以不用這麼做，所以註解掉，如果有需要可以使用註解的內容
+# gcloud container node-pools create agones-system --cluster=cluster-gladiators --zone=asia-east1-c --node-taints agones.dev/agones-system=true:NoExecute --node-labels agones.dev/agones-system=true --num-nodes=1 --machine-type=e2-standard-4
+# gcloud container clusters update cluster-gladiators --zone=asia-east1-c --workload-pool=fourth-waters-410202.svc.id.goog
+# 新增命名空間matchmaker(配房伺服器) 與 matchgame(遊戲伺服器)
+kubectl create namespace gladiators-service
+kubectl create namespace gladiators-gameserver
+
+gcloud container clusters describe cluster-gladiators --zone=asia-east1-c --format="value(workloadIdentityConfig.workloadPool)"
+# kubectl annotate serviceaccount --namespace gladiators-service [SERVICE_ACCOUNT_NAME] iam.gke.io/gcp-service-account=[GCP_SERVICE_ACCOUNT_EMAIL]
+
+# 設定K8s上下文(使用yaml佈署應用時, 會根據k8s上下文決定佈署到哪個專案的哪個cluster)
+gcloud container clusters get-credentials cluster-gladiators --zone=asia-east1-c --project fourth-waters-410202
+
+
+# =========K8s服務帳戶綁定GCP IAM服務帳戶步驟=========
+# 為命名空間添加Annotation(註解), 註解是key=value的形式讓同個命名空間可以取用, 下面的例子key是iam.gke.io/gcp-service-account, value是gcseditor@fourth-waters-410202.iam.gserviceaccount.com
+kubectl annotate namespace gladiators-service "iam.gke.io/gcp-service-account=gcseditor@fourth-waters-410202.iam.gserviceaccount.com"
+kubectl annotate namespace gladiators-gameserver "iam.gke.io/gcp-service-account=gcseditor@fourth-waters-410202.iam.gserviceaccount.com"
+# 為 gladiators-service 命名空間的 default 服務帳戶綁定 IAM 策略
+gcloud iam service-accounts add-iam-policy-binding gcseditor@fourth-waters-410202.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:fourth-waters-410202.svc.id.goog[gladiators-service/default]"
+# 為 gladiators-gameserver 命名空間的 default 服務帳戶綁定 IAM 策略
+gcloud iam service-accounts add-iam-policy-binding gcseditor@fourth-waters-410202.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:fourth-waters-410202.svc.id.goog[gladiators-gameserver/default]"
+# 將K8s的服務帳戶與GCP的服務帳戶綁定(讓k8s的default綁定GCP的gcseditor綁定)
+kubectl annotate serviceaccount default -n gladiators-service iam.gke.io/gcp-service-account=gcseditor@fourth-waters-410202.iam.gserviceaccount.com
+kubectl annotate serviceaccount default -n gladiators-gameserver iam.gke.io/gcp-service-account=gcseditor@fourth-waters-410202.iam.gserviceaccount.com
+
+# =========安裝Agones步驟=========
+# 使用helm安裝agones, 參考官方文件: https://agones.dev/site/docs/installation/install-agones/helm/
+helm repo add agones https://agones.dev/chart/stable
+helm repo update
+# 安裝agones服務並設定要分配的game server pod的port範圍使用以下指令
+helm install helm-release-gladiators agones/agones --set gameservers.namespaces[0]=gladiators-gameserver,agones.controller.minPort=6000,agones.controller.maxPort=8000 --namespace agones-system --create-namespace
+# 如果有新增server命名空間要跑這個(game server有刪掉命名空間的話要重新執行upgrade否則 matchgame server在deploy時會發生"agones-sdk" not found的錯誤)
+# helm upgrade helm-release-gladiators agones/agones --reuse-values --set "gameservers.namespaces={gladiators-gameserver,新增的命名空間}" --namespace agones-system
+# 可以使用以下語法來查看部屬結果
+helm list -n agones-system # 使用命名空間查看helm部屬的內容
+kubectl get services -n agones-system # 使用命名空間查看k8s上的服務(agones-controller-service & agones-allocator-service就是agones服務)
+kubectl get pods -n agones-system -o wide # 取得k8s的pods來確認部屬與執行狀況
+# 如果要移除agones使用以下語法
+helm uninstall helm-release-gladiators --namespace=agones-system
+
+# 將K8s的服務帳戶與GCP的服務帳戶綁定(agones fleet建出來的gameserver pod是使用agones-sdk這個serviceAccount, 所以讓k8s的agones-sdk綁定GCP的gcseditor綁定)
+gcloud iam service-accounts add-iam-policy-binding gcseditor@fourth-waters-410202.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:fourth-waters-410202.svc.id.goog[gladiators-gameserver/agones-sdk]"
+kubectl annotate serviceaccount agones-sdk -n gladiators-gameserver iam.gke.io/gcp-service-account=gcseditor@fourth-waters-410202.iam.gserviceaccount.com
+# 使用以下語法來查詢是否都有將k8s的服務帳戶綁定到GCP的服務帳戶
+gcloud container clusters describe cluster-gladiators --zone=asia-east1-c --project fourth-waters-410202
+
+# 建立防火牆
+gcloud compute firewall-rules create gladiators-matchgame-firewall-udp --allow udp:7000-8000 --target-tags gladiators --description "Gladiators firewall to allow game server udp traffic"
+
+# 設定應用程式認證(ADC, Application Default Credentials)
+# 先移除應用程式認證, 再重新認證(如果不是全新環境, 可能本地已經有使用的ADC文件, 換新專案時也要一併更新ADC文件)
+gcloud auth application-default revoke
+gcloud auth application-default login
+
+# =========啟用Artifacts服務=========  
+# 要能push docker image要先啟用artifact registry服務
+gcloud services enable artifactregistry.googleapis.com  cloudbuild.googleapis.com
+# 要能push docker image要先建立儲存庫, 參考文件: https://cloud.google.com/artifact-registry/docs/repositories/create-repos#docker
+# 區域選擇可以參考文件: https://cloud.google.com/artifact-registry/docs/repositories/repo-locations
+# --async是讓建立過程不用等待並可透過cli查看建立進度
+gcloud artifacts repositories create gladiators --repository-format=docker --location=asia-east1 --description="gladiators的image儲存庫" --async
+# 使用以下語法查詢artifacts repo的發布結果(repo id要改成剛剛建立)
+# gcloud artifacts operations describe <repo id> --location=asia-east1
+# 配置Docker客戶端使用Google Cloud身份進行認證，這樣就可以推送和拉取image，而不會遇到權限問題
+gcloud auth configure-docker asia-east1-docker.pkg.dev
+
+
+# =========建立Secret步驟=========
+# 使用k8s secret建立mongo需要的敏感資料並在建置yaml檔案中取
+# 建立secret指令為kubectl create secret generic secretName --from-literal=key1=value1 --from-literal=key2=value2
+# 以下為範例 gladiators-service跟gladiators-gameserver都要建立
+kubectl create secret generic mongodb-secret -n gladiators-service --from-literal=MongoAPIPublicKey=kzqcjiya --from-literal=MongoAPIPrivateKey=a0995b0e-c8c1-4607-8161-d8c3d9676b86 --from-literal=MongoUser=aura --from-literal=MongoPW=dw0ivy2ljTXuoZGW
+kubectl create secret generic mongodb-secret -n gladiators-gameserver --from-literal=MongoAPIPublicKey=kzqcjiya --from-literal=MongoAPIPrivateKey=a0995b0e-c8c1-4607-8161-d8c3d9676b86 --from-literal=MongoUser=aura --from-literal=MongoPW=dw0ivy2ljTXuoZGW
+# 查看secret方法
+kubectl get secrets -n gladiators-service
+# 刪除secret方法
+kubectl delete secret <SECRET_NAME> --namespace=<NAMESPACE>
+
+# =========SSL/TLS證書取得步驟=========
+# 要先安裝Cert-Manager讓server有SSL/TLS證書
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+# 安裝CRDs(CustomResourceDefinitions)
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.crds.yaml
+# 安裝Cert-Manager 參考: https://cert-manager.io/docs/installation/helm/
+kubectl create namespace cert-manager
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version v1.13.2 --debug
+# 要刪除Cert-Manager使用helm uninstall cert-manager -n cert-manager
+
+# 在k8s安裝ingress-nginx
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+helm install nginx-ingress ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
+# 如果要刪除可以用helm delete gladiators-ingress -n ingress-nginx
+kubectl apply -f .\CICD_Common_Dev\cert-manager.yaml
+# 在DNS那邊要設定ingress對應的外部ip
+# 使用kubectl get services -n ingress-nginx找nginx-ingress-ingress-nginx-controller的外部ip
+# 因為gladiators-lobby-service的ingress資源使用LoadBalancer分配的外部ip
+# 主機名稱: 留空
+# 類型: A
+# 資料: 對外ip
+
+# 可以使用以下語法來查看證書頒發狀態(這個頒發過程可能要幾分鐘的時間)
+kubectl describe certificate gladiators-certification -n gladiators-service # 查看證書頒發狀況
+kubectl get certificaterequest -n gladiators-service # 查看證書頒發請求
+kubectl describe certificaterequest <請求名稱> -n gladiators-service # 查看請求的細節資訊
+# 查看請求的細節資訊時如果看到訂單是pending狀態通常就是正在等待頒發, 這時候也可以用以下語法查看訂單狀況與challenge狀況
+# 例如: Waiting on certificate issuance from order gladiators-service/gladiators-certification-tdrcr-455658989: "pending"
+kubectl describe order <訂單名稱> -n gladiators-service # 查看訂單狀態, 訂單名稱通常是長這樣子gladiators-certification-tdrcr-455658989
+kubectl describe challenge -n <命名空間> # 查看challenge狀況, 訂單一直在pendding就需要查看問題出在哪
+

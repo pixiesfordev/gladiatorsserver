@@ -1,0 +1,42 @@
+{
+    "properties": {
+        "_id": {
+            "bsonType": "string"
+        },
+        "authType": {
+            "bsonType": "string"
+        },
+        "ban": {
+            "bsonType": "bool"
+        },
+        "createdAt": {
+            "bsonType": "date"
+        },
+        "deviceUID": {
+            "bsonType": "string"
+        },
+        "heroExp": {
+            "bsonType": "int"
+        },
+        "inMatchgameID": {
+            "bsonType": "string"
+        },
+        "lastSigninAt": {
+            "bsonType": "date"
+        },
+        "lastSignoutAt": {
+            "bsonType": "date"
+        },
+        "onlineState": {
+            "bsonType": "string"
+        },
+        "point": {
+            "bsonType": "long"
+        }
+    },
+    "required": [
+        "_id",
+        "createdAt"
+    ],
+    "title": "player"
+}

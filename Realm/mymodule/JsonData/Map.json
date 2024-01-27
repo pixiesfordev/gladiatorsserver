@@ -1,0 +1,10 @@
+{"Map":[
+	{	"ID":"1",	"Ref":"map1",	"MonsterSpawnerIDs":"10004,10,1001"},
+	{	"ID":"2",	"Ref":"map2",	"MonsterSpawnerIDs":"10004,10,1001"},
+	{	"ID":"3",	"Ref":"map3",	"MonsterSpawnerIDs":"10004,10,1001"},
+	{	"ID":"4",	"Ref":"map4",	"MonsterSpawnerIDs":"10004,10,1001"},
+	{	"ID":"5",	"Ref":"map5",	"MonsterSpawnerIDs":"10004,10,1001"},
+	{	"ID":"6",	"Ref":"map6",	"MonsterSpawnerIDs":"10004,10,1001"},
+	{	"ID":"7",	"Ref":"map7",	"MonsterSpawnerIDs":"10004,10,1001"},
+	{	"ID":"8",	"Ref":"map8",	"MonsterSpawnerIDs":"10004,10,1001"}
+]}

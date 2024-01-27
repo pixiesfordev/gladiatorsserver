@@ -1,0 +1,50 @@
+# 登入
+gcloud auth login
+# 查看登入的帳戶
+gcloud auth list
+# 設定應用程式認證
+gcloud auth application-default login
+# 移除應用程式認證
+gcloud auth application-default revoke
+# 顯示gcp project
+gcloud projects list
+# 設定專案
+gcloud config set project 專案ID
+# 顯示目前使用中的專案
+gcloud config get-value project
+# 初始化k8s
+gcloud container clusters get-credentials <cluster-name> --zone <zone-name> --project <project-name>
+# 修改節點數量
+gcloud container clusters resize cluster-gladiators  --num-nodes=1 --zone=asia-east1-c
+# 移除特定pod
+kubectl delete pod gladiators-matchgame-bbhbg-w8n82 -n gladiators-gameserver
+# 查看pod資訊
+kubectl describe pod gladiators-matchgame-b7sqm-zkndn -n gladiators-gameserver
+# 查看所有服務
+kubectl get svc --all-namespaces
+# 查看pod的label資訊
+kubectl get pod gladiators-matchgame-b7sqm-zkndn -n gladiators-gameserver -o=jsonpath='{.metadata.labels}'
+# 新增namespace
+kubectl create namespace gladiators-service
+# 移除namespace
+kubectl delete namespace gladiators-service
+# 查看防火牆設定
+gcloud compute firewall-rules list --project=fourth-waters-410202
+# 新增火牆
+gcloud compute firewall-rules create gladiators-matchgame-firewall-tcp --allow tcp:7000-8000 --target-tags gladiators --description "Gladiators firewall to allow game server tcp traffic"
+# 刪除火牆
+gcloud compute firewall-rules delete gladiators-firewall-udp --project=fourth-waters-410202
+# 查詢某tag的nodes
+gcloud compute instances list --filter="tags.items:gladiators"
+# 查看node的tag
+gcloud compute instances describe gke-cluster-gladiators-default-pool-fbb15252-std9 --zone=asia-east1-c --format='get(tags)'
+# 新增node tag
+gcloud compute instances add-tags gke-cluster-gladiators-default-pool-fbb15252-std9 --zone=asia-east1-c --tags=gladiators
+# 移除node tag
+gcloud compute instances remove-tags gke-cluster-gladiators-default-pool-fbb15252-std9 --asia-east1-c --tags==gladiators
+# 查看Storage項目
+gsutil ls
+gsutil ls gs://gladiators_gamejson_dev/
+# 查看pod使用的serviceAccount
+kubectl get pod gladiators-matchmaker-5b6dc6776b-dgvxb -n gladiators-service -o=jsonpath='{.spec.serviceAccount}'
+kubectl get pod gladiators-matchgame-qbqzp-59glj -n gladiators-gameserver -o=jsonpath='{.spec.serviceAccount}'

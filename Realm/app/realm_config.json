@@ -1,0 +1,8 @@
+{
+    "app_id": "app-gladiators-pvxuj",
+    "config_version": 20210101,
+    "name": "app-gladiators",
+    "location": "IN-MB",
+    "provider_region": "gcp-asia-south1",
+    "deployment_model": "LOCAL"
+}

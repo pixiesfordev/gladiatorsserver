@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gladiators-lobby-service
+  namespace: gladiators-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: gladiators-lobby
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gladiators-lobby
+  namespace: gladiators-service
+spec:
+  selector:
+    matchLabels:
+      app: gladiators-lobby
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: gladiators-lobby
+        type: gladiators-lobby  # 標示為gladiators-service, 方便之後對版本做刪除等管理
+        imgVersion: "0.1.23"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
+    spec:
+      containers:
+      - name: gladiators-lobby
+        image: asia-east1-docker.pkg.dev/fourth-waters-410202/gladiators/gladiators-lobby:0.1.23
+        resources:
+          requests:
+            memory: "1024Mi"
+            cpu: "100m"
+          limits:
+            memory: "2048Mi"
+            cpu: "200m"
+        # 環境變數設定
+        env:
+        - name: "Env"
+          value: "Dev"
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name              
+        # mongodb相關
+        - name: MongoAPIPublicKey
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MongoAPIPublicKey
+        - name: MongoAPIPrivateKey
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MongoAPIPrivateKey
+        - name: MongoUser
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MongoUser
+        - name: MongoPW
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MongoPW
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gladiators-lobby-autoscaler
+  namespace: gladiators-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gladiators-lobby
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gladiators-certification
+  namespace: gladiators-service
+spec:
+  secretName: gladiators-service-tls
+  issuerRef:
+    name: gladiators-cert-issuer
+    kind: ClusterIssuer
+  commonName: 'aurafordev.com'
+  dnsNames:
+  - 'aurafordev.com'
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gladiators-ingress
+  namespace: gladiators-service
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "gladiators-cert-issuer"
+spec:
+  tls:
+  - hosts:
+    - aurafordev.com
+    secretName: gladiators-service-tls
+  rules:
+  - host: aurafordev.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gladiators-lobby-service
+            port:
+              number: 80
