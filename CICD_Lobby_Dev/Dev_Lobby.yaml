@@ -27,15 +27,15 @@ spec:
       labels:
         app: gladiators-lobby
         type: gladiators-lobby  # 標示為gladiators-service, 方便之後對版本做刪除等管理
-        imgVersion: "0.1.23"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
+        imgVersion: "0.1.42"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
     spec:
       containers:
       - name: gladiators-lobby
-        image: asia-east1-docker.pkg.dev/fourth-waters-410202/gladiators/gladiators-lobby:0.1.23
+        image: asia-east1-docker.pkg.dev/testgcpproject1-415003/gladiators/gladiators-lobby:0.1.42
         resources:
           requests:
-            memory: "1024Mi"
-            cpu: "100m"
+            memory: "512Mi"
+            cpu: "50m"
           limits:
             memory: "2048Mi"
             cpu: "200m"

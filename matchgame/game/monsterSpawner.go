@@ -5,6 +5,7 @@ import (
 	"gladiatorsGoModule/utility"
 	"matchgame/logger"
 	"matchgame/packet"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -48,7 +49,7 @@ func NewMonsterSpawner() *MonsterSpawner {
 		spawnTimerMap: make(map[int]int),
 		Monsters:      make(map[int]*Monster),
 		Spawns:        make([]packet.Spawn, 0),
-		controlChan:   make(chan bool),
+		controlChan:   make(chan bool, 1),
 	}
 }
 
@@ -95,16 +96,22 @@ func (ms *MonsterSpawner) SpawnSwitch(setOn bool) {
 func (ms *MonsterSpawner) SpawnTimer() {
 
 	running := false
-
 	for {
+
 		select {
 		case isOn := <-ms.controlChan:
 			running = isOn
 		default:
+			time.Sleep(time.Second) // 每秒檢查一次
+			// 怪物計時器是否正在執行(當房間中沒有玩家時running會是false)
 			if !running {
 				continue
 			}
-			time.Sleep(1000 * time.Millisecond) // 每X豪秒檢查一次
+			// 冰凍檢查, 如果還在冰凍就不產怪
+			if MyRoom.OnEffect("Frozen") {
+				continue
+			}
+
 			// 怪物移除檢查
 			needRemoveMonsterIdxs := make([]int, 0)
 			for _, monster := range ms.Monsters {
@@ -247,19 +254,20 @@ func (ms *MonsterSpawner) Spawn(spawn *Spawn) {
 
 		// 紀錄怪物清單
 		monsters = append(monsters, &packet.Monster{
-			JsonID:  int(monsterJsonID),
+			ID:      int(monsterJsonID),
 			Idx:     monsterIdx,
 			Death:   false,
+			LTime:   math.Round(leaveTime),
 			Effects: nil,
 		})
 
 	}
 	// 紀錄生怪清單
 	ms.Spawns = append(ms.Spawns, packet.Spawn{
-		RouteJsonID: int(routeJsonID),
-		SpawnTime:   MyRoom.GameTime,
-		IsBoss:      spawn.IsBoss,
-		Monsters:    monsters,
+		RID:   int(routeJsonID),
+		STime: MyRoom.GameTime,
+		IsB:   spawn.IsBoss,
+		Ms:    monsters,
 	})
 	// 廣播給所有玩家
 	MyRoom.BroadCastPacket(-1, &packet.Pack{
@@ -291,13 +299,13 @@ func (ms *MonsterSpawner) RemoveMonsters(killMonsterIdxs []int) {
 	// 檢查Spawn清單是否有Spawn沒有存活的怪物了, 沒有就移除該Spawn事件
 	needRemoveSpawnIdxs := make([]int, 0)
 	for i, spawn := range ms.Spawns {
-		if spawn.Monsters == nil {
+		if spawn.Ms == nil {
 			needRemoveSpawnIdxs = append(needRemoveSpawnIdxs, i)
 			continue
 		}
 
 		noAliveMonster := true // 此Spawn是否沒有怪物存活了
-		for _, monster := range spawn.Monsters {
+		for _, monster := range spawn.Ms {
 			if _, exists := killSet[monster.Idx]; exists {
 				monster.Death = true // 設定為已死亡
 			}
@@ -308,7 +316,7 @@ func (ms *MonsterSpawner) RemoveMonsters(killMonsterIdxs []int) {
 		// 如果此Spawn沒有任何怪物存活就把此Spawn加到要移除清單中
 		if noAliveMonster {
 			needRemoveSpawnIdxs = append(needRemoveSpawnIdxs, i)
-			if spawn.IsBoss {
+			if spawn.IsB {
 				ms.MutexLock.Lock()
 				ms.BossExist = false
 				ms.MutexLock.Unlock()

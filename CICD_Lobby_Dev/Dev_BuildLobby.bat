@@ -28,11 +28,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content lobby\go.mo
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Build image=======
-docker build --no-cache -f lobby/Dockerfile -t asia-east1-docker.pkg.dev/fourth-waters-410202/gladiators/gladiators-lobby:0.1.23 .
+docker build --no-cache -f lobby/Dockerfile -t asia-east1-docker.pkg.dev/testgcpproject1-415003/gladiators/gladiators-lobby:0.1.42 .
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Push image=======
-docker push asia-east1-docker.pkg.dev/fourth-waters-410202/gladiators/gladiators-lobby:0.1.23
+docker push asia-east1-docker.pkg.dev/testgcpproject1-415003/gladiators/gladiators-lobby:0.1.42
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Change go.mod back to local setting=======

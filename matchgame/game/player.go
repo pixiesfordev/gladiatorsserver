@@ -14,6 +14,33 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type Gamer interface {
+	GetID() string
+	SetIdx(idx int)
+	GetDBPlayer() *mongo.DBPlayer
+	GetRedisPlayer() *redis.RedisPlayer
+	GetHero() *Hero
+	GetBuffers() []packet.PlayerBuff
+	SetBuffers(buffers []packet.PlayerBuff)
+	GetPoint() int64
+	AddPoint(value int64)
+	GetPTBuffer() int64
+	AddPTBuffer(value int64)
+	GetTotalWin() int64
+	AddTotalWin(value int64)
+	GetTotalExpenditure() int64
+	AddTotalExpenditure(value int64)
+	AddHeroExp(value int32)
+	AddSpellCharge(idx int32, value int32)
+	AddDrop(value int32)
+	RemoveDrop(value int32)
+	IsOwnedDrop(value int32)
+	GetRandomChargeableSpell() (gameJson.HeroSpellJsonData, bool)
+	GetLearnedAndChargeableSpells() []gameJson.HeroSpellJsonData
+	CanSpell(idx int32) bool
+	GetAttackCDBuff() float64
+}
+
 // 玩家
 type Player struct {
 	DBPlayer       *mongo.DBPlayer         // 玩家DB資料
@@ -29,22 +56,95 @@ type Player struct {
 	ConnUDP        *gSetting.ConnectionUDP // UDP連線
 }
 
+// 取得ID
+func (player *Player) GetID() string {
+	return player.DBPlayer.ID
+}
+
+// 設定座位
+func (player *Player) SetIdx(idx int) {
+	player.Index = idx
+}
+
+// 取得DBPlayer
+func (player *Player) GetDBPlayer() *mongo.DBPlayer {
+	return player.DBPlayer
+}
+
+// 取得RedisPlayer
+func (player *Player) GetRedisPlayer() *redis.RedisPlayer {
+	return player.RedisPlayer
+}
+
+// 取得Hero
+func (player *Player) GetHero() *Hero {
+	return player.MyHero
+}
+
+// 取得玩家Buffers
+func (player *Player) GetBuffers() []packet.PlayerBuff {
+	return player.PlayerBuffs
+}
+
+// 設定玩家Buffers
+func (player *Player) SetBuffers(buffers []packet.PlayerBuff) {
+	player.PlayerBuffs = buffers
+}
+
+// 取得點數
+func (player *Player) GetPoint() int64 {
+	return player.DBPlayer.Point
+}
+
 // 玩家點數增減
 func (player *Player) AddPoint(value int64) {
 	player.RedisPlayer.AddPoint(value)
 	player.DBPlayer.Point += int64(value)
+}
+
+// 取得點數溢位
+func (player *Player) GetPTBuffer() int64 {
+	return player.DBPlayer.PointBuffer
+}
+
+// 玩家點數溢位增減
+func (player *Player) AddPTBuffer(value int64) {
+	player.RedisPlayer.AddPTBuffer(value)
+	player.DBPlayer.PointBuffer += value
+}
+
+// 取得總贏點數
+func (player *Player) GetTotalWin() int64 {
+	return player.DBPlayer.TotalWin
+}
+
+// 玩家總贏點數增減
+func (player *Player) AddTotalWin(value int64) {
+	player.RedisPlayer.AddTotalWin(value)
+	player.DBPlayer.TotalWin += value
 	player.GainPoint += value
 }
 
+// 取得總花費
+func (player *Player) GetTotalExpenditure() int64 {
+	return player.DBPlayer.TotalExpenditure
+}
+
+// 玩家總花費點數增減
+func (player *Player) AddTotalExpenditure(value int64) {
+	player.RedisPlayer.AddTotalExpenditure(value)
+	player.DBPlayer.TotalExpenditure += value
+}
+
 // 英雄經驗增減
-func (player *Player) AddHeroExp(value int) {
+func (player *Player) AddHeroExp(value int32) {
 	player.RedisPlayer.AddHeroExp(value)
 	player.DBPlayer.HeroExp += value
 
 }
 
 // 技能充能增減, idx傳入1~3
-func (player *Player) AddSpellCharge(idx int, value int) {
+func (player *Player) AddSpellCharge(idx int32, value int32) {
 	if idx < 1 || idx > 3 {
 		log.Errorf("%s AddSpellCharge傳入錯誤索引: %v", logger.LOG_Player, idx)
 		return
@@ -58,7 +158,7 @@ func (player *Player) AddSpellCharge(idx int, value int) {
 }
 
 // 新增掉落
-func (player *Player) AddDrop(value int) {
+func (player *Player) AddDrop(value int32) {
 	if value == 0 {
 		log.Errorf("%s AddDrop傳入值為0", logger.LOG_Player)
 		return
@@ -69,7 +169,7 @@ func (player *Player) AddDrop(value int) {
 	}
 	dropIdx := -1
 	for i, v := range player.DBPlayer.Drops {
-		if v == 0 && v != value {
+		if v == 0 {
 			dropIdx = i
 			break
 		}
@@ -78,13 +178,13 @@ func (player *Player) AddDrop(value int) {
 		log.Errorf("%s AddDrop時dropIdx為-1", logger.LOG_Player)
 		return
 	}
-	log.Infof("%s 玩家%s獲得Drop idx:%v  dropID:%v", logger.LOG_Player, player.DBPlayer.ID, dropIdx, player.DBPlayer.Drops[dropIdx])
+	// log.Infof("%s 玩家%s獲得Drop idx:%v  dropID:%v", logger.LOG_Player, player.DBPlayer.ID, dropIdx, player.DBPlayer.Drops[dropIdx])
 	player.RedisPlayer.SetDrop(dropIdx, value)
 	player.DBPlayer.Drops[dropIdx] = value
 }
 
 // 移除掉落
-func (player *Player) RemoveDrop(value int) {
+func (player *Player) RemoveDrop(value int32) {
 	if value == 0 {
 		log.Errorf("%s RemoveDrop傳入值為0", logger.LOG_Player)
 		return
@@ -105,13 +205,13 @@ func (player *Player) RemoveDrop(value int) {
 		log.Errorf("%s RemoveDrop時dropIdx為-1", logger.LOG_Player)
 		return
 	}
-	log.Infof("%s 玩家%s移除Drop idx:%v  dropID:%v", logger.LOG_Player, player.DBPlayer.ID, dropIdx, player.DBPlayer.Drops[dropIdx])
+	// log.Infof("%s 玩家%s移除Drop idx:%v  dropID:%v", logger.LOG_Player, player.DBPlayer.ID, dropIdx, player.DBPlayer.Drops[dropIdx])
 	player.RedisPlayer.SetDrop(dropIdx, 0)
 	player.DBPlayer.Drops[dropIdx] = 0
 }
 
 // 是否已經擁有此道具
-func (player *Player) IsOwnedDrop(value int) bool {
+func (player *Player) IsOwnedDrop(value int32) bool {
 	for _, v := range player.DBPlayer.Drops {
 		if v == value {
 			return true
@@ -123,43 +223,55 @@ func (player *Player) IsOwnedDrop(value int) bool {
 // 將玩家連線斷掉
 func (player *Player) CloseConnection() {
 	if player == nil {
+		log.Errorf("%s 關閉玩家連線時 player 為 nil", logger.LOG_Player)
 		return
 	}
 	if player.ConnTCP.Conn != nil {
+		player.ConnTCP.MyLoopChan.ClosePackReadStopChan()
 		player.ConnTCP.Conn.Close()
 		player.ConnTCP.Conn = nil
 		player.ConnTCP = nil
 	}
 	if player.ConnUDP.Conn != nil {
+		player.ConnUDP.MyLoopChan.ClosePackReadStopChan()
 		player.ConnUDP.Conn = nil
 		player.ConnUDP = nil
 	}
+	log.Infof("%s 關閉玩家(%s)連線", logger.LOG_Player, player.DBPlayer.ID)
 }
 
-// 取得此英雄隨機尚未充滿能的技能, 無尚未充滿能的技能時會返回false
-func (player *Player) GetRandomUnchargedSpell() (gameJson.HeroSpellJsonData, bool) {
-	spells := player.GetUnchargedSpells()
+// 取得此英雄隨機尚未充滿能且已經學習過的技能, 無適合的技能時會返回false
+func (player *Player) GetRandomChargeableSpell() (gameJson.HeroSpellJsonData, bool) {
+	spells := player.GetLearnedAndChargeableSpells()
+
 	if len(spells) == 0 {
 		return gameJson.HeroSpellJsonData{}, false
 	}
 	spell, err := utility.GetRandomTFromSlice(spells)
 	if err != nil {
 		log.Errorf("%s utility.GetRandomTFromSlice(spells)錯誤: %v", logger.LOG_Player, err)
+		return gameJson.HeroSpellJsonData{}, false
 	}
 	return spell, true
 }
 
-// 取得此英雄尚未充滿能的技能
-func (player *Player) GetUnchargedSpells() []gameJson.HeroSpellJsonData {
+// 取得此英雄所有尚未充滿能且已經學習過的技能
+func (player *Player) GetLearnedAndChargeableSpells() []gameJson.HeroSpellJsonData {
 	spells := make([]gameJson.HeroSpellJsonData, 0)
-
+	if player == nil {
+		return spells
+	}
 	for i, v := range player.DBPlayer.SpellCharges {
-		spell, err := player.MyHero.GetSpell((i + 1))
+		if player.MyHero.SpellLVs[i+1] <= 0 { // 尚未學習的技能就跳過
+			continue
+		}
+		spell, err := player.MyHero.GetSpell(int32(i + 1))
 		if err != nil {
 			log.Errorf("%s GetUnchargedSpells時GetUnchargedSpells錯誤: %v", logger.LOG_Player, err)
 			continue
 		}
-		if v >= spell.Cost {
+		if v < spell.Cost {
+			// log.Errorf("已學習且尚未充滿能的技能: %v", spell.ID)
 			spells = append(spells, spell)
 		}
 	}
@@ -167,7 +279,7 @@ func (player *Player) GetUnchargedSpells() []gameJson.HeroSpellJsonData {
 }
 
 // 檢查是否可以施法
-func (player *Player) CanSpell(idx int) bool {
+func (player *Player) CanSpell(idx int32) bool {
 
 	spell, err := player.MyHero.GetSpell(idx)
 	if err != nil {
