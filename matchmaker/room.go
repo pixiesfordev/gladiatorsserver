@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	mongo "gladiatorsGoModule/mongo"
-	"gladiatorsGoModule/setting"
-	"gladiatorsGoModule/utility"
+	mongo "herofishingGoModule/mongo"
+	"herofishingGoModule/setting"
+	"herofishingGoModule/utility"
 	logger "matchmaker/logger"
 	mSetting "matchmaker/setting"
 	"net"

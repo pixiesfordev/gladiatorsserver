@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	mongo "gladiatorsGoModule/mongo"
-	redis "gladiatorsGoModule/redis"
+	mongo "herofishingGoModule/mongo"
+	redis "herofishingGoModule/redis"
 	logger "lobby/logger"
 	"net/http"
 	"os"

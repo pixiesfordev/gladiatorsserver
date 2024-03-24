@@ -4,7 +4,7 @@ import (
 	"context"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"gladiatorsGoModule/matchgrpc"
+	"herofishingGoModule/matchgrpc"
 	logger "matchgame/logger"
 	"time"
 )

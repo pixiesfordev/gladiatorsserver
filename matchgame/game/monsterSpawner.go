@@ -1,8 +1,8 @@
 package game
 
 import (
-	"gladiatorsGoModule/gameJson"
-	"gladiatorsGoModule/utility"
+	"herofishingGoModule/gameJson"
+	"herofishingGoModule/utility"
 	"matchgame/logger"
 	"matchgame/packet"
 	"math"

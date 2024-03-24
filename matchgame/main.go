@@ -1,8 +1,8 @@
 package main
 
 import (
-	"gladiatorsGoModule/k8s"
-	"gladiatorsGoModule/setting"
+	"herofishingGoModule/k8s"
+	"herofishingGoModule/setting"
 	logger "matchgame/logger"
 	"strconv"
 
@@ -18,9 +18,9 @@ import (
 	"agones.dev/agones/pkg/util/signals"
 
 	// "fmt"
-	"gladiatorsGoModule/gameJson"
-	mongo "gladiatorsGoModule/mongo"
-	"gladiatorsGoModule/redis"
+	"herofishingGoModule/gameJson"
+	mongo "herofishingGoModule/mongo"
+	"herofishingGoModule/redis"
 	"matchgame/agones"
 	"matchgame/game"
 	"os"

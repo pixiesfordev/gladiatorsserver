@@ -12,31 +12,20 @@ import (
 
 // 封包命令列表
 const (
-	AUTH                  = "AUTH"                  // (TCP)身分驗證
-	AUTH_TOCLIENT         = "AUTH_TOCLIENT"         // (TCP)身分驗證-送Client
-	SETHERO               = "SETHERO"               // (TCP)設定玩家英雄
-	SETHERO_TOCLIENT      = "SETHERO_TOCLIENT"      // (TCP)設定玩家英雄-送Client
-	LEAVE                 = "LEAVE"                 // (TCP)離開遊戲房
-	LEAVE_TOCLIENT        = "LEAVE_TOCLIENT"        // (TCP)離開遊戲房-送Client
-	AUTO                  = "AUTO"                  // (TCP)設定自動攻擊
-	AUTO_TOCLIENT         = "AUTO_TOCLIENT"         // (TCP)設定自動攻擊-送Client
-	ATTACK                = "ATTACK"                // (UDP)攻擊
-	ATTACK_TOCLIENT       = "ATTACK_TOCLIENT"       // (UDP)攻擊-送Client
-	HIT                   = "HIT"                   // (TCP)擊中
-	HIT_TOCLIENT          = "HIT_TOCLIENT"          // (TCP)擊中-送Client
-	DROPSPELL             = "DROPSPELL"             // (TCP)掉落施法
-	DROPSPELL_TOCLIENT    = "DROPSPELL_TOCLIENT"    // (TCP)掉落施法-送Client
-	UPDATEPLAYER_TOCLIENT = "UPDATEPLAYER_TOCLIENT" // (TCP)更新玩家-送Client
-	SPAWN_TOCLIENT        = "SPAWN_TOCLIENT"        // (TCP)生怪-送Client
-	LVUPSPELL             = "LVUPSPELL"             // (TCP)升級技能
-	LVUPSPELL_TOCLIENT    = "LVUPSPELL_TOCLIENT"    // (TCP)升級技能-送Client
-	UDPAUTH               = "UDPAUTH"               // (UDP)身分驗證
-	UPDATEGAME            = "UPDATEGAME"            // (UDP)遊戲狀態更新(太久沒收到回傳會將該玩家從房間踢出)
-	UPDATEGAME_TOCLIENT   = "UPDATEGAME_TOCLIENT"   // (UDP)遊戲狀態更新-送Client(每GAMEUPDATE_MS毫秒會送一次)
-	UPDATESCENE           = "UPDATESCENE"           // (TCP)場景狀態更新(玩家斷線回連時會主動送過來跟server要資料)
-	UPDATESCENE_TOCLIENT  = "UPDATESCENE_TOCLIENT"  // (UDP&TCP)場景狀態更新-送Client(每SCENEUPDATE_MS毫秒會送一次 或 玩家斷線回連時主動要求時會送)
-	// 測試用
-	MONSTERDIE_TOCLIENT = "MONSTERDIE_TOCLIENT" // (TCP)怪物死亡時送Client
+	AUTH                  = "AUTH"                 // (TCP)身分驗證
+	AUTH_TOCLIENT         = "AUTH_TOCLIENT"        // (TCP)身分驗證-送Client
+	SETPLAYER             = "SETPLAYER"            // (TCP)設定玩家資料
+	SETPLAYER_TOCLIENT    = "SETPLAYER_TOCLIENT"   // (TCP)設定玩家資料-送Client
+	READY                 = "READY"                // (TCP)遊戲準備就緒
+	READY_TOCLIENT        = "READY_TOCLIENT"       // (TCP)遊戲準備就緒-送Client
+	BRIBE                 = "BRIBE"                // (TCP)賄賂選擇
+	BRIBE_TOCLIENT        = "BRIBE_TOCLIENT"       // (TCP)賄賂選擇-送Client
+	PLAYERACTION          = "PLAYERACTION"         // (TCP)玩家指令
+	PLAYERACTION_TOCLIENT = "PLAYERACTIONTOCLIENT" // (TCP)玩家指令-送Client
+	BATTLESTATE           = "BATTLESTATE"          // (TCP)狀態更新
+	BATTLESTATE_TOCLIENT  = "BATTLESTATE_TOCLIENT" // (TCP)狀態更新-送Client
+	ENDGAME_TOCLIENT      = "ENDGAME_TOCLIENT"     // (TCP)遊戲結算-送Client
+	PING                  = "PING"                 // (TCP)心跳(太久沒收到回傳會視玩家斷線)
 )
 
 type Pack struct {

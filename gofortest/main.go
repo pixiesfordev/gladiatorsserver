@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"gladiatorsGoModule/gameJson"
+	"herofishingGoModule/gameJson"
 )
 
 func main() {

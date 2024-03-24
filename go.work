@@ -4,7 +4,7 @@ use (
 	./crontasker
 	./fortest/goredis
 	./gofortest
-	./gladiatorsGoModule
+	./gladiatorGoModule
 	./lobby
 	./matchgame
 	./matchmaker

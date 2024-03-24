@@ -1,13 +1,11 @@
 package game
 
 import (
-	"fmt"
-	"gladiatorsGoModule/gameJson"
-	"gladiatorsGoModule/utility"
+	log "github.com/sirupsen/logrus"
+	"herofishingGoModule/gameJson"
+	"herofishingGoModule/utility"
 	"matchgame/logger"
 	"matchgame/packet"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // 電腦玩家
@@ -23,11 +21,6 @@ type Bot struct {
 	HeroExp          int32
 	SpellCharges     [3]int32
 	Drops            [3]int32
-}
-
-// 取得ID
-func (bot *Bot) GetID() string {
-	return fmt.Sprintf("Bot%v", bot.Index)
 }
 
 // 玩家點數增減

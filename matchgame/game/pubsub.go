@@ -2,7 +2,7 @@ package game
 
 import (
 	"encoding/json"
-	"gladiatorsGoModule/redis"
+	"herofishingGoModule/redis"
 	logger "matchgame/logger"
 
 	log "github.com/sirupsen/logrus"

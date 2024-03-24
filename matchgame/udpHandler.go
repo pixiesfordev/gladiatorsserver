@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "gladiatorsGoModule/setting"
+	// "herofishingGoModule/setting"
 	logger "matchgame/logger"
 	gSetting "matchgame/setting"
 	"sync"

@@ -4,7 +4,7 @@ import (
 	logger "crontasker/logger"
 	"flag"
 	"fmt"
-	mongo "gladiatorsGoModule/mongo"
+	mongo "herofishingGoModule/mongo"
 	"os"
 	"time"
 

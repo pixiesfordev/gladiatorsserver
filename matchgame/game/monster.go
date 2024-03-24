@@ -1,7 +1,7 @@
 package game
 
 import (
-	"gladiatorsGoModule/gameJson"
+	"herofishingGoModule/gameJson"
 	// "matchgame/logger"
 	// log "github.com/sirupsen/logrus"
 )

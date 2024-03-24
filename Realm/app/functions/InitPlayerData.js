@@ -6,19 +6,18 @@ exports = async function InitPlayerData(data) {
   }
   const ah = require("aura-gladiators");
 
-  if (!("AuthType" in data)) {
-    console.log("[InitPlayerData] 格式錯誤");
-    return {
-      Result: ah.GameSetting.ResultTypes.Fail,
-      Data: "格式錯誤",
-    };
-  }
+  // if (!("AuthType" in data)) {
+  //   console.log("[InitPlayerData] 格式錯誤");
+  //   return {
+  //     Result: ah.GameSetting.ResultTypes.Fail,
+  //     Data: "格式錯誤",
+  //   };
+  // }
 
   // 建立plyer資料
   writePlayerDocData = {
     _id: context.user.id,
-    authType: data.AuthType,
-    point: 100,
+    authType: "Guest",//data.AuthType,
     onlineState: ah.GameSetting.OnlineState.Online,
   };
   // 寫入plyer資料

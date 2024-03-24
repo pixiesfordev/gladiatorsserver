@@ -22,21 +22,21 @@ if "%ERRORLEVEL%"=="0" (
 @echo on
 
 REM =======Change go.mod for docker setting=======
-powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content matchmaker\go.mod) | ForEach-Object { $_ -replace 'replace gladiatorsGoModule => ../gladiatorsGoModule // for local', '// replace gladiatorsGoModule => ../gladiatorsGoModule // for local' } | Set-Content matchmaker\go.mod"
+powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content matchmaker\go.mod) | ForEach-Object { $_ -replace 'replace herofishingGoModule => ../herofishingGoModule // for local', '// replace herofishingGoModule => ../herofishingGoModule // for local' } | Set-Content matchmaker\go.mod"
 @if ERRORLEVEL 1 exit /b 1
-powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content matchmaker\go.mod) | ForEach-Object { $_ -replace '// replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker', 'replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker' } | Set-Content matchmaker\go.mod"
+powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content matchmaker\go.mod) | ForEach-Object { $_ -replace '// replace herofishingGoModule => /home/herofishingGoModule // for docker', 'replace herofishingGoModule => /home/herofishingGoModule // for docker' } | Set-Content matchmaker\go.mod"
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Build image=======
-docker build --no-cache -f matchmaker/Dockerfile -t asia-east1-docker.pkg.dev/testgcpproject1-415003/gladiators/gladiators-matchmaker:0.2.26 .
+docker build --no-cache -f matchmaker/Dockerfile -t asia-east1-docker.pkg.dev/testgcpproject1-415003/gladiators/gladiators-matchmaker:0.2.29 .
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Push image=======
-docker push asia-east1-docker.pkg.dev/testgcpproject1-415003/gladiators/gladiators-matchmaker:0.2.26
+docker push asia-east1-docker.pkg.dev/testgcpproject1-415003/gladiators/gladiators-matchmaker:0.2.29
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Change go.mod back to local setting=======
-powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content matchmaker\go.mod) | ForEach-Object { $_ -replace '// replace gladiatorsGoModule => ../gladiatorsGoModule // for local', 'replace gladiatorsGoModule => ../gladiatorsGoModule // for local' } | Set-Content matchmaker\go.mod"
+powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content matchmaker\go.mod) | ForEach-Object { $_ -replace '// replace herofishingGoModule => ../herofishingGoModule // for local', 'replace herofishingGoModule => ../herofishingGoModule // for local' } | Set-Content matchmaker\go.mod"
 @if ERRORLEVEL 1 exit /b 1
-powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content matchmaker\go.mod) | ForEach-Object { $_ -replace 'replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker', '// replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker' } | Set-Content matchmaker\go.mod"
+powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content matchmaker\go.mod) | ForEach-Object { $_ -replace 'replace herofishingGoModule => /home/herofishingGoModule // for docker', '// replace herofishingGoModule => /home/herofishingGoModule // for docker' } | Set-Content matchmaker\go.mod"
 @if ERRORLEVEL 1 exit /b 1

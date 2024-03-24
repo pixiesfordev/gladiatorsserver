@@ -2,11 +2,11 @@ package game
 
 import (
 	"fmt"
-	"gladiatorsGoModule/gameJson"
+	"herofishingGoModule/gameJson"
 
 	log "github.com/sirupsen/logrus"
 
-	// "gladiatorsGoModule/utility"
+	// "herofishingGoModule/utility"
 	"matchgame/logger"
 )
 

@@ -7,8 +7,8 @@ WORKDIR /home/lobby
 # 複製 lobby 的內容
 COPY lobby/ .
 
-# 複製 gladiatorsGoModule 到 /home/gladiatorsGoModule
-COPY gladiatorsGoModule/ /home/gladiatorsGoModule/
+# 複製 herofishingGoModule 到 /home/herofishingGoModule
+COPY herofishingGoModule/ /home/herofishingGoModule/
 
 # 設置 Go 模組環境變數
 ENV GO111MODULE=on

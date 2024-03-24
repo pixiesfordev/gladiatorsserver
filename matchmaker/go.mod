@@ -2,15 +2,15 @@ module matchmaker
 
 go 1.21.0
 
-replace gladiatorsGoModule => ../gladiatorsGoModule // for local
+replace herofishingGoModule => ../herofishingGoModule // for local
 
-// replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker
+// replace herofishingGoModule => /home/herofishingGoModule // for docker
 
 require (
 	agones.dev/agones v1.35.0
 	github.com/sirupsen/logrus v1.9.3
 	go.mongodb.org/mongo-driver v1.12.1
-	gladiatorsGoModule v0.0.0-00010101000000-000000000000
+	herofishingGoModule v0.0.0-00010101000000-000000000000
 	k8s.io/apimachinery v0.28.2
 	k8s.io/client-go v0.28.2
 )

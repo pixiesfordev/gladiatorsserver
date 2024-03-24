@@ -3,10 +3,10 @@ package game
 import (
 	"errors"
 	"fmt"
-	"gladiatorsGoModule/gameJson"
-	mongo "gladiatorsGoModule/mongo"
-	"gladiatorsGoModule/setting"
-	"gladiatorsGoModule/utility"
+	"herofishingGoModule/gameJson"
+	mongo "herofishingGoModule/mongo"
+	"herofishingGoModule/setting"
+	"herofishingGoModule/utility"
 
 	// "matchgame/agones"
 	logger "matchgame/logger"
@@ -32,25 +32,26 @@ const (
 )
 
 const (
-	KICK_PLAYER_SECS    float64 = 60 // 最長允許玩家無心跳X秒後踢出遊戲房
-	ATTACK_EXPIRED_SECS float64 = 3  // 攻擊事件實例被創建後X秒後過期(過期代表再次收到同樣的AttackID時Server不會處理)
+	TIMELOOP_MILISECS   int     = 100 // 遊戲每X毫秒循環
+	KICK_PLAYER_SECS    float64 = 60  // 最長允許玩家無心跳X秒後踢出遊戲房
+	ATTACK_EXPIRED_SECS float64 = 5   // 攻擊事件實例被創建後X秒後過期(過期代表再次收到同樣的AttackID時Server不會處理)
 )
 
 type Room struct {
 	// 玩家陣列(索引0~3 分別代表4個玩家)
 	// 1. 索引就是玩家的座位, 一進房間後就不會更動 所以HeroIDs[0]就是在座位0玩家的英雄ID
-	// 2. 座位無關玩家進來順序 有人離開就會空著 例如 索引2的玩家離開 Gamers[2]就會是nil 直到有新玩家加入
-	Gamers       [setting.PLAYER_NUMBER]Gamer // 玩家陣列
-	RoomName     string                       // 房間名稱(也是DB文件ID)(房主UID+時間轉 MD5)
-	GameState    GameState                    // 遊戲狀態
-	DBMatchgame  *mongo.DBMatchgame           // DB遊戲房資料
-	DBmap        *mongo.DBMap                 // DB地圖設定
-	GameTime     float64                      // 遊戲開始X秒
-	ErrorLogs    []string                     // ErrorLogs
-	MathModel    *MathModel                   // 數學模型
-	MSpawner     *MonsterSpawner              // 生怪器
-	AttackEvents map[string]*AttackEvent      // 攻擊事件
-	SceneEffects []packet.SceneEffect         // 場景效果
+	// 2. 座位無關玩家進來順序 有人離開就會空著 例如 索引2的玩家離開 Players[2]就會是nil 直到有新玩家加入
+	Players      [setting.PLAYER_NUMBER]*Player // 玩家陣列
+	RoomName     string                         // 房間名稱(也是DB文件ID)(房主UID+時間轉 MD5)
+	GameState    GameState                      // 遊戲狀態
+	DBMatchgame  *mongo.DBMatchgame             // DB遊戲房資料
+	DBmap        *mongo.DBMap                   // DB地圖設定
+	GameTime     float64                        // 遊戲開始X秒
+	ErrorLogs    []string                       // ErrorLogs
+	MathModel    *MathModel                     // 數學模型
+	MSpawner     *MonsterSpawner                // 生怪器
+	AttackEvents map[string]*AttackEvent        // 攻擊事件
+	SceneEffects []packet.SceneEffect           // 場景效果
 	MutexLock    sync.RWMutex
 }
 
@@ -155,9 +156,9 @@ func RoomLoop() {
 }
 
 // 傳入玩家ID取得Player
-func (r *Room) GetPlayerByID(playerID string) Gamer {
-	for _, v := range r.Gamers {
-		if v.GetDBPlayer().ID == playerID {
+func (r *Room) GetPlayerByID(playerID string) *Player {
+	for _, v := range r.Players {
+		if v.DBPlayer != nil && v.DBPlayer.ID == playerID {
 			return v
 		}
 	}
@@ -180,18 +181,21 @@ func (r *Room) RemoveExpiredAttackEvents() {
 
 // 移除過期的玩家Buffer
 func (r *Room) RemoveExpiredPlayerBuffers() {
-	for _, gamer := range r.Gamers {
-		if gamer == nil {
+	for _, player := range r.Players {
+		if player == nil {
 			return
 		}
 		toRemoveIdxs := make([]int, 0)
-		for j, buffer := range gamer.GetBuffers() {
+		for j, buffer := range player.PlayerBuffs {
 			if r.GameTime > (buffer.AtTime + buffer.Duration) {
 				toRemoveIdxs = append(toRemoveIdxs, j)
 			}
 		}
 		if len(toRemoveIdxs) > 0 {
-			gamer.SetBuffers(utility.RemoveFromSliceBySlice(gamer.GetBuffers(), toRemoveIdxs))
+			// for _, v := range toRemoveIdxs {
+			// 	log.Infof("%s 移除過期的玩家Buffer: %v", logger.LOG_Room, player.PlayerBuffs[v].Name)
+			// }
+			player.PlayerBuffs = utility.RemoveFromSliceBySlice(player.PlayerBuffs, toRemoveIdxs)
 		}
 	}
 }
@@ -203,7 +207,7 @@ func (r *Room) WriteGameErrorLog(log string) {
 // 取得房間玩家數
 func (r *Room) PlayerCount() int {
 	count := 0
-	for _, v := range r.Gamers {
+	for _, v := range r.Players {
 		if v != nil {
 			count++
 		}
@@ -212,14 +216,9 @@ func (r *Room) PlayerCount() int {
 }
 
 // 設定遊戲房內玩家使用英雄ID
-func (r *Room) SetHero(conn net.Conn, heroID int, heroSkinID string) {
+func (r *Room) SetHero(player *Player, heroID int, heroSkinID string) {
 	r.MutexLock.Lock()
 	defer r.MutexLock.Unlock()
-	player := r.GetPlayerByTCPConn(conn)
-	if player == nil {
-		log.Errorf("%s SetHero時player := r.getPlayer(conn)為nil", logger.LOG_Room)
-		return
-	}
 
 	heroJson, err := gameJson.GetHeroByID(strconv.Itoa(heroID))
 	if err != nil {
@@ -241,30 +240,30 @@ func (r *Room) GetHeroInfos() ([setting.PLAYER_NUMBER]int, [setting.PLAYER_NUMBE
 	defer r.MutexLock.Unlock()
 	var heroIDs [setting.PLAYER_NUMBER]int
 	var heroSkinIDs [setting.PLAYER_NUMBER]string
-	for i, gamer := range r.Gamers {
-		if gamer == nil {
+	for i, player := range r.Players {
+		if player == nil {
 			heroIDs[i] = 0
 			heroSkinIDs[i] = ""
 			continue
 		}
-		heroIDs[i] = gamer.GetHero().ID
-		heroSkinIDs[i] = gamer.GetHero().SkinID
+		heroIDs[i] = player.MyHero.ID
+		heroSkinIDs[i] = player.MyHero.SkinID
 	}
 	return heroIDs, heroSkinIDs
 }
 
 // 把玩家加到房間中, 成功時回傳true
-func (r *Room) JoinPlayer(gamer Gamer) bool {
-	if gamer == nil {
+func (r *Room) JoinPlayer(player *Player) bool {
+	if player == nil {
 		log.Errorf("%s JoinPlayer傳入nil Player", logger.LOG_Room)
 		return false
 	}
-	log.Infof("%s 玩家(%s) 嘗試加入房間 DBMatchgame: %+v", logger.LOG_Room, gamer.GetID(), r.DBMatchgame)
+	log.Infof("%s 玩家 %s 嘗試加入房間 DBMatchgame: %+v", logger.LOG_Room, player.DBPlayer.ID, r.DBMatchgame)
 
 	index := -1
-	for i, v := range r.Gamers {
-		if v != nil && v.GetID() == gamer.GetID() { // 如果要加入的玩家ID與目前房間的玩家ID一樣就回傳失敗
-			log.Errorf("%s 加入房間失敗, 嘗試加入同樣的玩家: %s.\n", logger.LOG_Room, gamer.GetID())
+	for i, v := range r.Players {
+		if v != nil && v.DBPlayer.ID == player.DBPlayer.ID { // 如果要加入的玩家ID與目前房間的玩家ID一樣就回傳失敗
+			log.Errorf("%s 加入房間失敗, 嘗試加入同樣的玩家: %s.\n", logger.LOG_Room, player.DBPlayer.ID)
 			return false
 		}
 		if v == nil && index == -1 { // 有座位是空的就把座位索引存起來
@@ -277,20 +276,20 @@ func (r *Room) JoinPlayer(gamer Gamer) bool {
 	}
 	// 設定玩家
 	r.MutexLock.Lock()
-	joinErr := r.DBMatchgame.JoinPlayer(gamer.GetID())
+	joinErr := r.DBMatchgame.JoinPlayer(player.DBPlayer.ID)
 	if joinErr != nil {
-		log.Errorf("%s JoinPlayer時 r.DBMatchgame.JoinPlayer(gamer.GetID())錯誤: %v", logger.LOG_Room, joinErr)
+		log.Errorf("%s JoinPlayer時r.DBMatchgame.JoinPlayer(player.DBPlayer.ID)錯誤: %v", logger.LOG_Room, joinErr)
 		return false
 	}
 	log.Infof("安排房間座位: %v", index)
-	gamer.SetIdx(index)
-	r.Gamers[index] = gamer
+	player.Index = index
+	r.Players[index] = player
 	r.MutexLock.Unlock()
 
 	r.UpdateMatchgameToDB() // 更新DB
 	r.OnRoomPlayerChange()
 
-	log.Infof("%s 玩家(%s) 已加入房間(%v/%v) 房間資訊: %+v", logger.LOG_Room, gamer.GetID(), r.PlayerCount(), setting.PLAYER_NUMBER, r)
+	log.Infof("%s 玩家%s 已加入房間(%v/%v) 房間資訊: %+v", logger.LOG_Room, player.DBPlayer.ID, r.PlayerCount(), setting.PLAYER_NUMBER, r)
 	return true
 }
 
@@ -298,20 +297,20 @@ func (r *Room) JoinPlayer(gamer Gamer) bool {
 func (r *Room) KickPlayer(conn net.Conn, reason string) {
 
 	seatIndex := r.GetPlayerIndexByTCPConn(conn) // 取得座位索引
-	if seatIndex < 0 || r.Gamers[seatIndex] == nil {
+	if seatIndex < 0 || r.Players[seatIndex] == nil {
 		log.Infof("%s 執行KickPlayer 原因: %s , 玩家已經不在清單中直接返回", logger.LOG_Room, reason)
 		return
 	}
 
 	log.Infof("%s 執行KickPlayer 原因: %s", logger.LOG_Room, reason)
-	gamer := r.Gamers[seatIndex]
+	player := r.Players[seatIndex]
 
 	// 更新玩家DB
-	if gamer.GetDBPlayer() != nil {
-		log.Infof("%s 嘗試踢出玩家 %s", logger.LOG_Room, gamer.GetID())
+	if player.DBPlayer != nil {
+		log.Infof("%s 嘗試踢出玩家 %s", logger.LOG_Room, player.DBPlayer.ID)
 		// 取mongoDB player doc
 		var mongoPlayerDoc mongo.DBPlayer
-		getPlayerDocErr := mongo.GetDocByID(mongo.ColName.Player, gamer.GetID(), &mongoPlayerDoc)
+		getPlayerDocErr := mongo.GetDocByID(mongo.ColName.Player, player.DBPlayer.ID, &mongoPlayerDoc)
 		if getPlayerDocErr != nil {
 			log.Errorf("%s 取mongoDB player doc資料發生錯誤: %v", logger.LOG_Room, getPlayerDocErr)
 			return
@@ -320,35 +319,35 @@ func (r *Room) KickPlayer(conn net.Conn, reason string) {
 			mongoPlayerDoc.RedisSync = true // 將RedisSync為設為true
 			// 更新玩家DB資料
 			updatePlayerBson := bson.D{
-				{Key: "point", Value: gamer.GetPoint()},                       // 玩家點數
-				{Key: "pointBuffer", Value: gamer.GetPTBuffer()},              // 玩家點數溢位
-				{Key: "totalWin", Value: gamer.GetTotalWin()},                 // 玩家總贏點數
-				{Key: "totalExpenditure", Value: gamer.GetTotalExpenditure()}, // 玩家總花費點數
-				{Key: "leftGameAt", Value: time.Now()},                        // 離開遊戲時間
-				{Key: "inMatchgameID", Value: ""},                             // 玩家不在遊戲房內了
-				{Key: "heroExp", Value: gamer.DBPlayer.HeroExp},               // 英雄經驗
-				{Key: "spellCharges", Value: gamer.DBPlayer.SpellCharges},     // 技能充能
-				{Key: "drops", Value: gamer.DBPlayer.Drops},                   // 掉落道具
-				{Key: "redisSync", Value: gamer.DBPlayer.RedisSync},           // 設定redisSync為true, 代表已經把這次遊玩結果更新上monogoDB了
+				{Key: "point", Value: player.DBPlayer.Point},                       // 玩家點數
+				{Key: "pointBuffer", Value: player.DBPlayer.PointBuffer},           // 玩家點數溢位
+				{Key: "totalWin", Value: player.DBPlayer.TotalWin},                 // 玩家總贏點數
+				{Key: "totalExpenditure", Value: player.DBPlayer.TotalExpenditure}, // 玩家總花費點數
+				{Key: "leftGameAt", Value: time.Now()},                             // 離開遊戲時間
+				{Key: "inMatchgameID", Value: ""},                                  // 玩家不在遊戲房內了
+				{Key: "heroExp", Value: player.DBPlayer.HeroExp},                   // 英雄經驗
+				{Key: "spellCharges", Value: player.DBPlayer.SpellCharges},         // 技能充能
+				{Key: "drops", Value: player.DBPlayer.Drops},                       // 掉落道具
+				{Key: "redisSync", Value: player.DBPlayer.RedisSync},               // 設定redisSync為true, 代表已經把這次遊玩結果更新上monogoDB了
 			}
-			_, updateErr := mongo.UpdateDocByBsonD(mongo.ColName.Player, gamer.DBPlayer.ID, updatePlayerBson) // 更新DB DBPlayer
+			_, updateErr := mongo.UpdateDocByBsonD(mongo.ColName.Player, player.DBPlayer.ID, updatePlayerBson) // 更新DB DBPlayer
 			if updateErr != nil {
-				log.Errorf("%s 更新玩家 %s DB資料錯誤: %v", logger.LOG_Room, gamer.DBPlayer.ID, updateErr)
+				log.Errorf("%s 更新玩家 %s DB資料錯誤: %v", logger.LOG_Room, player.DBPlayer.ID, updateErr)
 			} else {
-				log.Infof("%s 更新玩家 %s DB資料", logger.LOG_Room, gamer.DBPlayer.ID)
+				log.Infof("%s 更新玩家 %s DB資料", logger.LOG_Room, player.DBPlayer.ID)
 			}
 		} else {
-			log.Infof("%s 玩家 %s RedisSync為true不需要更新PlayerDoc", logger.LOG_Room, gamer.DBPlayer.ID)
+			log.Infof("%s 玩家 %s RedisSync為true不需要更新PlayerDoc", logger.LOG_Room, player.DBPlayer.ID)
 		}
-		r.PubPlayerLeftMsg(gamer.DBPlayer.ID) // 送玩家離開訊息給Matchmaker
+		r.PubPlayerLeftMsg(player.DBPlayer.ID) // 送玩家離開訊息給Matchmaker
 	}
-	gamer.RedisPlayer.ClosePlayer() // 關閉該玩家的RedisDB
+	player.RedisPlayer.ClosePlayer() // 關閉該玩家的RedisDB
 	r.MutexLock.Lock()
-	r.Gamers[seatIndex] = nil
-	r.DBMatchgame.KickPlayer(gamer.DBPlayer.ID)
+	r.Players[seatIndex] = nil
+	r.DBMatchgame.KickPlayer(player.DBPlayer.ID)
 	r.UpdateMatchgameToDB() // 更新房間DB
 	r.MutexLock.Unlock()
-	gamer.CloseConnection() // 關閉連線
+	player.CloseConnection() // 關閉連線
 	r.OnRoomPlayerChange()
 	// 廣播玩家離開封包
 	r.BroadCastPacket(seatIndex, &packet.Pack{
@@ -400,6 +399,7 @@ func (r *Room) HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		log.Errorf("%s room.getPlayer為nil", logger.LOG_Room)
 		return fmt.Errorf("%s room.getPlayer為nil, 可能玩家已離開", logger.LOG_Room)
 	}
+	// log.Errorf("//////////////////////////來自player%v(%s) 的 %v 封包", player.Index, player.DBPlayer.ID, pack.CMD)
 	// 處理各類型封包
 	switch pack.CMD {
 	// ==========更新場景(玩家剛進遊戲 或 斷線回連會主動跟Server要更新資料用)==========
@@ -419,7 +419,7 @@ func (r *Room) HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			log.Errorf("%s parse %s failed", logger.LOG_Room, pack.CMD)
 			return fmt.Errorf("parse %s failed", pack.CMD)
 		}
-		r.SetHero(conn, content.HeroID, content.HeroSkinID) // 設定使用的英雄ID
+		r.SetHero(player, content.HeroID, content.HeroSkinID) // 設定使用的英雄ID
 		heroIDs, heroSkinIDs := r.GetHeroInfos()
 		// 廣播給所有玩家
 		r.BroadCastPacket(-1, &packet.Pack{ // 廣播封包
@@ -485,7 +485,7 @@ func (r *Room) HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 
 // 透過TCPConn取得玩家座位索引
 func (r *Room) GetPlayerIndexByTCPConn(conn net.Conn) int {
-	for i, v := range r.Gamers {
+	for i, v := range r.Players {
 		if v == nil || v.ConnTCP == nil {
 			continue
 		}
@@ -499,7 +499,7 @@ func (r *Room) GetPlayerIndexByTCPConn(conn net.Conn) int {
 
 // 透過ConnToken取得玩家座位索引
 func (r *Room) GetPlayerIndexByConnToken(connToken string) int {
-	for i, v := range r.Gamers {
+	for i, v := range r.Players {
 		if v == nil || v.ConnUDP == nil {
 			continue
 		}
@@ -513,7 +513,7 @@ func (r *Room) GetPlayerIndexByConnToken(connToken string) int {
 
 // 透過TCPConn取得玩家
 func (r *Room) GetPlayerByTCPConn(conn net.Conn) *Player {
-	for _, v := range r.Gamers {
+	for _, v := range r.Players {
 		if v == nil || v.ConnTCP == nil {
 			continue
 		}
@@ -527,7 +527,7 @@ func (r *Room) GetPlayerByTCPConn(conn net.Conn) *Player {
 
 // 透過ConnToken取得玩家
 func (r *Room) GetPlayerByConnToken(connToken string) *Player {
-	for _, v := range r.Gamers {
+	for _, v := range r.Players {
 		if v == nil || v.ConnUDP == nil {
 			continue
 		}
@@ -549,7 +549,7 @@ func (r *Room) BroadCastPacket(exceptPlayerIdx int, pack *packet.Pack) {
 	// 	log.Infof("廣播封包給其他玩家 CMD: %v", pack.CMD)
 	// }
 	// 送封包給所有房間中的玩家
-	for i, v := range r.Gamers {
+	for i, v := range r.Players {
 		if i == exceptPlayerIdx {
 			continue
 		}
@@ -566,20 +566,20 @@ func (r *Room) BroadCastPacket(exceptPlayerIdx int, pack *packet.Pack) {
 
 // 送封包給玩家(TCP)
 func (r *Room) SendPacketToPlayer(pIndex int, pack *packet.Pack) {
-	if r.Gamers[pIndex] == nil || r.Gamers[pIndex].ConnTCP.Conn == nil {
+	if r.Players[pIndex] == nil || r.Players[pIndex].ConnTCP.Conn == nil {
 		return
 	}
-	err := packet.SendPack(r.Gamers[pIndex].ConnTCP.Encoder, pack)
+	err := packet.SendPack(r.Players[pIndex].ConnTCP.Encoder, pack)
 	if err != nil {
 		log.Errorf("%s SendPacketToPlayer error: %v", logger.LOG_Room, err)
-		r.KickPlayer(r.Gamers[pIndex].ConnTCP.Conn, "SendPacketToPlayer錯誤")
+		r.KickPlayer(r.Players[pIndex].ConnTCP.Conn, "SendPacketToPlayer錯誤")
 	}
 }
 
 // 取得要送封包的玩家陣列
 func (r *Room) GetPacketPlayers() [setting.PLAYER_NUMBER]*packet.Player {
 	var players [setting.PLAYER_NUMBER]*packet.Player
-	for i, v := range r.Gamers {
+	for i, v := range r.Players {
 		if v == nil {
 			players[i] = nil
 			continue
@@ -596,13 +596,13 @@ func (r *Room) GetPacketPlayers() [setting.PLAYER_NUMBER]*packet.Player {
 
 // 送封包給玩家(UDP)
 func (r *Room) SendPacketToPlayer_UDP(pIndex int, sendData []byte) {
-	if r.Gamers[pIndex] == nil || r.Gamers[pIndex].ConnUDP.Conn == nil {
+	if r.Players[pIndex] == nil || r.Players[pIndex].ConnUDP.Conn == nil {
 		return
 	}
 	if sendData == nil {
 		return
 	}
-	player := r.Gamers[pIndex]
+	player := r.Players[pIndex]
 	sendData = append(sendData, '\n')
 	_, sendErr := player.ConnUDP.Conn.WriteTo(sendData, player.ConnUDP.Addr)
 	if sendErr != nil {
@@ -616,7 +616,7 @@ func (r *Room) BroadCastPacket_UDP(exceptPlayerIdx int, sendData []byte) {
 	if sendData == nil {
 		return
 	}
-	for i, v := range r.Gamers {
+	for i, v := range r.Players {
 		if exceptPlayerIdx == i {
 			continue
 		}
@@ -640,12 +640,12 @@ func (r *Room) RoomTimer(stop chan struct{}) {
 			stop <- struct{}{}
 		}
 	}()
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Duration(TIMELOOP_MILISECS) * time.Millisecond)
 	for {
 		select {
 		case <-ticker.C:
-			r.GameTime += 1 // 更新遊戲時間
-			for _, player := range r.Gamers {
+			r.GameTime += float64(TIMELOOP_MILISECS) / float64(1000) // 更新遊戲時間
+			for _, player := range r.Players {
 				if player == nil {
 					continue
 				}
