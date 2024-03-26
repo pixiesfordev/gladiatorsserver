@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	log "github.com/sirupsen/logrus"
+	"gladiatorsGoModule/matchgrpc"
 	"google.golang.org/grpc"
-	"herofishingGoModule/matchgrpc"
 	logger "matchgame/logger"
 	"time"
 )

@@ -3,7 +3,7 @@ package packet
 import (
 	// logger "matchgame/logger"
 	// log "github.com/sirupsen/logrus"
-	"herofishingGoModule/utility"
+	"gladiatorsGoModule/utility"
 )
 
 type BattleState struct {
@@ -19,7 +19,7 @@ type BattleState_ToClient struct {
 type PackPlayerState struct {
 	Skills      []PackSkill
 	BribeSkills []PackBribeSkill
-	Gladiators       []PackGladiator
+	Gladiators  []PackGladiator
 }
 
 type PackSkill struct {

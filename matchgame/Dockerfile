@@ -10,8 +10,8 @@ ENV GO111MODULE=on
 # 複製 matchgame 的內容
 COPY matchgame/ .
 
-# 複製 herofishingGoModule 到 /home/herofishingGoModule
-COPY herofishingGoModule/ /home/herofishingGoModule/
+# 複製 gladiatorsGoModule 到 /home/gladiatorsGoModule
+COPY gladiatorsGoModule/ /home/gladiatorsGoModule/
 
 # 下載建置需要的模組
 RUN go mod tidy

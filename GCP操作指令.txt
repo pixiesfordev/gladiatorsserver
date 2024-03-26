@@ -44,7 +44,7 @@ gcloud compute instances add-tags gke-cluster-gladiators-default-pool-fbb15252-s
 gcloud compute instances remove-tags gke-cluster-gladiators-default-pool-fbb15252-std9 --asia-east1-c --tags==gladiators
 # 查看Storage項目
 gsutil ls
-gsutil ls gs://herofishing_gamejson_dev/
+gsutil ls gs://gladiators_gamejson_dev/
 # 查看pod使用的serviceAccount
 kubectl get pod gladiators-matchmaker-5b6dc6776b-dgvxb -n gladiators-service -o=jsonpath='{.spec.serviceAccount}'
 kubectl get pod gladiators-matchgame-qbqzp-59glj -n gladiators-gameserver -o=jsonpath='{.spec.serviceAccount}'

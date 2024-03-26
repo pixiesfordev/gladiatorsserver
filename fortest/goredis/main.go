@@ -25,7 +25,7 @@ func main() {
 
 	// _, err := rdb.HMSet(ctx, playerID, map[string]interface{}{
 	// 	"gold":   9800,
-	// 	"heroLV": 10,
+	// 	"gladiatorLV": 10,
 	// }).Result()
 	// if err != nil {
 	// 	panic(err)
@@ -56,9 +56,9 @@ func showPlayerInfo(ctx context.Context, rdb *redis.Client) {
 	}
 
 	gold, _ := strconv.ParseInt(val["gold"], 10, 64)
-	heroLV64, _ := strconv.ParseInt(val["heroLV"], 10, 32)
-	heroLV := int32(heroLV64)
-	fmt.Printf("playerID: %s gold: %d heroLV: %d\n", playerID, gold, heroLV)
+	gladiatorLV64, _ := strconv.ParseInt(val["gladiatorLV"], 10, 32)
+	gladiatorLV := int32(gladiatorLV64)
+	fmt.Printf("playerID: %s gold: %d gladiatorLV: %d\n", playerID, gold, gladiatorLV)
 }
 
 // 暫存點數寫入並每X毫秒更新上RedisDB

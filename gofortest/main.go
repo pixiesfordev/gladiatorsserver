@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"herofishingGoModule/gameJson"
+	"gladiatorsGoModule/gameJson"
 )
 
 func main() {
@@ -11,7 +11,7 @@ func main() {
 		fmt.Printf("初始化失敗: %v\n", err)
 		return
 	}
-	// hero1, err := gameJson.GetHeroByID("1")
+	// gladiator1, err := gameJson.GetGladiatorByID("1")
 	// if err != nil {
 	// 	fmt.Printf("取資料錯誤: %v", err)
 	// }

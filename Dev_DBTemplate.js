@@ -20,7 +20,7 @@ let playerDoc = db.template.insertMany([
     leftGameAt_nowDate: null,
     inMatchgameID: "",
     redisSync: true,
-    heroExp: 0,
+    gladiatorExp: 0,
     spellCharges: [0, 0, 0],
     drops: [0, 0, 0],
   },

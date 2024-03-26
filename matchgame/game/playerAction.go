@@ -2,9 +2,9 @@ package game
 
 import (
 	"fmt"
-	"herofishingGoModule/gameJson"
-	mongo "herofishingGoModule/mongo"
-	"herofishingGoModule/utility"
+	"gladiatorsGoModule/gameJson"
+	mongo "gladiatorsGoModule/mongo"
+	"gladiatorsGoModule/utility"
 	logger "matchgame/logger"
 	"matchgame/packet"
 	"strconv"
@@ -30,9 +30,9 @@ func (room *Room) HandleAttack(player *Player, packID int, content packet.Attack
 	}
 	// needPoint := int64(room.DBmap.Bet)
 	// 取技能表
-	spellJson, err := gameJson.GetHeroSpellByID(content.SpellJsonID)
+	spellJson, err := gameJson.GetTraitByID(content.SpellJsonID)
 	if err != nil {
-		log.Errorf("%s HandleAttack時gameJson.GetHeroSpellByID(hitCMD.SpellJsonID) SpellJsonID: %s 錯誤: %v", logger.LOG_Action, content.SpellJsonID, err)
+		log.Errorf("%s HandleAttack時gameJson.GetGladiatorSpellByID(hitCMD.SpellJsonID) SpellJsonID: %s 錯誤: %v", logger.LOG_Action, content.SpellJsonID, err)
 		return
 	}
 
@@ -42,7 +42,7 @@ func (room *Room) HandleAttack(player *Player, packID int, content packet.Attack
 	spendPoint := int64(0)       // 花費點數
 
 	// 如果是技能攻擊, 設定spellIdx(第幾招技能), 並檢查充能是否足夠
-	if spellType == "HeroSpell" {
+	if spellType == "GladiatorSpell" {
 		idx, err := utility.ExtractLastDigit(spellJson.ID) // 掉落充能的技能索引(1~3) Ex.1就是第1個技能
 		spellIdx = int32(idx)
 		if err != nil {
@@ -70,9 +70,9 @@ func (room *Room) HandleAttack(player *Player, packID int, content packet.Attack
 		// 	log.Errorf("%s 該玩家充能不足, 無法使用技能才對", logger.LOG_Action)
 		// 	return
 		// }
-		spell, getSpellErr := player.MyHero.GetSpell(spellIdx)
+		spell, getSpellErr := player.MyGladiator.GetSpell(spellIdx)
 		if getSpellErr != nil {
-			log.Errorf("%s player.MyHero.GetSpell(spellIdx)錯誤: %v", logger.LOG_Action, getSpellErr)
+			log.Errorf("%s player.MyGladiator.GetSpell(spellIdx)錯誤: %v", logger.LOG_Action, getSpellErr)
 			return
 		}
 
@@ -127,7 +127,7 @@ func (room *Room) HandleAttack(player *Player, packID int, content packet.Attack
 	// 玩家點數變化
 	player.AddPoint(-spendPoint)
 	player.AddTotalExpenditure(spendPoint)
-	// 施放技能的話要減少英雄技能充能
+	// 施放技能的話要減少鬥士技能充能
 	if spellIdx != 0 && spendSpellCharge != 0 {
 		player.AddSpellCharge(spellIdx, -spendSpellCharge)
 	}
@@ -157,9 +157,9 @@ func (room *Room) HandleHit(player *Player, pack packet.Pack, content packet.Hit
 	attackID := strconv.Itoa(player.Index) + "_" + strconv.Itoa(content.AttackID)
 
 	// 取技能表
-	spellJson, err := gameJson.GetHeroSpellByID(content.SpellJsonID)
+	spellJson, err := gameJson.GetTraitByID(content.SpellJsonID)
 	if err != nil {
-		errStr := fmt.Sprintf("%s HandleHit時gameJson.GetHeroSpellByID(hitCMD.SpellJsonID) SpellJsonID: %s 錯誤: %v", logger.LOG_Action, content.SpellJsonID, err)
+		errStr := fmt.Sprintf("%s HandleHit時gameJson.GetGladiatorSpellByID(hitCMD.SpellJsonID) SpellJsonID: %s 錯誤: %v", logger.LOG_Action, content.SpellJsonID, err)
 		room.SendPacketToPlayer(player.Index, newHitErrorPack(errStr, pack))
 		log.Errorf("%s %s", logger.LOG_Action, errStr)
 		return
@@ -167,12 +167,12 @@ func (room *Room) HandleHit(player *Player, pack packet.Pack, content packet.Hit
 	// 取rtp
 	rtp := float64(0)
 	spellType := spellJson.GetSpellType()
-	if spellType == "HeroSpell" {
+	if spellType == "GladiatorSpell" {
 		idx, err := utility.ExtractLastDigit(spellJson.ID) // 掉落充能的技能索引(1~3) Ex.1就是第1個技能
 		if err != nil {
 			log.Errorf("%s HandleHit時utility.ExtractLastDigit(spellJson.ID錯誤: %v", logger.LOG_Action, err)
 		} else {
-			rtp = spellJson.GetRTP(player.MyHero.SpellLVs[idx])
+			rtp = spellJson.GetRTP(player.MyGladiator.SpellLVs[idx])
 		}
 	} else if spellType == "DropSpell" {
 		rtp = spellJson.GetRTP(1) // 掉落技能只有固定等級1
@@ -181,12 +181,12 @@ func (room *Room) HandleHit(player *Player, pack packet.Pack, content packet.Hit
 	spellMaxHits := spellJson.MaxHits
 
 	// hitMonsterIdxs := make([]int, 0)   // 擊中怪物索引清單
-	killMonsterIdxs := make([]int, 0)    // 擊殺怪物索引清單, [1,1,3]就是依次擊殺索引為1,1與3的怪物
-	gainPoints := make([]int64, 0)       // 獲得點數清單, [1,1,3]就是依次獲得點數1,1與3
-	gainSpellCharges := make([]int32, 0) // 獲得技能充能清單, [1,1,3]就是依次獲得技能1,技能1,技能3的充能
-	gainHeroExps := make([]int32, 0)     // 獲得英雄經驗清單, [1,1,3]就是依次獲得英雄經驗1,1與3
-	gainDrops := make([]int32, 0)        // 獲得掉落清單, [1,1,3]就是依次獲得DropJson中ID為1,1與3的掉落
-	ptBuffer := int64(0)                 // 點數溢位
+	killMonsterIdxs := make([]int, 0)     // 擊殺怪物索引清單, [1,1,3]就是依次擊殺索引為1,1與3的怪物
+	gainPoints := make([]int64, 0)        // 獲得點數清單, [1,1,3]就是依次獲得點數1,1與3
+	gainSpellCharges := make([]int32, 0)  // 獲得技能充能清單, [1,1,3]就是依次獲得技能1,技能1,技能3的充能
+	gainGladiatorExps := make([]int32, 0) // 獲得鬥士經驗清單, [1,1,3]就是依次獲得鬥士經驗1,1與3
+	gainDrops := make([]int32, 0)         // 獲得掉落清單, [1,1,3]就是依次獲得DropJson中ID為1,1與3的掉落
+	ptBuffer := int64(0)                  // 點數溢位
 	// 遍歷擊中的怪物並計算擊殺與獎勵
 	content.MonsterIdxs = utility.RemoveDuplicatesFromSlice(content.MonsterIdxs) // 移除重複的命中索引
 	for _, monsterIdx := range content.MonsterIdxs {
@@ -293,11 +293,11 @@ func (room *Room) HandleHit(player *Player, pack packet.Pack, content packet.Hit
 					if err != nil {
 						log.Errorf("%s HandleHit時utility.ExtractLastDigit(rndUnchargedSpell.ID錯誤: %v", logger.LOG_Action, err)
 					} else {
-						// log.Errorf("技能ID: %v 索引: %v 技能等級: %v", rndUnchargedSpell.ID, spellIdx, player.MyHero.SpellLVs[spellIdx])
-						rndUnchargedSpellRTP = rndUnchargedSpell.GetRTP(player.MyHero.SpellLVs[dropSpellIdx])
+						// log.Errorf("技能ID: %v 索引: %v 技能等級: %v", rndUnchargedSpell.ID, spellIdx, player.MyGladiator.SpellLVs[spellIdx])
+						rndUnchargedSpellRTP = rndUnchargedSpell.GetRTP(player.MyGladiator.SpellLVs[dropSpellIdx])
 					}
 					// log.Errorf("rndUnchargedSpellRTP: %v", rndUnchargedSpellRTP)
-					dropChargeP = room.MathModel.GetHeroSpellDropP_AttackKilling(rndUnchargedSpellRTP, odds)
+					dropChargeP = room.MathModel.GetGladiatorSpellDropP_AttackKilling(rndUnchargedSpellRTP, odds)
 					if utility.GetProbResult(dropChargeP) {
 						gainSpellCharges[len(gainSpellCharges)-1] = int32(dropSpellIdx)
 					}
@@ -305,7 +305,7 @@ func (room *Room) HandleHit(player *Player, pack packet.Pack, content packet.Hit
 				// log.Errorf("擊殺怪物: %v", monsterIdx)
 				killMonsterIdxs = append(killMonsterIdxs, monsterIdx)
 				gainPoints = append(gainPoints, rewardPoint)
-				gainHeroExps = append(gainHeroExps, int32(monsterExp))
+				gainGladiatorExps = append(gainGladiatorExps, int32(monsterExp))
 				if parsedDropID != 0 {
 					gainDrops[len(gainDrops)-1] = int32(parsedDropID)
 				}
@@ -355,13 +355,13 @@ func (room *Room) HandleHit(player *Player, pack packet.Pack, content packet.Hit
 		CMD:    packet.HIT_TOCLIENT,
 		PackID: pack.PackID,
 		Content: &packet.Hit_ToClient{
-			PlayerIdx:        player.Index,
-			KillMonsterIdxs:  killMonsterIdxs,
-			GainPoints:       gainPoints,
-			GainHeroExps:     gainHeroExps,
-			GainSpellCharges: gainSpellCharges,
-			GainDrops:        gainDrops,
-			PTBuffer:         ptBuffer,
+			PlayerIdx:         player.Index,
+			KillMonsterIdxs:   killMonsterIdxs,
+			GainPoints:        gainPoints,
+			GainGladiatorExps: gainGladiatorExps,
+			GainSpellCharges:  gainSpellCharges,
+			GainDrops:         gainDrops,
+			PTBuffer:          ptBuffer,
 		}}
 	attackEvent.Hit_ToClientPacks = append(attackEvent.Hit_ToClientPacks, hitPack)
 	// log.Errorf("attackEvent.Paid: %v   killMonsterIdxs: %v", attackEvent.Paid, killMonsterIdxs)
@@ -393,10 +393,10 @@ func (room *Room) settleHit(player *Player, hitPack packet.Pack) {
 		player.AddPTBuffer(content.PTBuffer)
 	}
 
-	// 英雄增加經驗
-	totalGainHeroExps := utility.SliceSum(content.GainHeroExps) // 把 每個擊殺獲得英雄經驗加總就是 總獲得英雄經驗
-	player.AddHeroExp(int32(totalGainHeroExps))
-	// 擊殺怪物增加英雄技能充能
+	// 鬥士增加經驗
+	totalGainGladiatorExps := utility.SliceSum(content.GainGladiatorExps) // 把 每個擊殺獲得鬥士經驗加總就是 總獲得鬥士經驗
+	player.AddGladiatorExp(int32(totalGainGladiatorExps))
+	// 擊殺怪物增加鬥士技能充能
 	for _, v := range content.GainSpellCharges {
 		if v <= 0 { // 因為有擊殺但沒掉落充能時, gainSpellCharges仍會填入-1, 所以要加判斷
 			continue
@@ -412,11 +412,11 @@ func (room *Room) settleHit(player *Player, hitPack packet.Pack) {
 	}
 	// 從怪物清單中移除被擊殺的怪物(付費後才算目標死亡, 沒收到付費的Attack封包之前都還是算怪物存活)
 	room.MSpawner.RemoveMonsters(content.KillMonsterIdxs)
-	log.Infof("killMonsterIdxs: %v gainPoints: %v gainHeroExps: %v gainSpellCharges: %v  , gainDrops: %v ", content.KillMonsterIdxs, content.GainPoints, content.GainHeroExps, content.GainSpellCharges, content.GainDrops)
+	log.Infof("killMonsterIdxs: %v gainPoints: %v gainGladiatorExps: %v gainSpellCharges: %v  , gainDrops: %v ", content.KillMonsterIdxs, content.GainPoints, content.GainGladiatorExps, content.GainSpellCharges, content.GainDrops)
 	// log.Infof("/////////////////////////////////")
 	// log.Infof("killMonsterIdxs: %v \n", killMonsterIdxs)
 	// log.Infof("gainPoints: %v \n", gainPoints)
-	// log.Infof("gainHeroExps: %v \n", gainHeroExps)
+	// log.Infof("gainGladiatorExps: %v \n", gainGladiatorExps)
 	// log.Infof("gainSpellCharges: %v \n", gainSpellCharges)
 	// log.Infof("gainDrops: %v \n", gainDrops)
 	// 廣播給client
@@ -498,11 +498,11 @@ func (room *Room) HandleDropSpell(player *Player, pack packet.Pack, content pack
 				Players: room.GetPacketPlayers(),
 			},
 		})
-	case "HeroSpell":
-		heroSpellID := dropSpellJson.ID + "_drop_spell"
+	case "GladiatorSpell":
+		gladiatorSpellID := dropSpellJson.ID + "_drop_spell"
 		attackPack := packet.Attack{
 			AttackID:    content.AttackID,
-			SpellJsonID: heroSpellID,
+			SpellJsonID: gladiatorSpellID,
 			MonsterIdx:  -1,
 		}
 		room.HandleAttack(player, -1, attackPack)
@@ -552,37 +552,37 @@ func (room *Room) HandleLvUpSpell(player *Player, pack packet.Pack, content pack
 		})
 	}
 
-	heroLV, err := gameJson.GetHeroLVByEXP(player.DBPlayer.HeroExp)
-	log.Errorf("heroExp: %v , heroLV: %v usedSpellPoint: %v", player.DBPlayer.HeroExp, heroLV, player.MyHero.UsedSpellPoint)
+	gladiatorLV, err := gameJson.GetGladiatorLVByEXP(player.DBPlayer.GladiatorExp)
+	log.Errorf("gladiatorExp: %v , gladiatorLV: %v usedSpellPoint: %v", player.DBPlayer.GladiatorExp, gladiatorLV, player.MyGladiator.UsedSpellPoint)
 
 	if err != nil {
-		errStr := fmt.Sprintf("%s gameJson.GetHeroLVByEXP錯誤: %v", logger.LOG_Action, err)
+		errStr := fmt.Sprintf("%s gameJson.GetGladiatorLVByEXP錯誤: %v", logger.LOG_Action, err)
 		log.Errorf(errStr)
 		errSend(errStr)
 		return
 	}
-	remainSpellPoint := heroLV - player.MyHero.UsedSpellPoint
+	remainSpellPoint := gladiatorLV - player.MyGladiator.UsedSpellPoint
 	if remainSpellPoint <= 0 {
 		errStr := fmt.Sprintf("%s 技能點數不足 remainSpellPoint: %v", logger.LOG_Action, remainSpellPoint)
 		log.Errorf(errStr)
 		errSend(errStr)
 		return
 	}
-	if content.SpellIdx < 1 && content.SpellIdx > 3 { // 英雄技能索引只會是1~3
-		errStr := fmt.Sprintf("%s 英雄技能索引只會是1~3 content.SpellIdx: %v", logger.LOG_Action, content.SpellIdx)
+	if content.SpellIdx < 1 && content.SpellIdx > 3 { // 鬥士技能索引只會是1~3
+		errStr := fmt.Sprintf("%s 鬥士技能索引只會是1~3 content.SpellIdx: %v", logger.LOG_Action, content.SpellIdx)
 		log.Errorf(errStr)
 		errSend(errStr)
 		return
 	}
-	if player.MyHero.SpellLVs[content.SpellIdx] > 2 { // SpellLV是0~3, 0是尚未學習,s 3是等級3
-		errStr := fmt.Sprintf("%s 該技能索引%v 等級為%v 無法再升級了", logger.LOG_Action, content.SpellIdx, player.MyHero.SpellLVs[content.SpellIdx])
+	if player.MyGladiator.SpellLVs[content.SpellIdx] > 2 { // SpellLV是0~3, 0是尚未學習,s 3是等級3
+		errStr := fmt.Sprintf("%s 該技能索引%v 等級為%v 無法再升級了", logger.LOG_Action, content.SpellIdx, player.MyGladiator.SpellLVs[content.SpellIdx])
 		log.Errorf(errStr)
 		errSend(errStr)
 		return
 	}
 
-	player.MyHero.UsedSpellPoint++             // 已使用的點數++
-	player.MyHero.SpellLVs[content.SpellIdx]++ // 英雄技能等級++
+	player.MyGladiator.UsedSpellPoint++             // 已使用的點數++
+	player.MyGladiator.SpellLVs[content.SpellIdx]++ // 鬥士技能等級++
 
 	room.SendPacketToPlayer(player.Index, &packet.Pack{
 		CMD:    packet.LVUPSPELL_TOCLIENT,

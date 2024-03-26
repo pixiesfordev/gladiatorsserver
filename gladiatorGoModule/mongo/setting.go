@@ -2,10 +2,10 @@ package mongo
 
 import (
 	"fmt"
-	"herofishingGoModule/setting"
+	"gladiatorsGoModule/setting"
 	"time"
 
-	logger "herofishingGoModule/logger"
+	logger "gladiatorsGoModule/logger"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -24,8 +24,8 @@ var EnvDBUri = map[string]string{
 }
 
 var AppEndpoint = map[string]string{
-	"Dev":     "https://asia-south1.gcp.data.mongodb-api.com/app/app-gladiators-pvxuj", // 開發版
-	"Release": "???",                                                                   // 正式版
+	"Dev":     "https://asia-south1.gcp.data.mongodb-api.com/app/mygladiators-dev", // 開發版
+	"Release": "???",                                                               // 正式版
 }
 
 // GroupID就是ProjectID(在atlas app service左上方有垂直三個點那點Project Settings)
@@ -39,8 +39,8 @@ var EnvGroupID = map[string]string{
 
 // AppID
 var EnvAppID = map[string]string{
-	"Dev":     "app-gladiators-pvxuj", // 開發版
-	"Release": "???",                  // 正式版
+	"Dev":     "mygladiators-dev", // 開發版
+	"Release": "???",              // 正式版
 }
 
 // App ObjectID跟AppID不一樣, 開啟Atlas Services時 網址會顯示App ObjectID
@@ -111,19 +111,12 @@ const (
 
 // DB玩家資料
 type DBPlayer struct {
-	ID               string    `bson:"_id"`
-	CreatedAt        time.Time `bson:"createdAt"`
-	Point            int64     `bson:"point"`
-	Ban              bool      `bson:"ban"`
-	InMatchgameID    string    `bson:"inMatchgameID"`
-	LeftGameAt       time.Time `bson:"leftGameAt"`
-	RedisSync        bool      `bson:"redisSync"`
-	HeroExp          int32     `bson:"heroExp"`
-	SpellCharges     [3]int32  `bson:"spellCharges"`
-	Drops            [3]int32  `bson:"drops"`
-	PointBuffer      int64     `bson:"pointBuffer"`
-	TotalWin         int64     `bson:"totalWin"`
-	TotalExpenditure int64     `bson:"totalExpenditure"`
+	ID            string    `bson:"_id"`
+	CreatedAt     time.Time `bson:"createdAt"`
+	Gold          int64     `bson:"gold"`
+	Point         int64     `bson:"point"`
+	Ban           bool      `bson:"ban"`
+	InMatchgameID string    `bson:"inMatchgameID"`
 
 	// DB用不到的資料放這
 	// AuthType      string    `bson:"authType"`
@@ -134,6 +127,26 @@ type DBPlayer struct {
 
 }
 
+// DB玩家資料
+type DBGladiator struct {
+	ID              string    `bson:"_id"`
+	CreatedAt       time.Time `bson:"createdAt"`
+	OwnerID         string    `bson:"ownerID"`
+	JsonGladiatorID int64     `bson:"jsonGladiatorID"`
+	JsonSkillIDs    []int32   `bson:"jsonSkillIDs"`
+	JsonTraitIDs    []int32   `bson:"jsonTraitIDs"`
+	JsonEquipIDs    []int32   `bson:"jsonEquipIDs"`
+	HP              int64     `bson:"hp"`
+	CurHP           int64     `bson:"curHP"`
+	VigorRegon      float64   `bson:"vigorRegon"`
+	STR             int64     `bson:"str"`
+	DEF             int64     `bson:"def"`
+	MDEF            int64     `bson:"mdef"`
+	CRIT            float64   `bson:"crit"`
+	INIT            int64     `bson:"init"`
+	Knockback       int64     `bson:"knockback"`
+}
+
 // gameSetting的GameState文件
 type DBGameState struct {
 	ID                       string    `bson:"_id"`
@@ -141,7 +154,6 @@ type DBGameState struct {
 	EnvVersion               string    `bson:"envVersion"`
 	GameVersion              string    `bson:"gameVersion"`
 	MinimumGameVersion       string    `bson:"minimumGameVersion"`
-	IosReview                bool      `bson:"iosReview"`
 	MatchgameTestverRoomName string    `bson:"matchgame-testver-roomName"`
 	MatchgameTestverMapID    string    `bson:"matchgame-testver-mapID"`
 	MatchgameTestverIP       string    `bson:"matchgame-testver-ip"`
@@ -153,15 +165,6 @@ type DBTimer struct {
 	ID                  string    `bson:"_id"`
 	CreatedAt           time.Time `bson:"createdAt"`
 	PlayerOfflineMinute int       `bson:"playerOfflineMinute"`
-	ResetHeroExpMinute  int       `bson:"resetHeroExpMinute"`
-}
-
-// gameSetting的GameConfig文件
-type DBGameConfig struct {
-	ID                      string    `bson:"_id"`
-	CreatedAt               time.Time `bson:"createdAt"`
-	RTPAdjust_KillRateValue float64   `bson:"rtpAdjust_KillRateValue"`
-	RTPAdjust_RTPThreshold  float64   `bson:"rtpAdjust_RTPThreshold"`
 }
 
 // DB玩家狀態資料
@@ -171,26 +174,11 @@ type DBPlayerState struct {
 	LastUpdateAt time.Time `bson:"lastUpdatedAt"`
 }
 
-// DB地圖資料
-type DBMap struct {
-	ID             string  `bson:"_id"`
-	MatchType      string  `bson:"matchType"`
-	JsonMapID      int32   `bson:"jsonMapID"`
-	Bet            int32   `bson:"bet"`
-	BetThreshold   int64   `bson:"betThreshold"`
-	Enable         bool    `bson:"enable"`
-	RTP            float64 `bson:"rtp"`
-	SpellSharedRTP float64 `bson:"spellSharedRTP"`
-}
-
 // 遊戲房資料
 type DBMatchgame struct {
-	ID        string    `bson:"_id"`
-	CreatedAt time.Time `bson:"createdAt"`
-	DBMapID   string    `bson:"dbMapID"`
-	// 玩家陣列(索引0~3 分別代表4個玩家)
-	// 1. 索引代表玩家座位
-	// 2. 座位無關玩家進來順序 有人離開就會空著 例如 索引2的玩家離開 players[2]就會是nil 直到有新玩家加入
+	ID                string                        `bson:"_id"`
+	CreatedAt         time.Time                     `bson:"createdAt"`
+	DBMapID           string                        `bson:"dbMapID"`
 	PlayerIDs         [setting.PLAYER_NUMBER]string `bson:"playerIDs"`
 	IP                string                        `bson:"ip"`
 	Port              int32                         `bson:"port"`

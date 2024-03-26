@@ -1,15 +1,15 @@
 module matchgame
 
-replace herofishingGoModule => ../herofishingGoModule // for local
+replace gladiatorsGoModule => ../gladiatorsGoModule // for local
 
-// replace herofishingGoModule => /home/herofishingGoModule // for docker
+// replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker
 
 go 1.21.0
 
 require (
 	agones.dev/agones v1.35.0
 	github.com/sirupsen/logrus v1.9.3
-	herofishingGoModule v0.0.0-00010101000000-000000000000
+	gladiatorsGoModule v0.0.0-00010101000000-000000000000
 )
 
 require (

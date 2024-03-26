@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"herofishingGoModule/redis"
+	"gladiatorsGoModule/redis"
 
 	logger "matchmaker/logger"
 	"matchmaker/packet"

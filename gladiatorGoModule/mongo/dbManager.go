@@ -4,7 +4,7 @@ package mongo
 
 import (
 	"context"
-	logger "herofishingGoModule/logger"
+	logger "gladiatorsGoModule/logger"
 
 	"github.com/google/martian/log"
 	"go.mongodb.org/mongo-driver/bson"

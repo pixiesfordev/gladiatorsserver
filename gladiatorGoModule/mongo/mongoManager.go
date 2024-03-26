@@ -3,7 +3,7 @@ package mongo
 import (
 	"context"
 	"fmt"
-	logger "herofishingGoModule/logger"
+	logger "gladiatorsGoModule/logger"
 	"time"
 
 	log "github.com/sirupsen/logrus"

@@ -5,7 +5,7 @@ import (
 	// "fmt"
 	redis "github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
-	logger "herofishingGoModule/logger"
+	logger "gladiatorsGoModule/logger"
 	"time"
 )
 

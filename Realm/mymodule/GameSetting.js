@@ -6,7 +6,7 @@ module.exports = {
     // 遊戲資料Json表
     JsonName: Object.freeze({
         GameSetting: "GameSetting",
-        Hero: "Hero",
+        Gladiator: "Gladiator",
     }),
     // DB集合
     ColName: Object.freeze({
@@ -20,7 +20,7 @@ module.exports = {
     }),
     // 環境版本對應Endpoint
     AppEndpoint: Object.freeze({
-        Dev: "https://asia-south1.gcp.data.mongodb-api.com/app/app-gladiators-pvxuj",// 開發版
+        Dev: "https://asia-south1.gcp.data.mongodb-api.com/app/mygladiators-dev",// 開發版
         Release: "???",// 正式版
     }),
     // EnvironmentID就是ProjectID(在atlas app service左上方有垂直三個點那點Project Settings)
@@ -30,7 +30,7 @@ module.exports = {
     }),
     // 環境版本對應AppID(AppID不是App的ObjectID)
     EnvAppID: Object.freeze({
-        Dev: "app-gladiators-pvxuj",// 開發版
+        Dev: "mygladiators-dev",// 開發版
         Release: "???",// 正式版
     }),
     // 環境版本對應AppObjID

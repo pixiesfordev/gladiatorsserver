@@ -3,10 +3,9 @@ package gameJson
 import (
 	"encoding/json"
 	"fmt"
-	// "herofishingGoModule/logger"
+	// "gladiatorsGoModule/logger"
 )
 
-// GameSetting JSON
 type GameSettingJsonData struct {
 	ID    string `json:"ID"`
 	Value string `json:"Value"`

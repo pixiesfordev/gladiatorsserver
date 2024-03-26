@@ -44,7 +44,7 @@ async function publishJsonData(jsonFileName) {
 async function publishAllData() {
   await ensureTopicAndSubscription();  // 確保主題和訂閱存在
   await publishJsonData('GameSetting');
-  await publishJsonData('Hero');
+  await publishJsonData('Gladiator');
 }
 
 publishAllData().catch(console.error);

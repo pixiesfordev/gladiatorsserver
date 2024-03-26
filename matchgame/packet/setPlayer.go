@@ -1,5 +1,7 @@
 package packet
 
+import "gladiatorsGoModule/setting"
+
 type SetPlayer struct {
 	CMDContent
 	DBPlayerID    string
@@ -8,7 +10,7 @@ type SetPlayer struct {
 
 type SetPlayer_ToClient struct {
 	CMDContent
-	Players [4]*PackPlayer
+	Players [setting.PLAYER_NUMBER]*PackPlayer
 }
 type PackPlayer struct {
 	DBPlayerID    string

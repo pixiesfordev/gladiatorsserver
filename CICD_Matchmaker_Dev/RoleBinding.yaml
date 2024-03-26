@@ -1,4 +1,4 @@
-# 讓herofishing-matchserver有控制herofishing-gameserver節點的權限
+# 讓gladiators-matchserver有控制gladiators-gameserver節點的權限
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:

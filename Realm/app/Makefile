@@ -10,7 +10,7 @@ PushApp:
 	@echo "==============Start Pushing App=============="
 	realm-cli push --include-package-json
 
-# 重新連結aura-herofishin
+# 重新連結aura-gladiatorfishin
 RelinkModule:
 	@echo "=============Relink npm module=============="
 	cd functions && npm link aura-gladiators

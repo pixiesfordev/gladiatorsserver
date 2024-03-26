@@ -15,7 +15,7 @@
         "deviceUID": {
             "bsonType": "string"
         },
-        "heroExp": {
+        "gladiatorExp": {
             "bsonType": "int"
         },
         "inMatchgameID": {

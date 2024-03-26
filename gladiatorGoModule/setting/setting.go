@@ -11,7 +11,7 @@ const (
 	MATCHGAME_TESTVER_UDP = "gladiators-matchgame-udp" // 個人測試用遊戲房Services UDP名稱
 
 	// 遊戲房舍定
-	PLAYER_NUMBER = 4 // 遊戲房最多X位玩家
+	PLAYER_NUMBER = 2 // 遊戲房最多X位玩家
 )
 
 var EnvGCPProject = map[string]string{

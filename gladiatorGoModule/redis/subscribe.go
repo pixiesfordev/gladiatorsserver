@@ -3,7 +3,7 @@ package redis
 import (
 	// "context"
 	"fmt"
-	logger "herofishingGoModule/logger"
+	logger "gladiatorsGoModule/logger"
 	// redis "github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,11 +21,10 @@ func Subscribe(channelName string, subscribeMsgChan chan interface{}) error {
 
 func receiveSubscribeMsg(channelName string, subscribeMsgChan chan interface{}) {
 	for msg := range pubsub.Channel() {
-        log.Infof("%s 收到Redis %s通道 訊息: %s", logger.LOG_Redis, channelName, msg.Payload)
-        subscribeMsgChan <- msg.Payload // 发送消息内容而非频道名
-    }
+		log.Infof("%s 收到Redis %s通道 訊息: %s", logger.LOG_Redis, channelName, msg.Payload)
+		subscribeMsgChan <- msg.Payload // 发送消息内容而非频道名
+	}
 }
-
 
 // 推送Redis訊息
 func Publish(channelName string, msg interface{}) error {

@@ -7,8 +7,8 @@ WORKDIR /home/crontasker
 # 複製 crontasker 的內容
 COPY crontasker/ .
 
-# 複製 herofishingGoModule 到 /home/herofishingGoModule
-COPY herofishingGoModule/ /home/herofishingGoModule/
+# 複製 gladiatorsGoModule 到 /home/gladiatorsGoModule
+COPY gladiatorsGoModule/ /home/gladiatorsGoModule/
 
 # 設置 Go 模組環境變數
 ENV GO111MODULE=on

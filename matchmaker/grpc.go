@@ -2,7 +2,7 @@ package main
 
 // import (
 // 	"context"
-// 	"herofishingGoModule/matchgrpc"
+// 	"gladiatorsGoModule/matchgrpc"
 // 	"io"
 // 	logger "matchmaker/logger"
 

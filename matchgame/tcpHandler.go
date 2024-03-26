@@ -11,8 +11,8 @@ import (
 
 	"encoding/hex"
 	"encoding/json"
-	mongo "herofishingGoModule/mongo"
-	"herofishingGoModule/redis"
+	mongo "gladiatorsGoModule/mongo"
+	"gladiatorsGoModule/redis"
 	"matchgame/game"
 	"matchgame/packet"
 	"net"
@@ -115,7 +115,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				var player game.Player
 				// 斷線重連檢測
 				reConnection := false
-				for _, v := range game.MyRoom.Players {
+				for _, v := range game.MyRoom.Gamers {
 					if v == nil {
 						continue
 					}
@@ -147,7 +147,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					}
 
 					// 建立RedisDB Player
-					redisPlayer, redisPlayerErr := redis.CreatePlayerData(dbPlayer.ID, dbPlayer.Point, dbPlayer.PointBuffer, dbPlayer.TotalWin, dbPlayer.TotalExpenditure, dbPlayer.HeroExp, dbPlayer.SpellCharges, dbPlayer.Drops)
+					redisPlayer, redisPlayerErr := redis.CreatePlayerData(dbPlayer.ID, dbPlayer.Point, dbPlayer.PointBuffer, dbPlayer.TotalWin, dbPlayer.TotalExpenditure, dbPlayer.GladiatorExp, dbPlayer.SpellCharges, dbPlayer.Drops)
 					if redisPlayerErr != nil {
 						log.Errorf("%s 建立RedisPlayer錯誤: %v", logger.LOG_Main, redisPlayerErr)
 						_ = packet.SendPack(encoder, &packet.Pack{

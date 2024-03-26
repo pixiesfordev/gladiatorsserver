@@ -1,7 +1,7 @@
 {"Drop":[
 	{	"ID":"1",	"Ref":"drop1",	"GainRTP":"30",	"EffectType":"ReplaceAttack",	"EffectValue1":"1"},
 	{	"ID":"2",	"Ref":"drop2",	"EffectType":"FullSkillEnergy"},
-	{	"ID":"3",	"Ref":"drop3",	"EffectType":"HeroLevelUP",	"EffectValue1":"1"},
+	{	"ID":"3",	"Ref":"drop3",	"EffectType":"GladiatorLevelUP",	"EffectValue1":"1"},
 	{	"ID":"4",	"Ref":"drop4",	"GainRTP":"40",	"EffectType":"Summon",	"EffectValue1":"2001"},
 	{	"ID":"5",	"Ref":"drop5",	"EffectType":"AttackSpeedUP",	"EffectValue1":"2",	"EffectValue2":"20"},
 	{	"ID":"6",	"Ref":"drop6",	"GainRTP":"200",	"EffectType":"BuffSkill",	"EffectValue1":"6"},
