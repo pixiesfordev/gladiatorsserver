@@ -5,7 +5,6 @@ import (
 	"fmt"
 )
 
-// / GladiatorSkin JSON
 type SkillJsonData struct {
 	ID int `json:"ID"`
 }
@@ -28,7 +27,7 @@ func (jsonData SkillJsonData) UnmarshalJSONData(jsonName string, jsonBytes []byt
 	return items, nil
 }
 
-func GetGladiatorSkins() ([]SkillJsonData, error) {
+func GetSkills() ([]SkillJsonData, error) {
 	datas, err := getJsonDataByName(JsonName.Skill) // Assuming you have JsonName.GladiatorSkin defined
 	if err != nil {
 		return nil, err
@@ -46,7 +45,7 @@ func GetGladiatorSkins() ([]SkillJsonData, error) {
 }
 
 func GetSkillByID(id int) (SkillJsonData, error) {
-	gladiatorSkins, err := GetGladiatorSkins()
+	gladiatorSkins, err := GetSkills()
 	if err != nil {
 		return SkillJsonData{}, err
 	}

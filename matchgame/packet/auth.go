@@ -17,7 +17,6 @@ type Auth_ToClient struct {
 	CMDContent
 	IsAuth    bool   // 是否驗證成功
 	ConnToken string // 連線Token
-	Index     int    // 玩家座位
 }
 
 func (p *Auth) Parse(common CMDContent) bool {

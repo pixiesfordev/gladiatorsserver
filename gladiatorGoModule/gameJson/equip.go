@@ -6,7 +6,6 @@ import (
 	// "gladiatorsGoModule/logger"
 )
 
-// GladiatorEXP JSON
 type EquipJsonData struct {
 	ID int `json:"ID"`
 }

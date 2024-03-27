@@ -113,8 +113,8 @@ const (
 type DBPlayer struct {
 	ID            string    `bson:"_id"`
 	CreatedAt     time.Time `bson:"createdAt"`
-	Gold          int64     `bson:"gold"`
-	Point         int64     `bson:"point"`
+	Gold          int       `bson:"gold"`
+	Point         int       `bson:"point"`
 	Ban           bool      `bson:"ban"`
 	InMatchgameID string    `bson:"inMatchgameID"`
 
@@ -132,19 +132,28 @@ type DBGladiator struct {
 	ID              string    `bson:"_id"`
 	CreatedAt       time.Time `bson:"createdAt"`
 	OwnerID         string    `bson:"ownerID"`
-	JsonGladiatorID int64     `bson:"jsonGladiatorID"`
-	JsonSkillIDs    []int32   `bson:"jsonSkillIDs"`
-	JsonTraitIDs    []int32   `bson:"jsonTraitIDs"`
-	JsonEquipIDs    []int32   `bson:"jsonEquipIDs"`
-	HP              int64     `bson:"hp"`
-	CurHP           int64     `bson:"curHP"`
+	JsonGladiatorID int       `bson:"jsonGladiatorID"`
+	JsonSkillIDs    []int     `bson:"jsonSkillIDs"`
+	JsonTraitIDs    []int     `bson:"jsonTraitIDs"`
+	JsonEquipIDs    []int     `bson:"jsonEquipIDs"`
+	HP              int       `bson:"hp"`
+	CurHP           int       `bson:"curHP"`
 	VigorRegon      float64   `bson:"vigorRegon"`
-	STR             int64     `bson:"str"`
-	DEF             int64     `bson:"def"`
-	MDEF            int64     `bson:"mdef"`
+	STR             int       `bson:"str"`
+	DEF             int       `bson:"def"`
+	MDEF            int       `bson:"mdef"`
 	CRIT            float64   `bson:"crit"`
-	INIT            int64     `bson:"init"`
-	Knockback       int64     `bson:"knockback"`
+	INIT            int       `bson:"init"`
+	Knockback       int       `bson:"knockback"`
+}
+
+// DB地圖資料
+type DBMap struct {
+	ID        string    `bson:"_id"`
+	CreatedAt time.Time `bson:"createdAt"`
+	MatchType string    `bson:"matchType"`
+	JsonMapID int       `bson:"jsonMapID"`
+	Enable    bool      `bson:"enable"`
 }
 
 // gameSetting的GameState文件
@@ -157,7 +166,7 @@ type DBGameState struct {
 	MatchgameTestverRoomName string    `bson:"matchgame-testver-roomName"`
 	MatchgameTestverMapID    string    `bson:"matchgame-testver-mapID"`
 	MatchgameTestverIP       string    `bson:"matchgame-testver-ip"`
-	MatchgameTestverPort     int32     `bson:"matchgame-testver-port"`
+	MatchgameTestverPort     int       `bson:"matchgame-testver-port"`
 }
 
 // gameSetting的Timer文件
@@ -181,7 +190,7 @@ type DBMatchgame struct {
 	DBMapID           string                        `bson:"dbMapID"`
 	PlayerIDs         [setting.PLAYER_NUMBER]string `bson:"playerIDs"`
 	IP                string                        `bson:"ip"`
-	Port              int32                         `bson:"port"`
+	Port              int                           `bson:"port"`
 	NodeName          string                        `bson:"nodeName"`
 	PodName           string                        `bson:"podName"`
 	MatchmakerPodName string                        `bson:"matchmakerPodName"`

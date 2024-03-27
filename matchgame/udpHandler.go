@@ -57,16 +57,16 @@ func openConnectUDP(stop chan struct{}, src string) {
 			log.Errorf("%s (UDP)Token驗證失敗 來自 %s 的命令: %s \n", logger.LOG_Main, addr.String(), pack.CMD)
 			continue
 		}
-		if pack.CMD != packet.UPDATEGAME {
+		if pack.CMD != packet.PING {
 			log.Infof("%s (UDP)收到來自 %s 的命令: %s \n", logger.LOG_Main, addr.String(), pack.CMD)
 		}
 
 		// 執行命令
 		if pack.CMD == packet.UDPAUTH {
 			if player.ConnUDP.Conn != nil {
-				log.Errorf("%s (UDP)玩家(%s)斷線重連UDP", logger.LOG_Main, player.DBPlayer.ID)
+				log.Errorf("%s (UDP)玩家(%s)斷線重連UDP", logger.LOG_Main, player.GetID())
 				if player.ConnUDP.Addr.String() != addr.String() { // 玩家通過ConnToken驗證但Addr有變更可能是因為Wifi環境改變
-					log.Infof("%s (UDP)玩家 %s 的位置從 %s 變更為 %s \n", logger.LOG_Main, player.DBPlayer.ID, player.ConnUDP.Addr.String(), addr.String())
+					log.Infof("%s (UDP)玩家 %s 的位置從 %s 變更為 %s \n", logger.LOG_Main, player.GetID(), player.ConnUDP.Addr.String(), addr.String())
 				}
 			} else {
 				go updateGameLoop(player, stop)
@@ -76,7 +76,7 @@ func openConnectUDP(stop chan struct{}, src string) {
 			player.ConnUDP.Addr = addr
 		} else {
 			if player.ConnUDP.Conn == nil || player.ConnUDP.Addr == nil {
-				log.Warnf("%s (UDP)收到來自 %s(%s) 但尚未進行UDP Auth的命令: %s", logger.LOG_Main, player.DBPlayer.ID, addr, pack.CMD)
+				log.Warnf("%s (UDP)收到來自 %s(%s) 但尚未進行UDP Auth的命令: %s", logger.LOG_Main, player.GetID(), addr, pack.CMD)
 			}
 			// 更新連線資料
 			player.ConnUDP.Conn = conn
@@ -84,7 +84,7 @@ func openConnectUDP(stop chan struct{}, src string) {
 			switch pack.CMD {
 
 			// ==========更新遊戲狀態==========
-			case packet.UPDATEGAME:
+			case packet.PING:
 				// log.Infof("%s 更新玩家 %s 心跳", logger.LOG_Main, player.DBPlayer.ID)
 				player.LastUpdateAt = time.Now() // 更新心跳
 			}
@@ -118,52 +118,52 @@ func updateGameLoop(player *game.Player, stop chan struct{}) {
 			log.Infof("終止玩家updateGameLoop")
 			return
 		// ==========更新遊戲狀態==========
-		case <-gameUpdateTimer.C:
-			// log.Infof("game.MyRoom.GameTime: %v", game.MyRoom.GameTime)
-			sendData, err := json.Marshal(&packet.Pack{
-				CMD:    packet.UPDATEGAME_TOCLIENT,
-				PackID: -1,
-				Content: &packet.UpdateGame_ToClient{
-					GameTime: game.MyRoom.GameTime,
-				},
-			})
-			if err != nil {
-				log.Errorf("%s (UDP)序列化UPDATEGAME封包錯誤. %s", logger.LOG_Main, err.Error())
-				continue
-			}
-			sendData = append(sendData, '\n')
-			game.MyRoom.SendPacketToPlayer_UDP(player.Index, sendData)
-		// ==========更新玩家狀態==========
-		case <-playerUpdateTimer.C:
-			sendData, err := json.Marshal(&packet.Pack{
-				CMD:    packet.UPDATEPLAYER_TOCLIENT,
-				PackID: -1,
-				Content: &packet.UpdatePlayer_ToClient{
-					Players: game.MyRoom.GetPacketPlayers(),
-				},
-			})
-			if err != nil {
-				log.Errorf("%s UpdatePlayers_UDP錯誤. %s", logger.LOG_Room, err.Error())
-				return
-			}
-			sendData = append(sendData, '\n')
-			game.MyRoom.SendPacketToPlayer_UDP(player.Index, sendData)
-		// ==========更新場景狀態==========
-		case <-sceneUpdateTimer.C:
-			sendData, err := json.Marshal(&packet.Pack{
-				CMD:    packet.UPDATESCENE_TOCLIENT,
-				PackID: -1,
-				Content: &packet.UpdateScene_ToClient{
-					Spawns:       game.MyRoom.MSpawner.Spawns,
-					SceneEffects: game.MyRoom.SceneEffects,
-				},
-			})
-			if err != nil {
-				log.Errorf("%s UpdatePlayers_UDP錯誤. %s", logger.LOG_Room, err.Error())
-				return
-			}
-			sendData = append(sendData, '\n')
-			game.MyRoom.SendPacketToPlayer_UDP(player.Index, sendData)
+		// case <-gameUpdateTimer.C:
+		// 	// log.Infof("game.MyRoom.GameTime: %v", game.MyRoom.GameTime)
+		// 	sendData, err := json.Marshal(&packet.Pack{
+		// 		CMD:    packet.UPDATEGAME_TOCLIENT,
+		// 		PackID: -1,
+		// 		Content: &packet.UpdateGame_ToClient{
+		// 			GameTime: game.MyRoom.GameTime,
+		// 		},
+		// 	})
+		// 	if err != nil {
+		// 		log.Errorf("%s (UDP)序列化UPDATEGAME封包錯誤. %s", logger.LOG_Main, err.Error())
+		// 		continue
+		// 	}
+		// 	sendData = append(sendData, '\n')
+		// 	game.MyRoom.SendPacketToPlayer_UDP(player.Index, sendData)
+		// // ==========更新玩家狀態==========
+		// case <-playerUpdateTimer.C:
+		// 	sendData, err := json.Marshal(&packet.Pack{
+		// 		CMD:    packet.UPDATEPLAYER_TOCLIENT,
+		// 		PackID: -1,
+		// 		Content: &packet.UpdatePlayer_ToClient{
+		// 			Players: game.MyRoom.GetPacketPlayers(),
+		// 		},
+		// 	})
+		// 	if err != nil {
+		// 		log.Errorf("%s UpdatePlayers_UDP錯誤. %s", logger.LOG_Room, err.Error())
+		// 		return
+		// 	}
+		// 	sendData = append(sendData, '\n')
+		// 	game.MyRoom.SendPacketToPlayer_UDP(player.Index, sendData)
+		// // ==========更新場景狀態==========
+		// case <-sceneUpdateTimer.C:
+		// 	sendData, err := json.Marshal(&packet.Pack{
+		// 		CMD:    packet.UPDATESCENE_TOCLIENT,
+		// 		PackID: -1,
+		// 		Content: &packet.UpdateScene_ToClient{
+		// 			Spawns:       game.MyRoom.MSpawner.Spawns,
+		// 			SceneEffects: game.MyRoom.SceneEffects,
+		// 		},
+		// 	})
+		// 	if err != nil {
+		// 		log.Errorf("%s UpdatePlayers_UDP錯誤. %s", logger.LOG_Room, err.Error())
+		// 		return
+		// 	}
+		// 	sendData = append(sendData, '\n')
+		// 	game.MyRoom.SendPacketToPlayer_UDP(player.Index, sendData)
 
 		}
 

@@ -20,7 +20,6 @@ import (
 	// "fmt"
 	"gladiatorsGoModule/gameJson"
 	mongo "gladiatorsGoModule/mongo"
-	"gladiatorsGoModule/redis"
 	"matchgame/agones"
 	"matchgame/game"
 	"os"
@@ -138,7 +137,7 @@ func main() {
 				log.Infof("%s Port: %v", logger.LOG_Main, gs.Status.Ports[0].Port)
 				log.Infof("%s Get Info Finished", logger.LOG_Main)
 
-				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, gs.Status.Ports[0].Port, podName, nodeName, matchmakerPodName, roomChan)
+				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, int(gs.Status.Ports[0].Port), podName, nodeName, matchmakerPodName, roomChan)
 				agones.SetServerState(agonesv1.GameServerStateAllocated) // 設定房間為Allocated(agones應該會在WatchGameServer後自動設定為Allocated但這邊還是主動設定)
 				log.Infof("%s GameServer狀態為: %s", logger.LOG_Main, gs.Status.State)
 				log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
@@ -201,7 +200,7 @@ func main() {
 				}
 
 			}
-			setExternalIPandPort(tcpIP, udpIP, int32(myPort))
+			setExternalIPandPort(tcpIP, udpIP, int(myPort))
 			matchmakerPodName := ""
 			playerIDs := [setting.PLAYER_NUMBER]string{}
 
@@ -226,7 +225,7 @@ func main() {
 			log.Infof("%s Port: %v", logger.LOG_Main, port)
 			log.Infof("%s Get Info Finished", logger.LOG_Main)
 
-			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int32(myPort), PodName, nodeName, matchmakerPodName, roomChan)
+			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int(myPort), PodName, nodeName, matchmakerPodName, roomChan)
 
 			log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
 		}()
@@ -244,8 +243,6 @@ func main() {
 	close(roomChan)
 	// ====================Room資料設定完成====================
 	log.Infof("%s ==============Room資料設定完成==============", logger.LOG_Main)
-	redis.Init()              // 初始化redisDB
-	room.WriteMatchgameToDB() // 寫入DBMatchgame(加入已存在房間時, DBMatchgame的玩家加入是在Matchmaker寫入, 但開房是在DBMatchgame寫入)
 
 	// 開啟連線
 	src := ":" + *port
@@ -253,14 +250,6 @@ func main() {
 	go openConnectUDP(stopChan, src)
 
 	go room.RoomTimer(stopChan) // 開始遊戲房計時器
-
-	// 開始生怪計時器
-	go room.MSpawner.SpawnTimer()
-	room.MSpawner.SpawnSwitch(false)
-	if game.Mode != "non-agones" { // non-agones模式下不需與Matchmaker溝通
-		room.PubGameCreatedMsg(int(packID)) // 送房間建立訊息給Matchmaker
-		go room.SubMatchmakerMsg()          // 訂閱MatchmakerMsg
-	}
 
 	select {
 	case <-stopChan:
@@ -298,7 +287,7 @@ func getExternalIP(_serviceName string) (string, error) {
 }
 
 // 寫入對外ID到DB中
-func setExternalIPandPort(tcpIP string, udpIP string, port int32) {
+func setExternalIPandPort(tcpIP string, udpIP string, port int) {
 	log.Infof("%s 開始寫入對外IP到DB tcpIP:%s udpIP:%s port:%v.\n", logger.LOG_Main, tcpIP, udpIP, port)
 	// 設定要更新的資料
 	data := bson.D{

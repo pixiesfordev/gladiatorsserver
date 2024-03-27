@@ -7,12 +7,10 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson"
 
 	"encoding/hex"
 	"encoding/json"
 	mongo "gladiatorsGoModule/mongo"
-	"gladiatorsGoModule/redis"
 	"matchgame/game"
 	"matchgame/packet"
 	"net"
@@ -116,14 +114,13 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				// 斷線重連檢測
 				reConnection := false
 				for _, v := range game.MyRoom.Gamers {
-					if v == nil {
-						continue
-					}
-					if v.DBPlayer.ID == playerID {
-						log.Infof("玩家(%v)斷線重連", playerID)
-						reConnection = true
-						player = *v
-						break
+					if p, ok := v.(*game.Player); ok {
+						if p.GetID() == playerID {
+							log.Infof("玩家(%v)斷線重連", playerID)
+							reConnection = true
+							player = *p
+							break
+						}
 					}
 				}
 
@@ -146,35 +143,9 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 						})
 					}
 
-					// 建立RedisDB Player
-					redisPlayer, redisPlayerErr := redis.CreatePlayerData(dbPlayer.ID, dbPlayer.Point, dbPlayer.PointBuffer, dbPlayer.TotalWin, dbPlayer.TotalExpenditure, dbPlayer.GladiatorExp, dbPlayer.SpellCharges, dbPlayer.Drops)
-					if redisPlayerErr != nil {
-						log.Errorf("%s 建立RedisPlayer錯誤: %v", logger.LOG_Main, redisPlayerErr)
-						_ = packet.SendPack(encoder, &packet.Pack{
-							CMD:    packet.AUTH_TOCLIENT,
-							PackID: pack.PackID,
-							ErrMsg: "建立RedisPlayer錯誤",
-							Content: &packet.Auth_ToClient{
-								IsAuth: false,
-							},
-						})
-					}
-
-					// 將該玩家monogoDB上的redisSync設為false
-					updatePlayerBson := bson.D{
-						{Key: "redisSync", Value: false},
-					}
-					_, updateErr := mongo.UpdateDocByBsonD(mongo.ColName.Player, dbPlayer.ID, updatePlayerBson)
-					if updateErr != nil {
-						log.Errorf("%s 更新玩家 %s DB資料錯誤: %v", logger.LOG_Main, dbPlayer.ID, updateErr)
-					}
-
 					// 將玩家加入遊戲房
 					player = game.Player{
-						DBPlayer:     &dbPlayer,
-						RedisPlayer:  redisPlayer,
 						LastUpdateAt: time.Now(),
-						PlayerBuffs:  []packet.PlayerBuff{},
 						ConnTCP: &gSetting.ConnectionTCP{
 							Conn:       conn,
 							MyLoopChan: packReadChan,
@@ -185,7 +156,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 							ConnToken: newConnToken,
 						},
 					}
-					joined := game.MyRoom.JoinPlayer(&player)
+					joined := game.MyRoom.JoinGamer(&player)
 					if !joined {
 						log.Errorf("%s 玩家加入房間失敗", logger.LOG_Main)
 						packReadChan.ClosePackReadStopChan()
@@ -203,7 +174,6 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					Content: &packet.Auth_ToClient{
 						IsAuth:    true,
 						ConnToken: player.ConnUDP.ConnToken,
-						Index:     player.Index,
 					},
 				})
 				if err != nil {
@@ -214,7 +184,10 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				err = game.MyRoom.HandleTCPMsg(conn, pack)
 				if err != nil {
 					log.Errorf("%s (TCP)處理GameRoom封包錯誤: %v\n", logger.LOG_Main, err.Error())
-					game.MyRoom.KickPlayer(conn, "處理GameRoom封包錯誤")
+					player := game.MyRoom.GetPlayerByTCPConn(conn)
+					if player != nil {
+						game.MyRoom.KickPlayer(player, "處理GameRoom封包錯誤")
+					}
 					continue
 				}
 			}

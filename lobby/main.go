@@ -3,7 +3,6 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 	mongo "gladiatorsGoModule/mongo"
-	redis "gladiatorsGoModule/redis"
 	logger "lobby/logger"
 	"os"
 )
@@ -35,8 +34,6 @@ func main() {
 	mongoUser := os.Getenv("MongoUser")
 	mongoPW := os.Getenv("MongoPW")
 	initMonogo(mongoAPIPublicKey, mongoAPIPrivateKey, mongoUser, mongoPW)
-
-	redis.Init() // 初始化Redis
 
 	// router := mux.NewRouter()
 	// router.HandleFunc("/player/syncredischeck", handleSyncRedisCheck).Methods("POST")

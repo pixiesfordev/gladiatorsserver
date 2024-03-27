@@ -6,7 +6,6 @@ import (
 	"gladiatorsGoModule/gameJson"
 	"gladiatorsGoModule/k8s"
 	mongo "gladiatorsGoModule/mongo"
-	"gladiatorsGoModule/redis"
 	"gladiatorsGoModule/setting"
 	logger "matchmaker/logger"
 	"matchmaker/packet"
@@ -76,9 +75,6 @@ func main() {
 	mongoPW := os.Getenv("MongoPW")
 	log.Infof("%s MongoUser: %s", logger.LOG_Main, mongoUser)
 	log.Infof("%s mongoPW: %s", logger.LOG_Main, mongoPW)
-
-	// 初始化redisDB
-	redis.Init()
 
 	InitGameJson() // 初始化遊戲Json資料
 

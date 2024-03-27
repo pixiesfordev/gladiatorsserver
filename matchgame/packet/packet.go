@@ -26,6 +26,7 @@ const (
 	BATTLESTATE_TOCLIENT  = "BATTLESTATE_TOCLIENT" // (TCP)狀態更新-送Client
 	ENDGAME_TOCLIENT      = "ENDGAME_TOCLIENT"     // (TCP)遊戲結算-送Client
 	PING                  = "PING"                 // (TCP)心跳(太久沒收到回傳會視玩家斷線)
+	UDPAUTH               = "UDPAUTH"              // (UDP)身分驗證
 )
 
 type Pack struct {

@@ -101,7 +101,6 @@ func (r *RoomReceptionist) KickDisconnectedPlayer(palyerID string) {
 	for _, v := range r.quickRoomUshers {
 		for _, room := range v.rooms {
 			if room.IsIDExist(palyerID) {
-				room.PubKickDisconnectedPlayer(palyerID)
 				room.RemovePlayer(palyerID) // 將該玩家從房間中移除
 				return
 			}
@@ -271,7 +270,6 @@ func (r *room) CreateGame(packID int) error {
 				"error:":     err.Error(),
 			}).Infof("%s Create gameServer with retry: \n", logger.LOG_Room)
 		}
-		go r.SubMatchgameMsg() // 訂閱房間資訊
 	} else {
 		log.WithFields(log.Fields{
 			"retryTimes": mSetting.RETRY_CREATE_GAMESERVER_TIMES,
