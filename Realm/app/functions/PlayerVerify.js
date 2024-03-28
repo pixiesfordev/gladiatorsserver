@@ -80,7 +80,7 @@ exports = async function PlayerTokenVerify(data) {
   return JSON.stringify(ah.ReplyData.NewReplyData(replyData, null));
 
   // // 使用Endpoint查找資料要先確保HTTPS Endpoints的Data API有開啟
-  // const findEndpoint = ah.GameSetting.AppEndpoint.Dev + `endpoint/data/v1/action/findOne`; // https://asia-south1.gcp.data.mongodb-api.com/app/mygladiators-dev/endpoint/data/v1/action/findOne
+  // const findEndpoint = ah.GameSetting.AppEndpoint.Dev + `endpoint/data/v1/action/findOne`; // https://asia-south1.gcp.data.mongodb-api.com/app/gladiators-pirlo/endpoint/data/v1/action/findOne
   // console.log("verifyEndpoint=" + findEndpoint);
   // // 執行HTTP POST請求
   // const response = await context.http.post({

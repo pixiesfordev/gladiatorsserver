@@ -1,5 +1,0 @@
-{"Gladiator":[
-	{	"ID":"1",	"RoleType":"Shooter",	"Ref":"MissFortune",	"RoleCategory":"LOL",	"IdleMotions":"idle1"},
-	{	"ID":"2",	"RoleType":"Shooter",	"Ref":"Ezreal",	"RoleCategory":"LOL",	"IdleMotions":"idle1"},
-	{	"ID":"7",	"RoleType":"AGI",	"Ref":"Mirana",	"RoleCategory":"DOTA2",	"IdleMotions":"idle1"}
-]}

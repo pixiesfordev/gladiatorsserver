@@ -56,5 +56,5 @@ func GetSkillByID(id int) (SkillJsonData, error) {
 		}
 	}
 
-	return SkillJsonData{}, fmt.Errorf("未找到ID為 %s 的%s資料", id, JsonName.Skill)
+	return SkillJsonData{}, fmt.Errorf("未找到ID為 %v 的%s資料", id, JsonName.Skill)
 }

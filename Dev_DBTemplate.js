@@ -17,12 +17,7 @@ let playerDoc = db.template.insertMany([
     lastSignoutAt_nowDate: null,
     ban: false,
     deviceUID: "",
-    leftGameAt_nowDate: null,
     inMatchgameID: "",
-    redisSync: true,
-    gladiatorExp: 0,
-    spellCharges: [0, 0, 0],
-    drops: [0, 0, 0],
   },
   // 模板-玩家狀態
   {

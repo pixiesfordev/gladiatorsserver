@@ -106,5 +106,5 @@ func GetTraitByID(id int) (TraitJsonData, error) {
 			return gladiatorSpell, nil
 		}
 	}
-	return TraitJsonData{}, fmt.Errorf("未找到ID為 %s 的%s資料", id, JsonName.Trait)
+	return TraitJsonData{}, fmt.Errorf("未找到ID為 %v 的%s資料", id, JsonName.Trait)
 }

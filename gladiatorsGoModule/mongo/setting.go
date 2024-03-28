@@ -19,12 +19,12 @@ var (
 const ()
 
 var EnvDBUri = map[string]string{
-	"Dev":     "mongodb+srv://%s:%s@cluster-gladiators.8yp6fou.mongodb.net/?retryWrites=true&w=majority", // 開發版
+	"Dev":     "mongodb+srv://%s:%s@cluster-gladiators.f9ufimm.mongodb.net/?retryWrites=true&w=majority", // 開發版
 	"Release": "???",                                                                                     // 正式版
 }
 
 var AppEndpoint = map[string]string{
-	"Dev":     "https://asia-south1.gcp.data.mongodb-api.com/app/mygladiators-dev", // 開發版
+	"Dev":     "https://asia-south1.gcp.data.mongodb-api.com/app/gladiators-pirlo", // 開發版
 	"Release": "???",                                                               // 正式版
 }
 
@@ -39,7 +39,7 @@ var EnvGroupID = map[string]string{
 
 // AppID
 var EnvAppID = map[string]string{
-	"Dev":     "mygladiators-dev", // 開發版
+	"Dev":     "gladiators-pirlo", // 開發版
 	"Release": "???",              // 正式版
 }
 

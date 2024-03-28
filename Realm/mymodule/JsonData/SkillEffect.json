@@ -1,0 +1,23 @@
+{"SkillEffect":[
+	{	"ID": "1",	"SkillID": 1,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 5,	"EffectProb1": 1.0,	"EffectType2": "Attack",	"EffectValue2": 5,	"EffectProb2": 1.0,	"EffectType3": "Attack",	"EffectValue3": 5,	"EffectProb3": 1.0,	"EffectType4": "Attack",	"EffectValue4": 5,	"EffectProb4": 1.0,	"EffectType5(s)+T1": "Attack",	"EffectValue5": 5,	"EffectProb5": 1.0,	"EffectType6": "Bleeding",	"EffectValue6": 5,	"EffectProb6": 1.0},
+	{	"ID": "2",	"SkillID": 2,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 50,	"EffectProb1": 1.0,	"EffectType2": "Vulnerable",	"EffectValue2": 3,	"EffectProb2": 1.0,	"EffectType3": "Poison",	"EffectValue3": 3,	"EffectProb3": 1.0},
+	{	"ID": "3",	"SkillID": 3,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 40,	"EffectProb1": 1.0,	"EffectType2": "Rush",	"EffectValue2": 4,	"EffectProb2": 1.0},
+	{	"ID": "4",	"SkillID": 4,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 40,	"EffectProb1": 1.0,	"EffectType2": "Burning",	"EffectValue2": 20,	"EffectProb2": 1.0},
+	{	"ID": "5",	"SkillID": 5,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 50,	"EffectProb1": 1.0,	"EffectType2": "Pull",	"EffectValue2": 3,	"EffectProb2": 1.0},
+	{	"ID": "6",	"SkillID": 6,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 60,	"EffectProb1": 1.0,	"EffectType2": "Burning",	"EffectValue2": 30,	"EffectProb2": 1.0},
+	{	"ID": "7",	"SkillID": 7,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 40,	"EffectProb1": 1.0,	"EffectType2": "Fearing",	"EffectValue2": 3,	"EffectProb2": 1.0},
+	{	"ID": "8",	"SkillID": 8,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 60,	"EffectProb1": 1.0,	"EffectType2": "Bleeding",	"EffectValue2": 10,	"EffectProb2": 1.0},
+	{	"ID": "9",	"SkillID": 9,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 40,	"EffectProb1": 1.0,	"EffectType2": "Knockback",	"EffectValue2": 1,	"EffectProb2": 1.0},
+	{	"ID": "9_1",	"SkillID": 9,	"Target": "Myself",	"EffectType1": "Protection",	"EffectValue1": 6,	"EffectProb1": 1.0},
+	{	"ID": "10",	"SkillID": 10,	"Target": "Myself",	"EffectType1": "RestoreHP",	"EffectValue1": 50,	"EffectProb1": 1.0,	"EffectType2": "RestoreVigor",	"EffectValue2": 3,	"EffectProb2": 1.0},
+	{	"ID": "1001",	"SkillID": 1001,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 30,	"EffectProb1": 1.0,	"EffectType2": "Knockback",	"EffectValue2": 1,	"EffectProb2": 1.0},
+	{	"ID": "1002",	"SkillID": 1002,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 30,	"EffectProb1": 1.0},
+	{	"ID": "1003",	"SkillID": 1003,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 20,	"EffectProb1": 1.0,	"EffectType2": "Bleeding",	"EffectValue2": 3,	"EffectProb2": 1.0},
+	{	"ID": "1004",	"SkillID": 1004,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 30,	"EffectProb1": 1.0},
+	{	"ID": "1005",	"SkillID": 1005,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 10,	"EffectProb1": 1.0},
+	{	"ID": "1006",	"SkillID": 1006,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 10,	"EffectProb1": 1.0},
+	{	"ID": "1007",	"SkillID": 1007,	"Target": "Enemy",	"EffectType1": "Dizzy",	"EffectValue1": 4,	"EffectProb1": 1.0},
+	{	"ID": "1008",	"SkillID": 1008,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 1,	"EffectProb1": 1.0,	"EffectType2": "Burning",	"EffectValue2": 20,	"EffectProb2": 1.0},
+	{	"ID": "1009",	"SkillID": 1009,	"Target": "Enemy",	"EffectType1": "Enraged",	"EffectValue1": 3,	"EffectProb1": 1.0},
+	{	"ID": "1010",	"SkillID": 1010,	"Target": "Enemy",	"EffectType1": "Attack",	"EffectValue1": 20,	"EffectProb1": 1.0,	"EffectType2": "Bleeding",	"EffectValue2": 3,	"EffectProb2": 1.0}
+]}

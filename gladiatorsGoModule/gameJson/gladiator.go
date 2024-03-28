@@ -74,5 +74,5 @@ func GetGladiatorByID(id int) (GladiatorJsonData, error) {
 		}
 	}
 
-	return GladiatorJsonData{}, fmt.Errorf("未找到ID為 %s 的%s資料", id, JsonName.Gladiator)
+	return GladiatorJsonData{}, fmt.Errorf("未找到ID為 %v 的%s資料", id, JsonName.Gladiator)
 }
