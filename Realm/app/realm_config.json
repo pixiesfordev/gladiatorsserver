@@ -1,7 +1,7 @@
 {
-    "app_id": "mygladiators-dev",
+    "app_id": "gladiators-pirlo",
     "config_version": 20210101,
-    "name": "app-gladiators",
+    "name": "gladiators",
     "location": "IN-MB",
     "provider_region": "gcp-asia-south1",
     "deployment_model": "LOCAL"

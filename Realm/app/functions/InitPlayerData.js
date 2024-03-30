@@ -4,20 +4,20 @@ exports = async function InitPlayerData(data) {
     console.log(JSON.stringify(context.user))
     return
   }
-  const ah = require("aura-gladiators");
+  const ah = require("pixies-mygladiators");
 
-  // if (!("AuthType" in data)) {
-  //   console.log("[InitPlayerData] 格式錯誤");
-  //   return {
-  //     Result: ah.GameSetting.ResultTypes.Fail,
-  //     Data: "格式錯誤",
-  //   };
-  // }
+  if (!("AuthType" in data)) {
+    console.log("[InitPlayerData] 格式錯誤");
+    return {
+      Result: ah.GameSetting.ResultTypes.Fail,
+      Data: "格式錯誤",
+    };
+  }
 
   // 建立plyer資料
   writePlayerDocData = {
     _id: context.user.id,
-    authType: "Guest",//data.AuthType,
+    authType: data.AuthType,
     onlineState: ah.GameSetting.OnlineState.Online,
   };
   // 寫入plyer資料

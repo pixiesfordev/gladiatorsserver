@@ -138,8 +138,8 @@ gcloud auth configure-docker asia-east1-docker.pkg.dev
 # 使用k8s secret建立mongo需要的敏感資料並在建置yaml檔案中取
 # 建立secret指令為kubectl create secret generic secretName --from-literal=key1=value1 --from-literal=key2=value2
 # 以下為範例 gladiators-service跟gladiators-gameserver都要建立
-kubectl create secret generic mongodb-secret -n herofishing-service --from-literal=MongoAPIPublicKey=faakhiny --from-literal=MongoAPIPrivateKey=f751e44f-d215-49ac-9883-a30f0f1db397 --from-literal=MongoUser=pixiesfordev --from-literal=MongoPW=qbTDhfmeItCF82Gr
-kubectl create secret generic mongodb-secret -n herofishing-gameserver --from-literal=MongoAPIPublicKey=faakhiny --from-literal=MongoAPIPrivateKey=f751e44f-d215-49ac-9883-a30f0f1db397 --from-literal=MongoUser=pixiesfordev --from-literal=MongoPW=qbTDhfmeItCF82Gr
+kubectl create secret generic mongodb-secret -n gladiators-service --from-literal=MongoAPIPublicKey=faakhiny --from-literal=MongoAPIPrivateKey=f751e44f-d215-49ac-9883-a30f0f1db397 --from-literal=MongoUser=pixiesfordev --from-literal=MongoPW=qbTDhfmeItCF82Gr
+kubectl create secret generic mongodb-secret -n gladiators-gameserver --from-literal=MongoAPIPublicKey=faakhiny --from-literal=MongoAPIPrivateKey=f751e44f-d215-49ac-9883-a30f0f1db397 --from-literal=MongoUser=pixiesfordev --from-literal=MongoPW=qbTDhfmeItCF82Gr
 # 查看secret方法
 kubectl get secrets -n gladiators-service
 # 刪除secret方法

@@ -23,19 +23,23 @@ module.exports = {
         Dev: "https://asia-south1.gcp.data.mongodb-api.com/app/gladiators-pirlo",// 開發版
         Release: "???",// 正式版
     }),
-    // EnvironmentID就是ProjectID(在atlas app service左上方有垂直三個點那點Project Settings)
+    // GroupID就是ProjectID(在atlas app service左上方有垂直三個點那點Project Settings)
+    // 也可以在開啟Atlas Services時 網址會顯示ProjectID
+    // 在https://services.cloud.mongodb.com/groups/65b4b62b344719089d82ca3a/apps/65b4c6435b1a5d26443841cc/dashboard中
     EnvGroupID: Object.freeze({
-        Dev: "653cd1ccb544ec4945f8df83",// 開發版
+        Dev: "65b4b62b344719089d82ca3a",// 開發版
         Release: "???",// 正式版
     }),
-    // 環境版本對應AppID(AppID不是App的ObjectID)
+    // 環境版本對應AppID(在Atlas service->App Setting中)
     EnvAppID: Object.freeze({
-        Dev: "mygladiators-dev",// 開發版
+        Dev: "gladiators-pirlo",// 開發版
         Release: "???",// 正式版
     }),
     // 環境版本對應AppObjID
+    // App ObjectID跟AppID不一樣, 開啟Atlas Services時 網址會顯示App ObjectID
+    // https://services.cloud.mongodb.com/groups/65b4b62b344719089d82ca3a/apps/65b4c6435b1a5d26443841cc/dashboard
     EnvAppObjID: Object.freeze({
-        Dev: "64e6d784c96a30ebafdf3de0",// 開發版
+        Dev: "65b4c6435b1a5d26443841cc",// 開發版
         Release: "???",// 正式版
     }),
     // 註冊類型

@@ -16,12 +16,8 @@ publish_npm:
 	@echo "==============Publishing to npm=============="
 	npm publish
 
-# 執行google publish
-publish_googlepub:
-	@echo "==============google publish=============="
-	node publish.js
 
 	
 
 # 完整發布流程
-all: increment_version publish_npm publish_googlepub
+all: increment_version publish_npm

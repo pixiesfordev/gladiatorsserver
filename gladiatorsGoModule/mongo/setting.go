@@ -30,10 +30,10 @@ var AppEndpoint = map[string]string{
 
 // GroupID就是ProjectID(在atlas app service左上方有垂直三個點那點Project Settings)
 // 也可以在開啟Atlas Services時 網址會顯示ProjectID
-// 在https://realm.mongodb.com/groups/653cd1ccb544ec4945f8df83/apps/653cd937e285e8ddc4d6ac57/dashboard中
+// 在https://services.cloud.mongodb.com/groups/65b4b62b344719089d82ca3a/apps/65b4c6435b1a5d26443841cc/dashboard中
 // https://realm.mongodb.com/groups/[GroupID]/apps/[App ObjectID]/dashboard
 var EnvGroupID = map[string]string{
-	"Dev":     "653cd1ccb544ec4945f8df83", // 開發版
+	"Dev":     "65b4b62b344719089d82ca3a", // 開發版
 	"Release": "???",                      // 正式版
 }
 
@@ -44,10 +44,10 @@ var EnvAppID = map[string]string{
 }
 
 // App ObjectID跟AppID不一樣, 開啟Atlas Services時 網址會顯示App ObjectID
-// https://realm.mongodb.com/groups/653cd1ccb544ec4945f8df83/apps/653cd937e285e8ddc4d6ac57/dashboard
+// https://services.cloud.mongodb.com/groups/65b4b62b344719089d82ca3a/apps/65b4c6435b1a5d26443841cc/dashboard
 // https://realm.mongodb.com/groups/[GroupID]/apps/[App ObjectID]/dashboard
 var EnvAppObjID = map[string]string{
-	"Dev":     "653cd937e285e8ddc4d6ac57", // 開發版
+	"Dev":     "65b4c6435b1a5d26443841cc", // 開發版
 	"Release": "???",                      // 正式版
 }
 

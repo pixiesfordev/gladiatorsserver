@@ -5,7 +5,7 @@ exports = async function GetServerTime() {
     return
   }
 
-  const ah = require("aura-gladiators");
+  const ah = require("pixies-mygladiators");
 
   let data = {
     serverTime: new Date(),

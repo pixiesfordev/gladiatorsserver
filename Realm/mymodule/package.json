@@ -1,15 +1,11 @@
 {
-  "name": "aura-gladiators",
-  "version": "1.0.19",
+  "name": "pixies-mygladiators",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "scoz",
-  "license": "ISC",
-  "dependencies": {
-    "@google-cloud/pubsub": "^4.0.6",
-    "redis": "^4.6.11"
-  }
+  "author": "",
+  "license": "ISC"
 }

@@ -10,10 +10,10 @@
 exports = async function OnUserCreation(user) {
   const playerCustomCol = context.services
     .get("mongodb-atlas")
-    .db("gladiators")
+    .db("herofishing")
     .collection("playerCustom");
 
-  const ah = require("aura-gladiators");
+  const ah = require("pixies-mygladiators");
   let role = ah.GameSetting.PlayerCustomRole.Player;
   // 建立玩家資料
   let writePlayerCustomData = {
