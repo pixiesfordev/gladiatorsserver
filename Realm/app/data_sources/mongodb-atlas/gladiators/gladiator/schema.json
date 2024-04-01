@@ -1,0 +1,68 @@
+{
+    "properties": {
+        "_id": {
+            "bsonType": "string"
+        },
+        "createdAt": {
+            "bsonType": "date"
+        },
+        "crit": {
+            "bsonType": "double"
+        },
+        "curHP": {
+            "bsonType": "int"
+        },
+        "def": {
+            "bsonType": "int"
+        },
+        "hp": {
+            "bsonType": "int"
+        },
+        "init": {
+            "bsonType": "int"
+        },
+        "jsonEquipIDs": {
+            "bsonType": "array",
+            "items": {
+                "bsonType": "int"
+            }
+        },
+        "jsonGladiatorID": {
+            "bsonType": "int"
+        },
+        "jsonSkillIDs": {
+            "bsonType": "array",
+            "items": {
+                "bsonType": "int"
+            }
+        },
+        "jsonTraitIDs": {
+            "bsonType": "array",
+            "items": {
+                "bsonType": "int"
+            }
+        },
+        "knockback": {
+            "bsonType": "int"
+        },
+        "mdef": {
+            "bsonType": "int"
+        },
+        "myGladiatorID": {
+            "bsonType": "string"
+        },
+        "ownerID": {
+            "bsonType": "string"
+        },
+        "str": {
+            "bsonType": "int"
+        },
+        "vigorRegen": {
+            "bsonType": "double"
+        }
+    },
+    "required": [
+        "_id",
+        "createdAt"
+    ]
+}

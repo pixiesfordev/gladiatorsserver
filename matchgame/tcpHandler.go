@@ -100,11 +100,11 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				// 驗證失敗
 				if authErr != nil || playerID == "" {
 					log.Errorf("%s 玩家驗證錯誤: %v", logger.LOG_Main, authErr)
-					_ = packet.SendPack(encoder, &packet.Pack{
+					_ = packet.SendPack(encoder, packet.Pack{
 						CMD:    packet.AUTH_TOCLIENT,
 						PackID: pack.PackID,
 						ErrMsg: "玩家驗證錯誤",
-						Content: &packet.Auth_ToClient{
+						Content: packet.Auth_ToClient{
 							IsAuth: false,
 						},
 					})
@@ -133,7 +133,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					getPlayerDocErr := mongo.GetDocByID(mongo.ColName.Player, playerID, &dbPlayer)
 					if getPlayerDocErr != nil {
 						log.Errorf("%s DBPlayer資料錯誤: %v", logger.LOG_Main, getPlayerDocErr)
-						_ = packet.SendPack(encoder, &packet.Pack{
+						_ = packet.SendPack(encoder, packet.Pack{
 							CMD:    packet.AUTH_TOCLIENT,
 							PackID: pack.PackID,
 							ErrMsg: "DBPlayer資料錯誤",
@@ -145,6 +145,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 
 					// 將玩家加入遊戲房
 					player = game.Player{
+						ID:           dbPlayer.ID,
 						LastUpdateAt: time.Now(),
 						ConnTCP: &gSetting.ConnectionTCP{
 							Conn:       conn,
@@ -168,10 +169,10 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					player.ConnUDP.ConnToken = newConnToken
 				}
 				// 回送client
-				err = packet.SendPack(encoder, &packet.Pack{
+				err = packet.SendPack(encoder, packet.Pack{
 					CMD:    packet.AUTH_TOCLIENT,
 					PackID: pack.PackID,
-					Content: &packet.Auth_ToClient{
+					Content: packet.Auth_ToClient{
 						IsAuth:    true,
 						ConnToken: player.ConnUDP.ConnToken,
 					},
@@ -181,7 +182,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				}
 
 			} else {
-				err = game.MyRoom.HandleTCPMsg(conn, pack)
+				err = game.HandleTCPMsg(conn, pack)
 				if err != nil {
 					log.Errorf("%s (TCP)處理GameRoom封包錯誤: %v\n", logger.LOG_Main, err.Error())
 					player := game.MyRoom.GetPlayerByTCPConn(conn)

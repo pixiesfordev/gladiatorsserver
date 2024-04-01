@@ -1,0 +1,24 @@
+{
+    "properties": {
+        "_id": {
+            "bsonType": "string"
+        },
+        "createdAt": {
+            "bsonType": "date"
+        },
+        "enable": {
+            "bsonType": "bool"
+        },
+        "jsonMapID": {
+            "bsonType": "int"
+        },
+        "matchType": {
+            "bsonType": "string"
+        }
+    },
+    "required": [
+        "_id",
+        "createdAt"
+    ],
+    "title": "map"
+}

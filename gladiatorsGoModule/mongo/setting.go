@@ -72,7 +72,7 @@ type colNameStruct struct {
 	PlayerCustom  string
 	PlayerState   string
 	PlayerHistory string
-
+	Gladiator     string
 	// 遊戲資料
 	Matchgame string
 }
@@ -91,6 +91,7 @@ var ColName = colNameStruct{
 	PlayerCustom:  "playerCustom",
 	PlayerState:   "playerState",
 	PlayerHistory: "playerHistory",
+	Gladiator:     "gladiator",
 
 	// 遊戲資料
 	Matchgame: "matchgame",
@@ -225,7 +226,7 @@ func (dbMatchgame *DBMatchgame) KickPlayer(playerID string) {
 	for i, v := range dbMatchgame.PlayerIDs {
 		if v == playerID {
 			dbMatchgame.PlayerIDs[i] = ""
-			log.Infof("%s 移除DBMatchgame中 index為%v的玩家(%s)", logger.LOG_Mongo, i, v)
+			log.Infof("%s 移除DBMatchgame玩家(%s)", logger.LOG_Mongo, v)
 			return
 		}
 	}

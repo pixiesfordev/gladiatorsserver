@@ -1,0 +1,78 @@
+{
+    "properties": {
+        "_id": {
+            "bsonType": "string"
+        },
+        "createdAt": {
+            "bsonType": "date"
+        },
+        "customerServiceURL": {
+            "bsonType": "string"
+        },
+        "env": {
+            "bsonType": "string"
+        },
+        "gameVersion": {
+            "bsonType": "string"
+        },
+        "maintain": {
+            "bsonType": "bool"
+        },
+        "maintainEndAt": {
+            "bsonType": "date"
+        },
+        "maintainExemptPlayerIDs": {
+            "bsonType": "array",
+            "items": {
+                "bsonType": "string"
+            }
+        },
+        "matchgame-testver-ip": {
+            "bsonType": "string"
+        },
+        "matchgame-testver-mapID": {
+            "bsonType": "string"
+        },
+        "matchgame-testver-port": {
+            "bsonType": "int"
+        },
+        "matchgame-testver-roomName": {
+            "bsonType": "string"
+        },
+        "matchgame-testver-tcp-ip": {
+            "bsonType": "string"
+        },
+        "matchgame-testver-udp-ip": {
+            "bsonType": "string"
+        },
+        "matchmakerEnable": {
+            "bsonType": "bool"
+        },
+        "matchmakerIP": {
+            "bsonType": "string"
+        },
+        "matchmakerPort": {
+            "bsonType": "int"
+        },
+        "minGameVersion": {
+            "bsonType": "string"
+        },
+        "onlineCheckSec": {
+            "bsonType": "int"
+        },
+        "playerOfflineMinute": {
+            "bsonType": "int"
+        },
+        "storeURL_Apple": {
+            "bsonType": "string"
+        },
+        "storeURL_Google": {
+            "bsonType": "string"
+        }
+    },
+    "required": [
+        "_id",
+        "createdAt"
+    ],
+    "title": "gameSetting"
+}

@@ -1,0 +1,17 @@
+{
+    "properties": {
+        "_id": {
+            "bsonType": "string"
+        },
+        "createdAt": {
+            "bsonType": "date"
+        },
+        "lastUpdatedAt": {
+            "bsonType": "date"
+        }
+    },
+    "required": [
+        "_id",
+        "createdAt"
+    ]
+}

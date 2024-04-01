@@ -6,6 +6,9 @@ exports = async function Signin() {
     return
   }
 
+  const userRole = context.user.custom_data.role;
+  console.log("User Role: " + userRole);
+
   const ah = require("pixies-mygladiators");
 
   // 如果玩家目前是下線的，改回上線中並更新最後登入時間
@@ -32,6 +35,7 @@ exports = async function Signin() {
       lastUpdatedAt: now
     }
   }, null);
+
 
   if (!updateSuccess) {
     let error = "[Signin] 更新在線時間失敗";

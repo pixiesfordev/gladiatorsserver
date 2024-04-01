@@ -10,7 +10,7 @@
 exports = async function OnUserCreation(user) {
   const playerCustomCol = context.services
     .get("mongodb-atlas")
-    .db("herofishing")
+    .db("gladiators")
     .collection("playerCustom");
 
   const ah = require("pixies-mygladiators");

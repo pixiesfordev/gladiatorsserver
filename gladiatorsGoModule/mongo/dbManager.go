@@ -142,6 +142,20 @@ func UpdateDocByInterface(col string, id string, updateData interface{}) (*mongo
 
 	return result, nil
 }
+// 文件存在就更新不存在就新增
+func AddOrUpdateDocByStruct(col string, docID string, addData interface{}) (*mongoDriver.UpdateResult, error) {
+
+	filter := bson.D{{Key: "_id", Value: docID}}
+	update := bson.D{{Key: "$set", Value: addData}}
+
+	opts := options.Update().SetUpsert(true)
+
+	result, err := DB.Collection(col).UpdateOne(context.TODO(), filter, update, opts)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
 
 // UpdateDocsByField 批量更新指定欄位符合特定條件的所有文檔
 // col: 要更新的集合名
@@ -181,17 +195,5 @@ func AddDocByStruct(col string, addData interface{}) (*mongoDriver.InsertOneResu
 	return result, nil
 }
 
-// 文件存在就更新不存在就新增
-func AddOrUpdateDocByStruct(col string, docID string, addData interface{}) (*mongoDriver.UpdateResult, error) {
 
-	filter := bson.D{{Key: "_id", Value: docID}}
-	update := bson.D{{Key: "$set", Value: addData}}
 
-	opts := options.Update().SetUpsert(true)
-
-	result, err := DB.Collection(col).UpdateOne(context.TODO(), filter, update, opts)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}

@@ -226,7 +226,6 @@ func main() {
 			log.Infof("%s Get Info Finished", logger.LOG_Main)
 
 			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int(myPort), PodName, nodeName, matchmakerPodName, roomChan)
-
 			log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
 		}()
 	}
@@ -247,7 +246,7 @@ func main() {
 	// 開啟連線
 	src := ":" + *port
 	go openConnectTCP(stopChan, src)
-	go openConnectUDP(stopChan, src)
+	// go openConnectUDP(stopChan, src)
 
 	go room.RoomTimer(stopChan) // 開始遊戲房計時器
 
@@ -303,6 +302,7 @@ func setExternalIPandPort(tcpIP string, udpIP string, port int) {
 	}
 	log.Infof("%s 寫入對外IP完成.\n", logger.LOG_Main)
 }
+
 
 // 房間循環
 func TestLoop() {

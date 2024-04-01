@@ -43,6 +43,27 @@ type UDPReceivePack struct {
 	Content   CMDContent
 }
 
+// 將封包的content內容轉為string
+func (pack *Pack) GetContentStr() string {
+	// 如果content是interface{}類型那會是map[string]interface{}格式要轉回字串
+	if contentMap, ok := pack.Content.(map[string]interface{}); ok {
+		contentBytes, err := json.Marshal(contentMap)
+		if err != nil {
+			return ""
+		}
+		return string(contentBytes)
+	}
+
+	// 如果content是json格式就直接轉字串
+	contentStr, ok := pack.Content.(string)
+	if ok {
+		return contentStr
+	}
+
+	// 都不是就返回空字串
+	return ""
+}
+
 type CMDContent interface {
 }
 
@@ -85,7 +106,7 @@ func ReadPack(decoder *json.Decoder) (Pack, error) {
 	return packet, err
 }
 
-func SendPack(encoder *json.Encoder, packet *Pack) error {
+func SendPack(encoder *json.Encoder, packet Pack) error {
 	err := encoder.Encode(packet)
 
 	// // 寫LOG

@@ -1,9 +1,9 @@
 package game
 
 import (
-	"errors"
 	mongo "gladiatorsGoModule/mongo"
 	"gladiatorsGoModule/setting"
+
 	// "matchgame/agones"
 	logger "matchgame/logger"
 	"matchgame/packet"
@@ -70,11 +70,13 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 	log.Infof("%s 初始化房間設定", logger.LOG_Room)
 	// 初始化房間設定
 	MyRoom = &Room{
+		Gamers:      make(map[string]Gamer),
 		RoomName:    roomName,
 		GameState:   Init,
 		DBMatchgame: &dbMatchgame,
 		GameTime:    0,
 	}
+	MyRoom.UpdateMatchgameToDB()
 	go RoomLoop() // 開始房間循環
 	log.Infof("%s InitGameRoom完成", logger.LOG_Room)
 	roomChan <- MyRoom
@@ -137,6 +139,7 @@ func (r *Room) JoinGamer(gamer Gamer) bool {
 		}
 		r.Gamers[gamer.GetID()] = gamer
 	}
+
 	if r.GamerCount() > setting.PLAYER_NUMBER {
 		log.Errorf("%s JoinGamer玩家人數超過上限 玩家人數: %v", logger.LOG_Room, r.GamerCount())
 		return false
@@ -153,7 +156,7 @@ func (r *Room) JoinGamer(gamer Gamer) bool {
 func (r *Room) KickPlayer(player *Player, reason string) {
 
 	log.Infof("%s 嘗試踢出玩家(%s) 原因: %s", logger.LOG_Room, player.GetID(), reason)
-	gamer := r.GetGamerByID(player.id)
+	gamer := r.GetGamerByID(player.ID)
 	if gamer == nil {
 		log.Infof("%s 要踢掉的玩家已經不存在", logger.LOG_Room)
 		return
@@ -181,8 +184,7 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 	} else {
 		log.Infof("%s 更新玩家 %s DB資料", logger.LOG_Room, player.GetID())
 	}
-
-	r.Gamers[player.GetID()] = nil
+	delete(r.Gamers, player.GetID())
 	r.DBMatchgame.KickPlayer(player.GetID())
 	r.UpdateMatchgameToDB() // 更新房間DB
 
@@ -204,31 +206,6 @@ func (r *Room) OnRoomPlayerChange() {
 	} else if playerCount == 0 { // 空房間處理
 	} else { // 有人但沒有滿房
 	}
-}
-
-// 處理TCP訊息
-func (r *Room) HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
-	player := r.GetPlayerByTCPConn(conn)
-	if player == nil {
-		log.Errorf("%s HandleMessage 錯誤, 玩家不存在連線清單中", logger.LOG_Room)
-		return errors.New("HandleMessage 錯誤, 玩家不存在連線清單中")
-	}
-	conn.SetDeadline(time.Time{}) // 移除連線超時設定
-	// 處理各類型封包
-	switch pack.CMD {
-	// ==========賄賂==========
-	case packet.BRIBE:
-		// r.SendPacketToPlayer(player.Index, &packet.Pack{
-		// 	CMD:    packet.UPDATESCENE_TOCLIENT,
-		// 	PackID: -1,
-		// 	Content: &packet.UpdateScene_ToClient{
-		// 		Spawns:       r.MSpawner.Spawns,
-		// 		SceneEffects: r.SceneEffects,
-		// 	},
-		// })
-	}
-
-	return nil
 }
 
 // 透過TCPConn取得玩家ID
@@ -298,8 +275,8 @@ func (r *Room) ChangeState(state GameState) {
 	r.GameState = state
 }
 
-// 送封包給遊戲房間內所有玩家(TCP), 除了指定索引(exceptPlayerIdx)的玩家, 如果要所有玩家就傳入-1就可以
-func (r *Room) BroadCastPacket(exceptPlayerID string, pack *packet.Pack) {
+// 送封包給遊戲房間內所有玩家(TCP), 除了指定索引(exceptPlayerIdx)的玩家, 如果要所有玩家就傳入""就可以
+func (r *Room) BroadCastPacket(exceptPlayerID string, pack packet.Pack) {
 	// if pack.CMD != packet.SPAWN_TOCLIENT {
 	// 	log.Infof("廣播封包給其他玩家 CMD: %v", pack.CMD)
 	// }
@@ -309,7 +286,7 @@ func (r *Room) BroadCastPacket(exceptPlayerID string, pack *packet.Pack) {
 			continue
 		}
 		if player, ok := gamer.(*Player); ok {
-			if player == nil || player.ConnTCP.Conn == nil {
+			if player.ConnTCP.Conn == nil {
 				continue
 			}
 			err := packet.SendPack(player.ConnTCP.Encoder, pack)
@@ -321,7 +298,7 @@ func (r *Room) BroadCastPacket(exceptPlayerID string, pack *packet.Pack) {
 }
 
 // 送封包給玩家(TCP)
-func (r *Room) SendPacketToPlayer(playerID string, pack *packet.Pack) {
+func (r *Room) SendPacketToPlayer(playerID string, pack packet.Pack) {
 	gamer := r.GetGamerByID(playerID)
 	if player, _ := gamer.(*Player); player != nil {
 		if player.ConnTCP.Conn == nil {
@@ -335,17 +312,18 @@ func (r *Room) SendPacketToPlayer(playerID string, pack *packet.Pack) {
 }
 
 // 取得要送封包的玩家陣列
-func (r *Room) GetPacketPlayers() [setting.PLAYER_NUMBER]*packet.PackPlayer {
-	var players [setting.PLAYER_NUMBER]*packet.PackPlayer
+func (r *Room) GetPackPlayers() [setting.PLAYER_NUMBER]packet.PackPlayer {
+	var players [setting.PLAYER_NUMBER]packet.PackPlayer
 	idx := 0
 	for _, gamer := range r.Gamers {
 		if gamer == nil {
 			continue
 		}
-		players[idx] = &packet.PackPlayer{
+		players[idx] = packet.PackPlayer{
 			DBPlayerID:    gamer.GetID(),
 			DBGladiatorID: gamer.GetGladiator().ID,
 		}
+		idx++
 	}
 	return players
 }
@@ -402,7 +380,7 @@ func (r *Room) RoomTimer(stop chan struct{}) {
 
 					nowTime := time.Now()
 					// 玩家無心跳超過X秒就踢出遊戲房
-					// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.DBPlayer.ID, nowTime.Sub(player.LastUpdateAt).Seconds())
+					// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
 					if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
 						MyRoom.KickPlayer(player, "玩家心跳逾時")
 					}
@@ -419,7 +397,7 @@ func (r *Room) RoomTimer(stop chan struct{}) {
 func (room *Room) UpdateMatchgameToDB() {
 	log.Infof("%s 開始更新Matchgame到DB: %v", logger.LOG_Room, room.DBMatchgame)
 
-	_, err := mongo.UpdateDocByInterface(mongo.ColName.Matchgame, room.DBMatchgame.ID, room.DBMatchgame)
+	_, err := mongo.AddOrUpdateDocByStruct(mongo.ColName.Matchgame, room.DBMatchgame.ID, room.DBMatchgame)
 	if err != nil {
 		log.Errorf("%s UpdateMatchgameToDB時mongo.UpdateDocByID(mongo.ColName.Matchgame, room.DBMatchgame.ID, updateData)發生錯誤 %v", logger.LOG_Room, err)
 	}

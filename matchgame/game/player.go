@@ -20,28 +20,28 @@ type Gamer interface {
 
 // 玩家
 type Player struct {
-	id           string                  // DBPlayer的_id
-	myGladiator  *Gladiator              // 使用中的鬥士
-	gold         int64                   // 玩家金幣
+	ID           string                  // DBPlayer的_id
+	MyGladiator  *Gladiator              // 使用中的鬥士
+	Gold         int64                   // 玩家金幣
 	LastUpdateAt time.Time               // 上次收到玩家更新封包(心跳)
 	ConnTCP      *gSetting.ConnectionTCP // TCP連線
 	ConnUDP      *gSetting.ConnectionUDP // UDP連線
 }
 
 func (player *Player) GetID() string {
-	return player.id
+	return player.ID
 }
 
 func (player *Player) GetGold() int64 {
-	return player.gold
+	return player.Gold
 }
 
 func (player *Player) AddGold(value int64) {
-	player.gold += value
+	player.Gold += value
 }
 
 func (player *Player) GetGladiator() *Gladiator {
-	return player.myGladiator
+	return player.MyGladiator
 }
 
 // 將玩家連線斷掉
