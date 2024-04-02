@@ -6,12 +6,12 @@ import (
 	// "gladiatorsGoModule/logger"
 )
 
-type EquipJsonData struct {
+type JsonEquip struct {
 	ID int `json:"ID"`
 }
 
-func (jsonData EquipJsonData) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[int]interface{}, error) {
-	var wrapper map[string][]EquipJsonData
+func (jsonData JsonEquip) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {
+	var wrapper map[string][]JsonEquip
 	if err := json.Unmarshal(jsonBytes, &wrapper); err != nil {
 		return nil, err
 	}
@@ -21,26 +21,9 @@ func (jsonData EquipJsonData) UnmarshalJSONData(jsonName string, jsonBytes []byt
 		return nil, fmt.Errorf("找不到key值: %s", jsonName)
 	}
 
-	items := make(map[int]interface{})
+	items := make(map[interface{}]interface{})
 	for _, item := range datas {
 		items[item.ID] = item
 	}
 	return items, nil
-}
-
-func GetEquips() ([]EquipJsonData, error) {
-	datas, err := getJsonDataByName(JsonName.Equip)
-	if err != nil {
-		return nil, err
-	}
-
-	var gladiatorEXPs []EquipJsonData
-	for _, data := range datas {
-		if gladiatorEXP, ok := data.(EquipJsonData); ok {
-			gladiatorEXPs = append(gladiatorEXPs, gladiatorEXP)
-		} else {
-			return nil, fmt.Errorf("資料類型不匹配: %T", data)
-		}
-	}
-	return gladiatorEXPs, nil
 }

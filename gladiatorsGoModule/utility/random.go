@@ -40,6 +40,28 @@ func GetRandomTFromSlice[T any](slice []T) (T, error) {
 	return slice[randIndex], nil
 }
 
+// 傳入泛型切片和要返回的隨機元素數量x，返回x個隨機且不重複的元素。
+func GetRandomNumberOfTFromSlice[T any](slice []T, count int) ([]T, error) {
+	if len(slice) == 0 || count <= 0 || count > len(slice) {
+		return nil, fmt.Errorf("GetRandomNumberOfTFromSlice傳入參數錯誤 count: %v slice: %v", count, slice)
+	}
+
+	src := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(src)
+
+	var selected []T
+	tmpSlice := make([]T, len(slice))
+	copy(tmpSlice, slice)
+
+	for i := 0; i < count; i++ {
+		randIndex := r.Intn(len(tmpSlice))
+		selected = append(selected, tmpSlice[randIndex])
+		tmpSlice = append(tmpSlice[:randIndex], tmpSlice[randIndex+1:]...)
+	}
+
+	return selected, nil
+}
+
 // 從map中取隨機key值出來
 func GetRndKeyFromMap[K comparable, V any](m map[K]V) K {
 	src := rand.NewSource(time.Now().UnixNano())
@@ -71,6 +93,33 @@ func GetRndValueFromMap[K comparable, V any](m map[K]V) V {
 		return defaultV // 如果map為空, 返回V類型的零值
 	}
 	return values[r.Intn(len(values))] // 隨機選擇一個值並返回
+}
+
+// 傳入泛型map和要返回的隨機元素數量x，返回x個隨機且不重複的元素。
+func GetRandomNumberOfTFromMap[K comparable, V any](m map[K]V, count int) ([]V, error) {
+	if len(m) == 0 || count <= 0 || count > len(m) {
+		return nil, fmt.Errorf("GetRandomNumberOfTFromMap傳入參數錯誤 count: %d", count)
+	}
+
+	src := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(src)
+
+	valuesSlice := make([]V, 0, len(m))
+	for _, value := range m {
+		valuesSlice = append(valuesSlice, value)
+	}
+
+	var selected []V
+	tmpSlice := make([]V, len(valuesSlice))
+	copy(tmpSlice, valuesSlice)
+
+	for i := 0; i < count; i++ {
+		randIndex := r.Intn(len(tmpSlice))
+		selected = append(selected, tmpSlice[randIndex])
+		tmpSlice = append(tmpSlice[:randIndex], tmpSlice[randIndex+1:]...)
+	}
+
+	return selected, nil
 }
 
 // 傳入機率回傳結果 EX. 傳入0.3就是有30%機率返回true

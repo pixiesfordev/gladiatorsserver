@@ -3,16 +3,18 @@ package gameJson
 import (
 	"encoding/json"
 	"fmt"
-	// "gladiatorsGoModule/logger"
+	"gladiatorsGoModule/logger"
+
+	log "github.com/sirupsen/logrus"
 )
 
-type GameSettingJsonData struct {
+type JsonGameSetting struct {
 	ID    string `json:"ID"`
 	Value string `json:"Value"`
 }
 
-func (jsonData GameSettingJsonData) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[string]interface{}, error) {
-	var wrapper map[string][]GameSettingJsonData
+func (jsonData JsonGameSetting) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {
+	var wrapper map[string][]JsonGameSetting
 	if err := json.Unmarshal(jsonBytes, &wrapper); err != nil {
 		return nil, err
 	}
@@ -22,9 +24,24 @@ func (jsonData GameSettingJsonData) UnmarshalJSONData(jsonName string, jsonBytes
 		return nil, fmt.Errorf("找不到key值: %s", jsonName)
 	}
 
-	items := make(map[string]interface{})
+	items := make(map[interface{}]interface{})
 	for _, item := range datas {
 		items[item.ID] = item
 	}
 	return items, nil
+}
+
+func GetJsonGameSetting(id string) (JsonGameSetting, error) {
+	jsonName := JsonName.GameSetting
+	jsonData, err := getJson(JsonName.GameSetting, id)
+	if err != nil {
+		log.Errorf("%s 取Json錯誤, JsonName: %s ID: %v", logger.LOG_GameJson, jsonName, id)
+		return JsonGameSetting{}, err
+	}
+	data, ok := jsonData.(JsonGameSetting)
+	if ok {
+		return data, nil
+	} else {
+		return JsonGameSetting{}, fmt.Errorf("%s 取Json時斷言失敗, JsonName: %s ID: %v", logger.LOG_GameJson, jsonName, id)
+	}
 }

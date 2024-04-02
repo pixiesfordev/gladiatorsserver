@@ -1,11 +1,5 @@
 package utility
 
-type Number interface {
-	int | int8 | int16 | int32 | int64 |
-		uint | uint8 | uint16 | uint32 | uint64 |
-		float32 | float64
-}
-
 // 移除重複的元素
 func RemoveDuplicatesFromSlice[T comparable](slice []T) []T {
 	unique := make(map[T]bool)
@@ -36,13 +30,20 @@ func RemoveFromMapByKeys[K comparable, V any](myMap map[K]*V, keys []K) {
 	}
 }
 
+// 從map中移除傳入的key陣列
+func RemoveFromMapByKeys2[K comparable, V any](myMap map[K]V, keys []K) {
+	for _, key := range keys {
+		delete(myMap, key)
+	}
+}
+
 // 從一個 slice 中移除指定索引的元素
 func RemoveFromSliceByIdx[T any](slice []T, idx int) []T {
 	return append(slice[:idx], slice[idx+1:]...)
 }
 
-// 從一個 slice 中移除多個索引, 多個索引是來自另外一個slice的元素
-func RemoveFromSliceBySlice[T any](slice []T, idxs []int) []T {
+// 從一個 slice 中移除多個索引, 多個索引是另一個slice的元素
+func RemoveFromSliceByIdxs[T any](slice []T, idxs []int) []T {
 	removeSet := make(map[int]bool)
 	for _, idx := range idxs {
 		removeSet[idx] = true
@@ -66,4 +67,30 @@ func Contains[T comparable](slice []T, element T) bool {
 		}
 	}
 	return false
+}
+
+// 某數字是否在數字切片中, 是就返回true, 切片回空返回false
+func NumberInSlice[T Number](slice []T, target T) bool {
+	if len(slice) == 0 {
+		return false
+	}
+	for _, v := range slice {
+		if v == target {
+			return true
+		}
+	}
+	return false
+}
+
+// 切片元素是否都等於某數字, 切片回空返回false
+func SliceNumberAllEqualTo[T Number](slice []T, target T) bool {
+	if len(slice) == 0 {
+		return false
+	}
+	for _, v := range slice {
+		if v != target {
+			return false
+		}
+	}
+	return true
 }

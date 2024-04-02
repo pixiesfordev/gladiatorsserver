@@ -3,16 +3,26 @@ package gameJson
 import (
 	"encoding/json"
 	"fmt"
+	"gladiatorsGoModule/logger"
 	"gladiatorsGoModule/utility"
-	// "gladiatorsGoModule/logger"
+
+	log "github.com/sirupsen/logrus"
 )
 
-type GladiatorJsonData struct {
-	ID int `json:"ID"`
+type JsonGladiator struct {
+	ID         int     `json:"ID"`
+	HP         int     `json:"HP"`
+	STR        int     `json:"STR"`
+	DEF        int     `json:"DEF"`
+	MDEF       int     `json:"MDEF"`
+	CRIT       float64 `json:"CRIT"`
+	VigorRegen float64 `json:"VigorRegen"`
+	Knockback  int     `json:"Knockback"`
+	INIT       int     `json:"INIT"`
 }
 
-func (jsonData GladiatorJsonData) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[int]interface{}, error) {
-	var wrapper map[string][]GladiatorJsonData
+func (jsonData JsonGladiator) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {
+	var wrapper map[string][]JsonGladiator
 	if err := json.Unmarshal(jsonBytes, &wrapper); err != nil {
 		return nil, err
 	}
@@ -22,57 +32,57 @@ func (jsonData GladiatorJsonData) UnmarshalJSONData(jsonName string, jsonBytes [
 		return nil, fmt.Errorf("找不到key值: %s", jsonName)
 	}
 
-	items := make(map[int]interface{})
+	items := make(map[interface{}]interface{})
 	for _, item := range datas {
 		items[item.ID] = item
 	}
 	return items, nil
 }
 
-func GetGladiators() ([]GladiatorJsonData, error) {
-	datas, err := getJsonDataByName(JsonName.Gladiator)
+func GetJsonGladiators() (map[int]JsonGladiator, error) {
+	jsonName := JsonName.Gladiator
+	jsonDatas, err := getJsonDic(jsonName)
 	if err != nil {
 		return nil, err
 	}
-
-	var gladiators []GladiatorJsonData
-	for _, data := range datas {
-		if gladiator, ok := data.(GladiatorJsonData); ok {
-			gladiators = append(gladiators, gladiator)
+	datas := make(map[int]JsonGladiator)
+	for _, v := range jsonDatas {
+		json, ok := v.(JsonGladiator)
+		if ok {
+			datas[json.ID] = json
 		} else {
-			return nil, fmt.Errorf("資料類型不匹配: %T", data)
+			return nil, fmt.Errorf("%s 取JsonDic時斷言失敗, JsonName: %s", logger.LOG_GameJson, jsonName)
 		}
 	}
-	return gladiators, nil
+	return datas, nil
 }
 
-// 取得隨機鬥士
-func GetRndGladiator() (GladiatorJsonData, error) {
-	gladiators, err := GetGladiators()
+func GetJsonGladiator(id int) (JsonGladiator, error) {
+	jsonName := JsonName.Gladiator
+	jsonData, err := getJson(JsonName.Gladiator, id)
 	if err != nil {
-		return GladiatorJsonData{}, err
+		log.Errorf("%s 取Json錯誤, JsonName: %s ID: %v", logger.LOG_GameJson, jsonName, id)
+		return JsonGladiator{}, err
 	}
-	if len(gladiators) == 0 {
-		return GladiatorJsonData{}, fmt.Errorf("鬥士資料為空")
+	data, ok := jsonData.(JsonGladiator)
+	if ok {
+		return data, nil
+	} else {
+		return JsonGladiator{}, fmt.Errorf("%s 取Json時斷言失敗, JsonName: %s ID: %v", logger.LOG_GameJson, jsonName, id)
 	}
-	gladiator, err := utility.GetRandomTFromSlice(gladiators)
-	if err != nil {
-		return GladiatorJsonData{}, err
-	}
-	return gladiator, nil
 }
 
-func GetGladiatorByID(id int) (GladiatorJsonData, error) {
-	gladiators, err := GetGladiators()
+func GetRndJsonGladiator() (JsonGladiator, error) {
+	jsonName := JsonName.Gladiator
+	jsonDatas, err := getJsonDic(jsonName)
 	if err != nil {
-		return GladiatorJsonData{}, err
+		return JsonGladiator{}, err
 	}
-
-	for _, gladiator := range gladiators {
-		if gladiator.ID == id {
-			return gladiator, nil
-		}
+	key := utility.GetRndKeyFromMap(jsonDatas)
+	data, err := GetJsonGladiator(key.(int))
+	if err == nil {
+		return data, nil
+	} else {
+		return JsonGladiator{}, fmt.Errorf("%s GetJsonGladiator錯誤: %v", logger.LOG_GameJson, err)
 	}
-
-	return GladiatorJsonData{}, fmt.Errorf("未找到ID為 %v 的%s資料", id, JsonName.Gladiator)
 }

@@ -2,7 +2,6 @@ package game
 
 import (
 	"gladiatorsGoModule/gameJson"
-
 	// log "github.com/sirupsen/logrus"
 	// "gladiatorsGoModule/utility"
 	// "matchgame/logger"
@@ -10,10 +9,10 @@ import (
 
 type Gladiator struct {
 	ID            string // DBGladiator的_id
-	JsonGladiator gameJson.GladiatorJsonData
-	JsonSkills    [6]gameJson.SkillJsonData
+	JsonGladiator gameJson.JsonGladiator
+	JsonSkills    [6]gameJson.JsonSkill
 	JsonTraits    []gameJson.TraitJsonData
-	JsonEquips    []gameJson.EquipJsonData
+	JsonEquips    []gameJson.JsonEquip
 	HP            int64
 	CurHP         int64
 	VigorRegon    float64

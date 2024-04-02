@@ -2,7 +2,6 @@ package gameJson
 
 import (
 	"context"
-	"errors"
 	"gladiatorsGoModule/setting"
 	"io"
 	"strings"
@@ -70,18 +69,17 @@ func Init(env string) error {
 			// fmt.Printf("%s File: %s Data: %s \n", logger.LOG_GameJson, attrs.Name, data)
 			switch jsonName {
 			case JsonName.GameSetting:
-				SetJsonDic(jsonName, data, GameSettingJsonData{})
+				SetJsonDic(jsonName, data, JsonGameSetting{})
 			case JsonName.Gladiator:
-				SetJsonDic(jsonName, data, GladiatorJsonData{})
+				SetJsonDic(jsonName, data, JsonGladiator{})
 			case JsonName.Trait:
 				SetJsonDic(jsonName, data, TraitJsonData{})
 			case JsonName.Skill:
-				SetJsonDic(jsonName, data, SkillJsonData{})
+				SetJsonDic(jsonName, data, JsonSkill{})
 			case JsonName.Equip:
-				SetJsonDic(jsonName, data, EquipJsonData{})
+				SetJsonDic(jsonName, data, JsonEquip{})
 			default:
 				log.Errorf("%s 未定義的jsonName: %v", logger.LOG_GameJson, jsonName)
-				return errors.New("未定義的jsonName")
 			}
 
 		}
@@ -90,7 +88,7 @@ func Init(env string) error {
 }
 
 // jsonDic的結構為jsonDic[jsonName][ID]
-var jsonDic = make(map[string]map[string]interface{})
+var jsonDic = make(map[string]map[interface{}]interface{})
 
 type JsonNameStruct struct {
 	GameSetting string
@@ -109,57 +107,39 @@ var JsonName = JsonNameStruct{
 	Trait:       "Trait",
 }
 
-// 傳入Json名稱取得對應JsonMap資料
-func getJsonDataByName(name string) (map[string]interface{}, error) {
-	data, exists := jsonDic[name]
-	if !exists {
-		return nil, fmt.Errorf("jsonDic中未找到 %s 的資料", name)
-	}
-	return data, nil
+type JsonUnmarshaler interface {
+	UnmarshalJSONData(jsonName string, jsonData []byte) (map[interface{}]interface{}, error)
 }
 
-type JsonUnmarshaler[K comparable] interface {
-	UnmarshalJSONData(jsonName string, jsonData []byte) (map[K]interface{}, error)
-}
-
-func SetJsonDic[K comparable](jsonName string, jsonData []byte, unmarshaler JsonUnmarshaler[K]) error {
+func SetJsonDic(jsonName string, jsonData []byte, unmarshaler JsonUnmarshaler) error {
 	items, err := unmarshaler.UnmarshalJSONData(jsonName, jsonData)
 	if err != nil {
 		log.Printf("%s表Unmarshal失敗: %v", jsonName, err)
 		return err
 	}
-	// 這裡使用interface{}以便於處理不同類型的map，你可能需要根據實際情況進行調整
-	jsonDic := make(map[string]interface{})
 	jsonDic[jsonName] = items
-	log.Printf("設定Json資料: %s", jsonName)
+	log.Printf("設定Json表(%s) %v筆資料", jsonName, len(items))
 	return nil
 }
 
-// // 傳入Json將並轉為對應struct資料並存入jsonDic中, jsonDic的結構為jsonDic[jsonName][ID]
-// func SetJsonDic(jsonName string, jsonData []byte) error {
+// 傳入Json名稱取得對應JsonMap資料
+func getJsonDic(jsonName string) (map[interface{}]interface{}, error) {
+	dic, exists := jsonDic[jsonName]
+	if !exists {
+		return nil, fmt.Errorf("jsonDic中未找到 %s 的資料", jsonName)
+	}
+	return dic, nil
+}
 
-// 	var unmarshaler JsonUnmarshaler
-// 	switch jsonName {
-// 	case JsonName.GameSetting:
-// 		unmarshaler = GameSettingJsonData{}
-// 	case JsonName.Gladiator:
-// 		unmarshaler = GladiatorJsonData{}
-// 	case JsonName.Trait:
-// 		unmarshaler = TraitJsonData{}
-// 	case JsonName.Skill:
-// 		unmarshaler = SkillJsonData{}
-// 	case JsonName.Equip:
-// 		unmarshaler = EquipJsonData{}
-// 	default:
-// 		log.Errorf("%s 未定義的jsonName: %v", logger.LOG_GameJson, jsonName)
-// 		return errors.New("未定義的jsonName")
-// 	}
-// 	items, err := unmarshaler.UnmarshalJSONData(jsonName, jsonData)
-// 	if err != nil {
-// 		log.Errorf("%s %s表Unmarshal失敗: %v", logger.LOG_GameJson, jsonName, err)
-// 		return err
-// 	}
-// 	jsonDic[jsonName] = items
-// 	log.Infof("%s 設定Json資料: %s", logger.LOG_GameJson, jsonName)
-// 	return nil
-// }
+// 傳入Json名稱取得對應JsonMap資料
+func getJson(jsonName string, id interface{}) (interface{}, error) {
+	dic, exists := jsonDic[jsonName]
+	if !exists {
+		return nil, fmt.Errorf("jsonDic中未找到資料 JsonName: %s", jsonName)
+	}
+	data, ok := dic[id]
+	if !ok {
+		return nil, fmt.Errorf("jsonDic中未找到資料 JsonName: %s ID: %v", jsonName, id)
+	}
+	return data, nil
+}

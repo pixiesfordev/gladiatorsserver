@@ -303,7 +303,6 @@ func setExternalIPandPort(tcpIP string, udpIP string, port int) {
 	log.Infof("%s 寫入對外IP完成.\n", logger.LOG_Main)
 }
 
-
 // 房間循環
 func TestLoop() {
 	ticker := time.NewTicker(5 * time.Second)
