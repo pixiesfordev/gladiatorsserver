@@ -1,9 +1,7 @@
 package packet
 
-import (
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
-)
 
 type Ready struct {
 	CMDContent
@@ -11,5 +9,5 @@ type Ready struct {
 
 type Ready_ToClient struct {
 	CMDContent
-	PlayerReadys [2]bool
+	PlayerReadies [2]bool
 }

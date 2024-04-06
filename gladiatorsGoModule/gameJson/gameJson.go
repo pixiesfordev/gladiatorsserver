@@ -95,6 +95,7 @@ type JsonNameStruct struct {
 	Gladiator   string
 	Equip       string
 	Skill       string
+	Bribe       string
 	Trait       string
 }
 
@@ -104,6 +105,7 @@ var JsonName = JsonNameStruct{
 	Gladiator:   "Gladiator",
 	Equip:       "Equip",
 	Skill:       "Skill",
+	Bribe:       "Bribe",
 	Trait:       "Trait",
 }
 

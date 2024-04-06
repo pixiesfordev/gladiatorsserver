@@ -9,7 +9,7 @@ spec:
     metadata:
       labels:
         type: gladiators-matchgame # 標示為gladiators-matchgame, 方便之後對版本做刪除等管理
-        imgVersion: "0.1.29" # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
+        imgVersion: "0.1.35" # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
     spec:
       ports:
       - name: default
@@ -26,11 +26,11 @@ spec:
         metadata:
           labels:
             type: gladiators-matchgame # 標示為gladiators-matchgame, 方便之後對版本做刪除等管理
-            imgVersion: "0.1.29" # 加版本標籤, 未來方便針對某個版本的pods進行移除, 版本必須要跟image版本一致避免搞混
+            imgVersion: "0.1.35" # 加版本標籤, 未來方便針對某個版本的pods進行移除, 版本必須要跟image版本一致避免搞混
         spec:
           containers:
           - name: gladiators-matchgame
-            image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-matchgame:0.1.29
+            image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-matchgame:0.1.35
             resources:
               requests:
                 memory: "32Mi"

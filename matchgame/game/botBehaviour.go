@@ -10,73 +10,57 @@ import (
 )
 
 // 加入Bot
-func AddBot() *Bot {
+func AddBot() {
+
+	bot, err := GetNewBot()
+	if err != nil {
+		log.Errorf("%s GetNewBot()錯誤: %v", logger.LOG_BotBehaviour, err)
+		return
+	}
+
+	err = MyRoom.JoinGamer(bot)
+	if err != nil {
+		log.Errorf("%s 加入Bot失敗: %v", logger.LOG_BotBehaviour, err)
+	}
+}
+
+// 建立新Bot玩家
+func GetNewBot() (*Bot, error) {
 	botIdx := IDAccumulator.GetNextIdx("BotIdx") // 取下一個BotIdx
 	botID := fmt.Sprintf("bot%v", botIdx)
 
 	// 取得隨機角鬥士
 	rndJsonGladiator, err := gameJson.GetRndJsonGladiator()
 	if err != nil {
-		log.Errorf("%s gameJson.GetRndJsonGladiator()錯誤: %v", logger.LOG_BotBehaviour, err)
-		return nil
+		return nil, fmt.Errorf("gameJson.GetRndJsonGladiator()錯誤: %v", err)
 	}
 
 	allJsonSkills, err := gameJson.GetJsonSkills()
 	if err != nil {
-		log.Errorf("%s gameJson.GetJsonSkills()錯誤: %v", logger.LOG_BotBehaviour, err)
-		return nil
+		return nil, fmt.Errorf("gameJson.GetJsonSkills()錯誤: %v", err)
 	}
-
+	var jsonSkills [6]gameJson.JsonSkill
 	rndJsonSkills, err := utility.GetRandomNumberOfTFromMap(allJsonSkills, 5)
 	if err != nil {
-		log.Errorf("%s utility.GetRandomNumberOfTFromMap錯誤: %v", logger.LOG_BotBehaviour, err)
-		return nil
+		return nil, fmt.Errorf("utility.GetRandomNumberOfTFromMap錯誤: %v", err)
 	}
-
-	var jsonSkills [6]gameJson.JsonSkill
-
+	for i, _ := range rndJsonSkills {
+		jsonSkills[i] = rndJsonSkills[i]
+	}
+	talentSkillJson, err := gameJson.GetJsonSkill(rndJsonGladiator.ID)
+	if err != nil {
+		return nil, fmt.Errorf("gameJson.GetJsonSkill(rndJsonGladiator.ID)錯誤: %v", err)
+	}
+	jsonSkills[5] = talentSkillJson
 	gladiator := Gladiator{
 		ID:            botID,
 		JsonGladiator: rndJsonGladiator,
 		JsonSkills:    jsonSkills,
 	}
 
-	// hero := Hero{
-	// 	ID:     int(heroID),
-	// 	skinID: heroSkinID,
-	// 	spells: skillJsons,
-	// }
-
-	// bot := Bot{
-	// 	ID:           botID,
-	// 	MyHero:       &hero,
-	// 	curTargetIdx: -1, // 無攻擊目標時, curTargetIdx為-1
-	// }
-	// bot.InitHero(0, [3]int{}, [3]float64{})
-	// joined := MyRoom.JoinPlayer(&bot)
-	// if !joined {
-	// 	log.Errorf("%s 玩家加入房間失敗", logger.LOG_Main)
-	// 	return nil
-	// }
-
-	// // 廣播更新玩家
-	// MyRoom.BroadCastPacket(-1, &packet.Pack{
-	// 	CMD:    packet.UPDATEPLAYER_TOCLIENT,
-	// 	PackID: -1,
-	// 	Content: &packet.UpdatePlayer_ToClient{
-	// 		Players: MyRoom.GetPacketPlayers(),
-	// 	},
-	// })
-	// // 廣播角鬥士選擇
-	// heroIDs, heroSkinIDs := MyRoom.GetHeroInfos()
-	// MyRoom.BroadCastPacket(-1, &packet.Pack{
-	// 	CMD: packet.SETHERO_TOCLIENT,
-	// 	Content: &packet.SetHero_ToClient{
-	// 		HeroIDs:     heroIDs,
-	// 		HeroSkinIDs: heroSkinIDs,
-	// 	},
-	// })
-	// bot.newSelectTargetLoop()
-	// return &bot
-	return nil
+	bot := &Bot{
+		ID:          botID,
+		MyGladiator: &gladiator,
+	}
+	return bot, nil
 }

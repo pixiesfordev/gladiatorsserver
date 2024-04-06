@@ -12,8 +12,8 @@ type SetPlayer_ToClient struct {
 	Players [setting.PLAYER_NUMBER]PackPlayer
 }
 type PackPlayer struct {
-	DBPlayerID    string `json:"DBPlayerID"`
-	DBGladiatorID string `json:"DBGladiatorID"`
+	DBPlayerID string `json:"DBPlayerID"`
+	Gladiator  PackGladiator
 }
 
 // func (set *SetPlayer) Parse(content CMDContent) bool {

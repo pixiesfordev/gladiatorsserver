@@ -37,9 +37,13 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			return fmt.Errorf("%s 取mongoDB gladiator doc資料發生錯誤: %v", logger.LOG_Action, getDocErr)
 		}
 		// 設定玩家使用的角鬥士
-		player.MyGladiator = &Gladiator{
+		player.myGladiator = &Gladiator{
 			ID: dbGladiator.ID,
 		}
+		if Mode == "non-agones" { // 遊戲模式是測試模式時, 自動加入Bot
+			AddBot() // 加入BOT
+		}
+
 		log.Infof("%s 收到玩家(%s)的角鬥士(%s)", logger.LOG_Action, player.GetID(), dbGladiator.ID)
 		pack := packet.Pack{
 			CMD:    packet.SETPLAYER_TOCLIENT,
@@ -48,7 +52,17 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				Players: MyRoom.GetPackPlayers(),
 			},
 		}
-		log.Infof("BroadCastPacket: %v", pack)
+		MyRoom.BroadCastPacket("", pack)
+		// ==========設定準備就緒==========
+	case packet.READY:
+		player.ready = true
+		pack := packet.Pack{
+			CMD:    packet.READY_TOCLIENT,
+			PackID: -1,
+			Content: &packet.Ready_ToClient{
+				PlayerReadies: MyRoom.GetPlayerReadies(),
+			},
+		}
 		MyRoom.BroadCastPacket("", pack)
 	// ==========賄賂==========
 	case packet.BRIBE:

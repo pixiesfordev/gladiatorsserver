@@ -16,13 +16,15 @@ type Gamer interface {
 	GetGold() int64
 	AddGold(value int64)
 	GetGladiator() *Gladiator
+	IsReady() bool
 }
 
 // 玩家
 type Player struct {
 	ID           string                  // DBPlayer的_id
-	MyGladiator  *Gladiator              // 使用中的鬥士
-	Gold         int64                   // 玩家金幣
+	myGladiator  *Gladiator              // 使用中的鬥士
+	gold         int64                   // 玩家金幣
+	ready        bool                    // 是否準備好了(進遊戲且收到雙方玩家資料後, client會送準備封包設定ready為true)
 	LastUpdateAt time.Time               // 上次收到玩家更新封包(心跳)
 	ConnTCP      *gSetting.ConnectionTCP // TCP連線
 	ConnUDP      *gSetting.ConnectionUDP // UDP連線
@@ -33,15 +35,19 @@ func (player *Player) GetID() string {
 }
 
 func (player *Player) GetGold() int64 {
-	return player.Gold
+	return player.gold
 }
 
 func (player *Player) AddGold(value int64) {
-	player.Gold += value
+	player.gold += value
 }
 
 func (player *Player) GetGladiator() *Gladiator {
-	return player.MyGladiator
+	return player.myGladiator
+}
+
+func (player *Player) IsReady() bool {
+	return player.ready
 }
 
 // 將玩家連線斷掉

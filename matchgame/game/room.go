@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	mongo "gladiatorsGoModule/mongo"
 	"gladiatorsGoModule/setting"
 
@@ -20,17 +21,6 @@ import (
 
 type GameState int // 目前遊戲狀態列舉
 
-const (
-	Init GameState = iota
-	Start
-	End
-)
-
-const (
-	TIMELOOP_MILISECS int     = 100 // 遊戲每X毫秒循環
-	KICK_PLAYER_SECS  float64 = 60  // 最長允許玩家無心跳X秒後踢出遊戲房
-)
-
 type Room struct {
 	Gamers      map[string]Gamer   // 玩家map
 	RoomName    string             // 房間名稱(也是DB文件ID)(房主UID+時間轉 MD5)
@@ -42,10 +32,6 @@ type Room struct {
 
 var MyRoom *Room // 房間
 
-// Mode模式分為以下:
-// standard:一般版本
-// non-agones: 個人測試模式(不使用Agones服務, non-agones的連線方式不會透過Matchmaker分配房間再把ip回傳給client, 而是直接讓client去連資料庫matchgame的ip)
-var Mode string
 
 func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomName string, ip string, port int, podName string, nodeName string, matchmakerPodName string, roomChan chan *Room) {
 	log.Infof("%s InitGameRoom開始", logger.LOG_Room)
@@ -118,10 +104,9 @@ func (r *Room) GamerCount() int {
 }
 
 // 把玩家加到房間中, 成功時回傳true
-func (r *Room) JoinGamer(gamer Gamer) bool {
+func (r *Room) JoinGamer(gamer Gamer) error {
 	if gamer == nil {
-		log.Errorf("%s JoinGamer傳入nil Gamer", logger.LOG_Room)
-		return false
+		return fmt.Errorf("JoinGamer傳入nil Gamer")
 	}
 	log.Infof("%s 玩家(%s) 嘗試加入房間 DBMatchgame: %+v", logger.LOG_Room, gamer.GetID(), r.DBMatchgame)
 
@@ -134,22 +119,31 @@ func (r *Room) JoinGamer(gamer Gamer) bool {
 	} else { // 玩家加入
 		joinErr := r.DBMatchgame.JoinPlayer(gamer.GetID())
 		if joinErr != nil {
-			log.Errorf("%s JoinPlayer時 r.DBMatchgame.JoinPlayer(gamer.GetID())錯誤: %v", logger.LOG_Room, joinErr)
-			return false
+			return fmt.Errorf("JoinPlayer時 r.DBMatchgame.JoinPlayer(gamer.GetID())錯誤: %v", joinErr)
 		}
 		r.Gamers[gamer.GetID()] = gamer
 	}
 
 	if r.GamerCount() > setting.PLAYER_NUMBER {
-		log.Errorf("%s JoinGamer玩家人數超過上限 玩家人數: %v", logger.LOG_Room, r.GamerCount())
-		return false
+		return fmt.Errorf("JoinGamer玩家人數超過上限 玩家人數: %v", r.GamerCount())
 	}
 
 	r.UpdateMatchgameToDB() // 更新DB
 	r.OnRoomPlayerChange()
 
 	log.Infof("%s 玩家(%s) 已加入房間(%v/%v) 房間資訊: %+v", logger.LOG_Room, gamer.GetID(), r.GamerCount(), setting.PLAYER_NUMBER, r)
-	return true
+	return nil
+}
+
+// 重置房間
+func (r *Room) ResetRoom() {
+	for _, v := range r.Gamers {
+		if player, ok := v.(*Player); ok {
+			r.KickPlayer(player, "重置房間")
+		} else if bot, ok := v.(*Bot); ok {
+			r.KickBot(bot, "重置房間")
+		}
+	}
 }
 
 // 將玩家踢出房間
@@ -192,6 +186,28 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 	r.OnRoomPlayerChange()
 
 	log.Infof("%s 踢出玩家完成", logger.LOG_Room)
+}
+
+// 將Bot踢出房間
+func (r *Room) KickBot(bot *Bot, reason string) {
+
+	log.Infof("%s 嘗試踢出Bot(%s) 原因: %s", logger.LOG_Room, bot.GetID(), reason)
+	gamer := r.GetGamerByID(bot.ID)
+	if gamer == nil {
+		log.Infof("%s 要踢掉的Bot已經不存在", logger.LOG_Room)
+		return
+	}
+
+	r.MutexLock.Lock()
+	defer r.MutexLock.Unlock()
+
+	delete(r.Gamers, bot.GetID())
+	r.DBMatchgame.KickPlayer(bot.GetID())
+	r.UpdateMatchgameToDB() // 更新房間DB
+
+	r.OnRoomPlayerChange()
+
+	log.Infof("%s 踢出Bot完成", logger.LOG_Room)
 }
 
 // 房間人數有異動處理
@@ -320,12 +336,26 @@ func (r *Room) GetPackPlayers() [setting.PLAYER_NUMBER]packet.PackPlayer {
 			continue
 		}
 		players[idx] = packet.PackPlayer{
-			DBPlayerID:    gamer.GetID(),
-			DBGladiatorID: gamer.GetGladiator().ID,
+			DBPlayerID: gamer.GetID(),
+			Gladiator:  gamer.GetGladiator().GetPackGladiator(),
 		}
 		idx++
 	}
 	return players
+}
+
+// 取得玩家準備狀態, 都準備好就會回傳都是true的array
+func (r *Room) GetPlayerReadies() [setting.PLAYER_NUMBER]bool {
+	var playerReadies [setting.PLAYER_NUMBER]bool
+	idx := 0
+	for _, gamer := range r.Gamers {
+		if gamer == nil {
+			playerReadies[idx] = false
+		}
+		playerReadies[idx] = gamer.IsReady()
+		idx++
+	}
+	return playerReadies
 }
 
 // 送封包給玩家(UDP)
@@ -382,7 +412,7 @@ func (r *Room) RoomTimer(stop chan struct{}) {
 					// 玩家無心跳超過X秒就踢出遊戲房
 					// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
 					if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
-						MyRoom.KickPlayer(player, "玩家心跳逾時")
+						r.ResetRoom()
 					}
 				}
 

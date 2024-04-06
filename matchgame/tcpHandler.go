@@ -157,9 +157,9 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 							ConnToken: newConnToken,
 						},
 					}
-					joined := game.MyRoom.JoinGamer(&player)
-					if !joined {
-						log.Errorf("%s 玩家加入房間失敗", logger.LOG_Main)
+					err = game.MyRoom.JoinGamer(&player)
+					if err != nil {
+						log.Errorf("%s 玩家加入房間失敗: %v", logger.LOG_Main, err)
 						packReadChan.ClosePackReadStopChan()
 						return
 					}

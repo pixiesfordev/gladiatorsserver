@@ -1,9 +1,8 @@
 package packet
 
 import (
-	// logger "matchgame/logger"
-	// log "github.com/sirupsen/logrus"
-	"gladiatorsGoModule/utility"
+// logger "matchgame/logger"
+// log "github.com/sirupsen/logrus"
 )
 
 type BattleState struct {
@@ -33,11 +32,23 @@ type PackBribeSkill struct {
 }
 
 type PackGladiator struct {
-	HP        int
-	Vigor     int
-	BattlePos int             // 戰鬥位置
-	StagePos  utility.Vector2 // 場景上實際位置
-	Buffers   []PackBuffer
+	JsonGladiatorID int
+	JsonSkillIDs    [6]int
+	JsonTraitIDs    []int
+	JsonEquipIDs    []int
+	HP              int
+	CurHP           int
+	CurVigor        float64
+	VigorRegen      float64
+	STR             int
+	DEF             int
+	MDEF            int
+	CRIT            float64
+	INIT            int
+	Knockback       int
+	BattlePos       int        // 戰鬥位置
+	StagePos        [2]float64 // 場景上實際位置
+	Buffers         []PackBuffer
 }
 type PackBuffer struct {
 	JsonID string
