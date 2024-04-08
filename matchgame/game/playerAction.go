@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gladiatorsGoModule/gameJson"
 	mongo "gladiatorsGoModule/mongo"
 	logger "matchgame/logger"
 	"matchgame/packet"
@@ -66,14 +67,34 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		MyRoom.BroadCastPacket("", pack)
 	// ==========賄賂==========
 	case packet.BRIBE:
-		// r.SendPacketToPlayer(player.Index, &packet.Pack{
-		// 	CMD:    packet.UPDATESCENE_TOCLIENT,
-		// 	PackID: -1,
-		// 	Content: &packet.UpdateScene_ToClient{
-		// 		Spawns:       r.MSpawner.Spawns,
-		// 		SceneEffects: r.SceneEffects,
-		// 	},
-		// })
+		content := packet.Bribe{}
+		err := json.Unmarshal([]byte(pack.GetContentStr()), &content)
+		if err != nil {
+			return fmt.Errorf("%s parse %s failed", logger.LOG_Action, pack.CMD)
+		}
+		for i, jsonID := range content.JsonBribeIDs {
+			if jsonID == 0 {
+				player.BribeSkills[i] = nil
+			} else {
+				jsonBribe, err := gameJson.GetJsonBribe(jsonID)
+				if err != nil {
+					return fmt.Errorf("%s gameJson.GetJsonBribe(jsonID)錯誤: %v", logger.LOG_Action, err)
+				}
+				player.BribeSkills[i] = &BribeSkill{
+					Used:   false,
+					MyJson: jsonBribe,
+				}
+			}
+		}
+		pack := packet.Pack{
+			CMD:    packet.BRIBE_TOCLIENT,
+			PackID: -1,
+			Content: &packet.Bribe_ToClient{
+				Players:  MyRoom.GetPackPlayerStates(),
+				GameTime: GameTime,
+			},
+		}
+		MyRoom.BroadCastPacket("", pack)
 	}
 
 	return nil

@@ -1,11 +1,15 @@
 package game
 
-import ()
+import (
+	"gladiatorsGoModule/setting"
+	"matchgame/packet"
+)
 
 // 玩家
 type Bot struct {
-	ID          string     // DBot的ID
-	MyGladiator *Gladiator // 使用中的鬥士
+	ID          string         // DBot的ID
+	MyGladiator *Gladiator     // 使用中的鬥士
+	BribeSkills [2]*BribeSkill // 賄賂技能
 }
 
 func (bot *Bot) GetID() string {
@@ -25,4 +29,27 @@ func (bot *Bot) GetGladiator() *Gladiator {
 
 func (bot *Bot) IsReady() bool {
 	return true
+}
+func (bot *Bot) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackBribeSkill {
+	var botBribes [2]packet.PackBribeSkill
+
+	botBribes[0] = packet.PackBribeSkill{
+		JsonID: bot.BribeSkills[0].MyJson.ID,
+		Used:   bot.BribeSkills[0].Used,
+	}
+	botBribes[1] = packet.PackBribeSkill{
+		JsonID: bot.BribeSkills[1].MyJson.ID,
+		Used:   bot.BribeSkills[1].Used,
+	}
+
+	return botBribes
+}
+
+func (bot *Bot) GetPackPlayerState() packet.PackPlayerState {
+	packBotState := packet.PackPlayerState{
+		ID:          bot.GetID(),
+		BribeSkills: bot.GetPackPlayerBribes(),
+		Gladiator:   bot.GetGladiator().GetPackGladiator(),
+	}
+	return packBotState
 }

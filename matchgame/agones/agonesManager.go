@@ -2,8 +2,8 @@ package agones
 
 import (
 	agonesv1 "agones.dev/agones/pkg/apis/agones/v1"
+	"matchgame/game"
 	"matchgame/logger"
-	gSetting "matchgame/setting"
 	"os"
 	"time"
 	// serverSDK "agones.dev/agones/pkg/sdk"
@@ -72,7 +72,7 @@ func AgonesHealthPin(stop <-chan struct{}) {
 		log.Errorf("%s 尚未初始化AgonesSDK", logger.LOG_Main)
 		return
 	}
-	tick := time.Tick(gSetting.AGONES_HEALTH_PIN_INTERVAL_SEC * time.Second)
+	tick := time.Tick(game.AGONES_HEALTH_PIN_INTERVAL_SEC * time.Second)
 	for {
 		if err := AgonesSDK.Health(); err != nil {
 			log.Errorf("%s ping agones server錯誤: %v", logger.LOG_Main, err)

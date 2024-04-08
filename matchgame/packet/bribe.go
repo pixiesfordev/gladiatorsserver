@@ -1,9 +1,9 @@
 package packet
 
-import (
+import "gladiatorsGoModule/setting"
+
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
-)
 
 type Bribe struct {
 	CMDContent
@@ -12,8 +12,6 @@ type Bribe struct {
 
 type Bribe_ToClient struct {
 	CMDContent
-	PlayerBribes [2]PackPlayerBribe
-}
-type PackPlayerBribe struct {
-	JsonBribeIDs [2]int
+	Players  [setting.PLAYER_NUMBER]PackPlayerState
+	GameTime float64
 }

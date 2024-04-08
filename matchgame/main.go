@@ -85,7 +85,7 @@ func main() {
 		go signalListen()
 	}
 	InitGameJson() // 初始化遊戲Json資料
-	roomChan := make(chan *game.Room)
+	roomCreatedChan := make(chan struct{})
 	var packID = int64(0)
 
 	if game.Mode == "standard" { // standard模式
@@ -137,7 +137,7 @@ func main() {
 				log.Infof("%s Port: %v", logger.LOG_Main, gs.Status.Ports[0].Port)
 				log.Infof("%s Get Info Finished", logger.LOG_Main)
 
-				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, int(gs.Status.Ports[0].Port), podName, nodeName, matchmakerPodName, roomChan)
+				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, int(gs.Status.Ports[0].Port), podName, nodeName, matchmakerPodName, roomCreatedChan)
 				agones.SetServerState(agonesv1.GameServerStateAllocated) // 設定房間為Allocated(agones應該會在WatchGameServer後自動設定為Allocated但這邊還是主動設定)
 				log.Infof("%s GameServer狀態為: %s", logger.LOG_Main, gs.Status.State)
 				log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
@@ -225,7 +225,7 @@ func main() {
 			log.Infof("%s Port: %v", logger.LOG_Main, port)
 			log.Infof("%s Get Info Finished", logger.LOG_Main)
 
-			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int(myPort), PodName, nodeName, matchmakerPodName, roomChan)
+			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int(myPort), PodName, nodeName, matchmakerPodName, roomCreatedChan)
 			log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
 		}()
 	}
@@ -238,8 +238,9 @@ func main() {
 		agones.SetServerState(agonesv1.GameServerStateReady) // 設定房間為Ready(才會被Matchmaker分配玩家進來)
 		go agones.AgonesHealthPin(stopChan)                  // Agones伺服器健康檢查
 	}
-	room := <-roomChan
-	close(roomChan)
+	game.InitGame() // 初始化遊戲
+	<-roomCreatedChan
+	close(roomCreatedChan)
 	// ====================Room資料設定完成====================
 	log.Infof("%s ==============Room資料設定完成==============", logger.LOG_Main)
 
@@ -247,8 +248,7 @@ func main() {
 	src := ":" + *port
 	go openConnectTCP(stopChan, src)
 	// go openConnectUDP(stopChan, src)
-
-	go room.RoomTimer(stopChan) // 開始遊戲房計時器
+	go game.RunGameTimer(stopChan) // 開始遊戲房計時器
 
 	select {
 	case <-stopChan:

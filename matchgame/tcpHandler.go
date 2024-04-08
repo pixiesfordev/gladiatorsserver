@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/rand"
 	logger "matchgame/logger"
-	gSetting "matchgame/setting"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -57,9 +56,9 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 	isAuth := false
 	encoder := json.NewEncoder(conn)
 	decoder := json.NewDecoder(conn)
-	conn.SetReadDeadline(time.Now().Add(gSetting.TCP_CONN_TIMEOUT_SEC * time.Second))
+	conn.SetReadDeadline(time.Now().Add(game.TCP_CONN_TIMEOUT_SEC * time.Second))
 
-	packReadChan := &gSetting.LoopChan{
+	packReadChan := &game.LoopChan{
 		StopChan:      make(chan struct{}, 1),
 		ChanCloseOnce: sync.Once{},
 	}
@@ -147,13 +146,13 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					player = game.Player{
 						ID:           dbPlayer.ID,
 						LastUpdateAt: time.Now(),
-						ConnTCP: &gSetting.ConnectionTCP{
+						ConnTCP: &game.ConnectionTCP{
 							Conn:       conn,
 							MyLoopChan: packReadChan,
 							Encoder:    encoder,
 							Decoder:    decoder,
 						},
-						ConnUDP: &gSetting.ConnectionUDP{
+						ConnUDP: &game.ConnectionUDP{
 							ConnToken: newConnToken,
 						},
 					}

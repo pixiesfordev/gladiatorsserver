@@ -8,9 +8,7 @@ import (
 	// "matchgame/agones"
 	logger "matchgame/logger"
 	"matchgame/packet"
-	gSetting "matchgame/setting"
 	"net"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -26,14 +24,12 @@ type Room struct {
 	RoomName    string             // 房間名稱(也是DB文件ID)(房主UID+時間轉 MD5)
 	GameState   GameState          // 遊戲狀態
 	DBMatchgame *mongo.DBMatchgame // DB遊戲房資料
-	GameTime    float64            // 遊戲開始X秒
-	MutexLock   sync.RWMutex
+	MutexLock sync.RWMutex
 }
 
 var MyRoom *Room // 房間
 
-
-func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomName string, ip string, port int, podName string, nodeName string, matchmakerPodName string, roomChan chan *Room) {
+func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomName string, ip string, port int, podName string, nodeName string, matchmakerPodName string, roomCreatedChan chan struct{}) {
 	log.Infof("%s InitGameRoom開始", logger.LOG_Room)
 	if MyRoom != nil {
 		log.Errorf("%s MyRoom已經被初始化過", logger.LOG_Room)
@@ -60,22 +56,10 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 		RoomName:    roomName,
 		GameState:   Init,
 		DBMatchgame: &dbMatchgame,
-		GameTime:    0,
 	}
 	MyRoom.UpdateMatchgameToDB()
-	go RoomLoop() // 開始房間循環
 	log.Infof("%s InitGameRoom完成", logger.LOG_Room)
-	roomChan <- MyRoom
-}
-
-// 房間循環
-func RoomLoop() {
-	ticker := time.NewTicker(gSetting.ROOMLOOP_MS * time.Millisecond)
-	defer ticker.Stop()
-
-	for range ticker.C {
-
-	}
+	roomCreatedChan <- struct{}{}
 }
 
 // 傳入玩家ID取得Player
@@ -336,9 +320,28 @@ func (r *Room) GetPackPlayers() [setting.PLAYER_NUMBER]packet.PackPlayer {
 			continue
 		}
 		players[idx] = packet.PackPlayer{
-			DBPlayerID: gamer.GetID(),
-			Gladiator:  gamer.GetGladiator().GetPackGladiator(),
+			ID:        gamer.GetID(),
+			Gladiator: gamer.GetGladiator().GetPackGladiator(),
 		}
+		idx++
+	}
+	return players
+}
+
+// 取得要送封包的玩家陣列
+func (r *Room) GetPackPlayerStates() [setting.PLAYER_NUMBER]packet.PackPlayerState {
+	var players [setting.PLAYER_NUMBER]packet.PackPlayerState
+	idx := 0
+	for _, gamer := range r.Gamers {
+		if gamer == nil {
+			players[idx] = packet.PackPlayerState{}
+		} else {
+			players[idx] = packet.PackPlayerState{
+				ID:        gamer.GetID(),
+				Gladiator: gamer.GetGladiator().GetPackGladiator(),
+			}
+		}
+
 		idx++
 	}
 	return players
@@ -388,37 +391,6 @@ func (r *Room) BroadCastPacket_UDP(exceptPlayerID string, sendData []byte) {
 				log.Errorf("%s (UDP)送封包錯誤 %s", logger.LOG_Room, sendErr.Error())
 				return
 			}
-		}
-	}
-}
-
-// 遊戲計時器
-func (r *Room) RoomTimer(stop chan struct{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Errorf("%s RoomTimer錯誤: %v.\n%s", logger.LOG_Room, err, string(debug.Stack()))
-			stop <- struct{}{}
-		}
-	}()
-	ticker := time.NewTicker(time.Duration(TIMELOOP_MILISECS) * time.Millisecond)
-	for {
-		select {
-		case <-ticker.C:
-			r.GameTime += float64(TIMELOOP_MILISECS) / float64(1000) // 更新遊戲時間
-			for _, gamer := range r.Gamers {
-				if player, _ := gamer.(*Player); player != nil {
-
-					nowTime := time.Now()
-					// 玩家無心跳超過X秒就踢出遊戲房
-					// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
-					if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
-						r.ResetRoom()
-					}
-				}
-
-			}
-		case <-stop:
-			return
 		}
 	}
 }

@@ -34,7 +34,7 @@ func GetNewBot() (*Bot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gameJson.GetRndJsonGladiator()錯誤: %v", err)
 	}
-
+	// 隨機角鬥士技能
 	allJsonSkills, err := gameJson.GetJsonSkills()
 	if err != nil {
 		return nil, fmt.Errorf("gameJson.GetJsonSkills()錯誤: %v", err)
@@ -47,17 +47,19 @@ func GetNewBot() (*Bot, error) {
 	for i, _ := range rndJsonSkills {
 		jsonSkills[i] = rndJsonSkills[i]
 	}
+	// 設定天賦技能
 	talentSkillJson, err := gameJson.GetJsonSkill(rndJsonGladiator.ID)
 	if err != nil {
 		return nil, fmt.Errorf("gameJson.GetJsonSkill(rndJsonGladiator.ID)錯誤: %v", err)
 	}
 	jsonSkills[5] = talentSkillJson
+	// 設定角鬥士
 	gladiator := Gladiator{
 		ID:            botID,
 		JsonGladiator: rndJsonGladiator,
 		JsonSkills:    jsonSkills,
 	}
-
+	// 設定Bot
 	bot := &Bot{
 		ID:          botID,
 		MyGladiator: &gladiator,

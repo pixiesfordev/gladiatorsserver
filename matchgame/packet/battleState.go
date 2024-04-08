@@ -11,19 +11,14 @@ type BattleState struct {
 
 type BattleState_ToClient struct {
 	CMDContent
-	Players  []PackPlayerState
+	Players  [2]PackPlayerState
 	GameTime float64
 }
 
 type PackPlayerState struct {
-	Skills      []PackSkill
-	BribeSkills []PackBribeSkill
-	Gladiators  []PackGladiator
-}
-
-type PackSkill struct {
-	JsonID int
-	On     bool
+	ID          string // 玩家DBID
+	BribeSkills [2]PackBribeSkill
+	Gladiator  PackGladiator
 }
 
 type PackBribeSkill struct {
@@ -36,6 +31,7 @@ type PackGladiator struct {
 	JsonSkillIDs    [6]int
 	JsonTraitIDs    []int
 	JsonEquipIDs    []int
+	CurJsonSkillIDs [4]PackSkill
 	HP              int
 	CurHP           int
 	CurVigor        float64
@@ -50,6 +46,12 @@ type PackGladiator struct {
 	StagePos        [2]float64 // 場景上實際位置
 	Buffers         []PackBuffer
 }
+
+type PackSkill struct {
+	JsonID int
+	On     bool
+}
+
 type PackBuffer struct {
 	JsonID string
 	Stack  int

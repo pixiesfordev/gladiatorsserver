@@ -4,8 +4,9 @@ import (
 	// "fmt"
 	// "gladiatorsGoModule/gameJson"
 	// "gladiatorsGoModule/utility"
+	"gladiatorsGoModule/setting"
 	"matchgame/logger"
-	gSetting "matchgame/setting"
+	"matchgame/packet"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -17,17 +18,20 @@ type Gamer interface {
 	AddGold(value int64)
 	GetGladiator() *Gladiator
 	IsReady() bool
+	GetPackPlayerState() packet.PackPlayerState
+	GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackBribeSkill
 }
 
 // 玩家
 type Player struct {
-	ID           string                  // DBPlayer的_id
-	myGladiator  *Gladiator              // 使用中的鬥士
-	gold         int64                   // 玩家金幣
-	ready        bool                    // 是否準備好了(進遊戲且收到雙方玩家資料後, client會送準備封包設定ready為true)
-	LastUpdateAt time.Time               // 上次收到玩家更新封包(心跳)
-	ConnTCP      *gSetting.ConnectionTCP // TCP連線
-	ConnUDP      *gSetting.ConnectionUDP // UDP連線
+	ID           string         // DBPlayer的_id
+	myGladiator  *Gladiator     // 使用中的鬥士
+	gold         int64          // 玩家金幣
+	ready        bool           // 是否準備好了(進遊戲且收到雙方玩家資料後, client會送準備封包設定ready為true)
+	BribeSkills  [2]*BribeSkill // 賄賂技能
+	LastUpdateAt time.Time      // 上次收到玩家更新封包(心跳)
+	ConnTCP      *ConnectionTCP // TCP連線
+	ConnUDP      *ConnectionUDP // UDP連線
 }
 
 func (player *Player) GetID() string {
@@ -68,4 +72,28 @@ func (player *Player) CloseConnection() {
 		player.ConnUDP = nil
 	}
 	log.Infof("%s 關閉玩家(%s)連線", logger.LOG_Player, player.GetID())
+}
+
+func (player *Player) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackBribeSkill {
+	var playerBribes [2]packet.PackBribeSkill
+
+	playerBribes[0] = packet.PackBribeSkill{
+		JsonID: player.BribeSkills[0].MyJson.ID,
+		Used:   player.BribeSkills[0].Used,
+	}
+	playerBribes[1] = packet.PackBribeSkill{
+		JsonID: player.BribeSkills[1].MyJson.ID,
+		Used:   player.BribeSkills[1].Used,
+	}
+
+	return playerBribes
+}
+
+func (player *Player) GetPackPlayerState() packet.PackPlayerState {
+	packPlayerState := packet.PackPlayerState{
+		ID:          player.GetID(),
+		BribeSkills: player.GetPackPlayerBribes(),
+		Gladiator:   player.GetGladiator().GetPackGladiator(),
+	}
+	return packPlayerState
 }
