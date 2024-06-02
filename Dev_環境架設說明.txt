@@ -10,19 +10,19 @@
 gcloud init 
 gcloud components install kubectl
 gcloud auth login
-gcloud config set project mygladiators-dev
+gcloud config set project gladiatortest1
 # 設定應用程式認證(ADC, Application Default Credentials)
 # 先移除應用程式認證, 再重新認證(如果不是全新環境, 可能本地已經有使用的ADC文件, 換新專案時也要一併更新ADC文件)
 gcloud auth application-default revoke
 gcloud auth application-default login
-gcloud auth application-default set-quota-project mygladiators-dev
+gcloud auth application-default set-quota-project gladiatortest1
 
 
 # 在開始建環境先確保登入的GCP帳戶擁有Project IAM Admin權限(在專案持有帳戶加), 如果是使用帳戶擁有者就可以不用執行此步驟
 # 透過cli補其他權限, 要參考iam腳色清單可以查看官方文件: https://cloud.google.com/iam/docs/understanding-roles
 # projectID跟目標帳戶要記得改, 反註解並使用以下語法:
-# gcloud projects add-iam-policy-binding mygladiators-dev `
-# --member=user:scoz@auro.gg `
+# gcloud projects add-iam-policy-binding gladiatortest1 `
+# --member=user:scozirge2@gmail.com `
 # --role=roles/editor `
 # --role=roles/artifactregistry.admin `
 # --role=roles/container.admin `
@@ -32,7 +32,7 @@ gcloud auth application-default set-quota-project mygladiators-dev
 # --role=roles/serviceusage.serviceUsageConsumer `
 # --role=roles/storage.admin
 
-
+gcloud projects add-iam-policy-binding gladiatortest1 --member=user:scozirge2@gmail.com --role=roles/editor
 
 # 服務帳戶管理員
 # 編輯者
@@ -41,14 +41,14 @@ gcloud auth application-default set-quota-project mygladiators-dev
 # Storage 管理員
 
 # 可以用以下指令來查看是否Iam都有加到
-gcloud projects get-iam-policy mygladiators-dev
+gcloud projects get-iam-policy gladiatortest1
 
 
 # 設定GCS GameJson位置
 # 1. 搜尋gladiators_gamejson_dev並取代目前的位置
 # 2. Enable GCS 並 建立對應位置資料夾
-gcloud services enable storage-api.googleapis.com --project=mygladiators-dev
-gsutil mb gs://gladiators_gamejson_dev/
+gcloud services enable storage-api.googleapis.com --project=gladiatortest1
+gsutil mb gs://gladiators_test1_gamejson_dev/
 
 
 # =========建立cluster步驟=========
@@ -58,11 +58,11 @@ gsutil mb gs://gladiators_gamejson_dev/
 # node用2台就好
 # 機器類型使用e2-standard-4, 這是相對便宜的機器, 機器類型可以參考 https://cloud.google.com/compute/docs/general-purpose-machines
 # --workload-pool是啟用Workload Identity(用於讓k8s下的pod能使用GCP的服務), 使用方式為--workload-pool PROJECT_ID.svc.id.goog
-gcloud services enable container.googleapis.com --project=mygladiators-dev
-g m-nodes=1 --enable-image-streaming --machine-type=e2-standard-4 --workload-pool=mygladiators-dev.svc.id.goog
+gcloud services enable container.googleapis.com --project=gladiatortest1
+gcloud container clusters create cluster-gladiators --zone=asia-east1-c --release-channel=regular --tags=gladiators --scopes=gke-default --num-nodes=1 --enable-image-streaming --machine-type=e2-standard-4 --workload-pool=gladiatortest1.svc.id.goog
 # 官方建議新建一個Agones專用的node pool, 避免跟遊戲server的機器共用, 但是Dev環境可以不用這麼做，所以註解掉，如果有需要可以使用註解的內容
 # gcloud container node-pools create agones-system --cluster=cluster-gladiators --zone=asia-east1-c --node-taints agones.dev/agones-system=true:NoExecute --node-labels agones.dev/agones-system=true --num-nodes=1 --machine-type=e2-standard-4
-# gcloud container clusters update cluster-gladiators --zone=asia-east1-c --workload-pool=mygladiators-dev.svc.id.goog
+# gcloud container clusters update cluster-gladiators --zone=asia-east1-c --workload-pool=gladiatortest1.svc.id.goog
 # 新增命名空間matchmaker(配房伺服器) 與 matchgame(遊戲伺服器)
 kubectl create namespace gladiators-service
 kubectl create namespace gladiators-gameserver
@@ -71,7 +71,7 @@ gcloud container clusters describe cluster-gladiators --zone=asia-east1-c --form
 # kubectl annotate serviceaccount --namespace gladiators-service [SERVICE_ACCOUNT_NAME] iam.gke.io/gcp-service-account=[GCP_SERVICE_ACCOUNT_EMAIL]
 
 # 設定K8s上下文(使用yaml佈署應用時, 會根據k8s上下文決定佈署到哪個專案的哪個cluster)
-gcloud container clusters get-credentials cluster-gladiators --zone=asia-east1-c --project mygladiators-dev
+gcloud container clusters get-credentials cluster-gladiators --zone=asia-east1-c --project gladiatortest1
 
 
 
@@ -79,19 +79,19 @@ gcloud container clusters get-credentials cluster-gladiators --zone=asia-east1-c
 # 建立service account
 gcloud iam service-accounts create gcseditor --description "編輯storage 用" --display-name "GCSEditor"
 # 為service account加入GCS Viewer權限
-gcloud projects add-iam-policy-binding mygladiators-dev `
-  --member="serviceAccount:gcseditor@mygladiators-dev.iam.gserviceaccount.com" `
+gcloud projects add-iam-policy-binding gladiatortest1 `
+  --member="serviceAccount:gcseditor@gladiatortest1.iam.gserviceaccount.com" `
   --role="roles/storage.objectViewer"
-# 為命名空間添加Annotation(註解), 註解是key=value的形式讓同個命名空間可以取用, 下面的例子key是iam.gke.io/gcp-service-account, value是gcseditor@mygladiators-dev.iam.gserviceaccount.com
-kubectl annotate namespace gladiators-service "iam.gke.io/gcp-service-account=gcseditor@mygladiators-dev.iam.gserviceaccount.com"
-kubectl annotate namespace gladiators-gameserver "iam.gke.io/gcp-service-account=gcseditor@mygladiators-dev.iam.gserviceaccount.com"
+# 為命名空間添加Annotation(註解), 註解是key=value的形式讓同個命名空間可以取用, 下面的例子key是iam.gke.io/gcp-service-account, value是gcseditor@gladiatortest1.iam.gserviceaccount.com
+kubectl annotate namespace gladiators-service "iam.gke.io/gcp-service-account=gcseditor@gladiatortest1.iam.gserviceaccount.com"
+kubectl annotate namespace gladiators-gameserver "iam.gke.io/gcp-service-account=gcseditor@gladiatortest1.iam.gserviceaccount.com"
 # 為 gladiators-service 命名空間的 default 服務帳戶綁定 IAM 策略
-gcloud iam service-accounts add-iam-policy-binding gcseditor@mygladiators-dev.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:mygladiators-dev.svc.id.goog[gladiators-service/default]"
+gcloud iam service-accounts add-iam-policy-binding gcseditor@gladiatortest1.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:gladiatortest1.svc.id.goog[gladiators-service/default]"
 # 為 gladiators-gameserver 命名空間的 default 服務帳戶綁定 IAM 策略
-gcloud iam service-accounts add-iam-policy-binding gcseditor@mygladiators-dev.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:mygladiators-dev.svc.id.goog[gladiators-gameserver/default]"
+gcloud iam service-accounts add-iam-policy-binding gcseditor@gladiatortest1.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:gladiatortest1.svc.id.goog[gladiators-gameserver/default]"
 # 將K8s的服務帳戶與GCP的服務帳戶綁定(讓k8s的default綁定GCP的gcseditor綁定)
-kubectl annotate serviceaccount default -n gladiators-service iam.gke.io/gcp-service-account=gcseditor@mygladiators-dev.iam.gserviceaccount.com
-kubectl annotate serviceaccount default -n gladiators-gameserver iam.gke.io/gcp-service-account=gcseditor@mygladiators-dev.iam.gserviceaccount.com
+kubectl annotate serviceaccount default -n gladiators-service iam.gke.io/gcp-service-account=gcseditor@gladiatortest1.iam.gserviceaccount.com
+kubectl annotate serviceaccount default -n gladiators-gameserver iam.gke.io/gcp-service-account=gcseditor@gladiatortest1.iam.gserviceaccount.com
 
 # =========安裝Agones步驟=========
 # 使用helm安裝agones, 參考官方文件: https://agones.dev/site/docs/installation/install-agones/helm/
@@ -109,10 +109,10 @@ kubectl get pods -n agones-system -o wide # 取得k8s的pods來確認部屬與�
 helm uninstall helm-release-gladiators --namespace=agones-system
 
 # 將K8s的服務帳戶與GCP的服務帳戶綁定(agones fleet建出來的gameserver pod是使用agones-sdk這個serviceAccount, 所以讓k8s的agones-sdk綁定GCP的gcseditor綁定)
-gcloud iam service-accounts add-iam-policy-binding gcseditor@mygladiators-dev.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:mygladiators-dev.svc.id.goog[gladiators-gameserver/agones-sdk]"
-kubectl annotate serviceaccount agones-sdk -n gladiators-gameserver iam.gke.io/gcp-service-account=gcseditor@mygladiators-dev.iam.gserviceaccount.com
+gcloud iam service-accounts add-iam-policy-binding gcseditor@gladiatortest1.iam.gserviceaccount.com --role roles/iam.workloadIdentityUser --member "serviceAccount:gladiatortest1.svc.id.goog[gladiators-gameserver/agones-sdk]"
+kubectl annotate serviceaccount agones-sdk -n gladiators-gameserver iam.gke.io/gcp-service-account=gcseditor@gladiatortest1.iam.gserviceaccount.com
 # 使用以下語法來查詢是否都有將k8s的服務帳戶綁定到GCP的服務帳戶
-gcloud container clusters describe cluster-gladiators --zone=asia-east1-c --project mygladiators-dev
+gcloud container clusters describe cluster-gladiators --zone=asia-east1-c --project gladiatortest1
 
 # 建立防火牆(這個沒設定會沒辦法透過UDP連線到server)
 gcloud compute firewall-rules create gladiators-matchmaker-firewall-tcp --allow tcp:32680 --target-tags gladiators --description "Firewall to allow Gladiators matchmaker TCP traffic"

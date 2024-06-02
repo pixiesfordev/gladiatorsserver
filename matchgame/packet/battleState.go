@@ -1,9 +1,7 @@
 package packet
 
-import (
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
-)
 
 type BattleState struct {
 	CMDContent
@@ -11,14 +9,14 @@ type BattleState struct {
 
 type BattleState_ToClient struct {
 	CMDContent
-	Players  [2]PackPlayerState
-	GameTime float64
+	PlayerStates [2]PackPlayerState
+	GameTime     float64
 }
 
 type PackPlayerState struct {
 	ID          string // 玩家DBID
 	BribeSkills [2]PackBribeSkill
-	Gladiator  PackGladiator
+	Gladiator   PackGladiator
 }
 
 type PackBribeSkill struct {
@@ -31,7 +29,7 @@ type PackGladiator struct {
 	JsonSkillIDs    [6]int
 	JsonTraitIDs    []int
 	JsonEquipIDs    []int
-	CurJsonSkillIDs [4]PackSkill
+	CurSkills       [4]PackSkill
 	HP              int
 	CurHP           int
 	CurVigor        float64
@@ -42,7 +40,8 @@ type PackGladiator struct {
 	CRIT            float64
 	INIT            int
 	Knockback       int
-	BattlePos       int        // 戰鬥位置
+	BattlePos       int // 戰鬥位置
+	Speed           int
 	StagePos        [2]float64 // 場景上實際位置
 	Buffers         []PackBuffer
 }

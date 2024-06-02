@@ -12,6 +12,5 @@ type Bribe struct {
 
 type Bribe_ToClient struct {
 	CMDContent
-	Players  [setting.PLAYER_NUMBER]PackPlayerState
-	GameTime float64
+	PlayerStates [setting.PLAYER_NUMBER]PackPlayerState
 }

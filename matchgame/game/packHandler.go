@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"gladiatorsGoModule/gameJson"
 	mongo "gladiatorsGoModule/mongo"
 	logger "matchgame/logger"
 	"matchgame/packet"
 	"net"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // 處理TCP訊息
@@ -53,18 +52,20 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				Players: MyRoom.GetPackPlayers(),
 			},
 		}
-		MyRoom.BroadCastPacket("", pack)
+		MyRoom.BroadCastPacket(-1, pack)
 		// ==========設定準備就緒==========
 	case packet.READY:
 		player.ready = true
+		playerReadies := MyRoom.GetPlayerReadies()
 		pack := packet.Pack{
 			CMD:    packet.READY_TOCLIENT,
 			PackID: -1,
 			Content: &packet.Ready_ToClient{
-				PlayerReadies: MyRoom.GetPlayerReadies(),
+				PlayerReadies: playerReadies,
 			},
 		}
-		MyRoom.BroadCastPacket("", pack)
+
+			MyRoom.BroadCastPacket(-1, pack)
 	// ==========賄賂==========
 	case packet.BRIBE:
 		content := packet.Bribe{}
@@ -90,11 +91,10 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			CMD:    packet.BRIBE_TOCLIENT,
 			PackID: -1,
 			Content: &packet.Bribe_ToClient{
-				Players:  MyRoom.GetPackPlayerStates(),
-				GameTime: GameTime,
+				PlayerStates: MyRoom.GetPackPlayerStates(),
 			},
 		}
-		MyRoom.BroadCastPacket("", pack)
+		MyRoom.BroadCastPacket(-1, pack)
 	}
 
 	return nil

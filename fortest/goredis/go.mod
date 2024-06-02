@@ -1,6 +1,6 @@
 module goredis
 
-go 1.21.0
+go 1.21.1
 
 require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

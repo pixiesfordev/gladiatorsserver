@@ -1,12 +1,12 @@
 {"Gladiator":[
-	{	"ID": 1,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 2,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 3,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 4,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 5,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 6,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 7,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 8,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 9,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0},
-	{	"ID": 10,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 100,	"INIT": 0}
+	{	"ID": 1,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 2,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 3,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 4,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 5,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 6,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 7,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 8,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 9,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20},
+	{	"ID": 10,	"HP": 300,	"STR": 20,	"DEF": 10,	"MDEF": 10,	"CRIT": 0.05,	"VigorRegen": 1.0,	"Knockback": 50,	"INIT": 0,	"Speed": 20}
 ]}

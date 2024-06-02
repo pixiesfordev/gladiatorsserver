@@ -20,11 +20,11 @@ import (
 type GameState int // 目前遊戲狀態列舉
 
 type Room struct {
-	Gamers      map[string]Gamer   // 玩家map
-	RoomName    string             // 房間名稱(也是DB文件ID)(房主UID+時間轉 MD5)
-	GameState   GameState          // 遊戲狀態
-	DBMatchgame *mongo.DBMatchgame // DB遊戲房資料
-	MutexLock sync.RWMutex
+	Gamers      [setting.PLAYER_NUMBER]Gamer // 玩家map
+	RoomName    string                       // 房間名稱(也是DB文件ID)(房主UID+時間轉 MD5)
+	GameState   GameState                    // 遊戲狀態
+	DBMatchgame *mongo.DBMatchgame           // DB遊戲房資料
+	MutexLock   sync.RWMutex
 }
 
 var MyRoom *Room // 房間
@@ -52,9 +52,9 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 	log.Infof("%s 初始化房間設定", logger.LOG_Room)
 	// 初始化房間設定
 	MyRoom = &Room{
-		Gamers:      make(map[string]Gamer),
+		Gamers:      [setting.PLAYER_NUMBER]Gamer{},
 		RoomName:    roomName,
-		GameState:   Init,
+		GameState:   GameState_Inited,
 		DBMatchgame: &dbMatchgame,
 	}
 	MyRoom.UpdateMatchgameToDB()
@@ -62,18 +62,35 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 	roomCreatedChan <- struct{}{}
 }
 
-// 傳入玩家ID取得Player
-func (r *Room) GetGamerByID(gamerID string) Gamer {
-	if gamer, ok := r.Gamers[gamerID]; ok {
-		return gamer
-	} else {
-		return nil
+func (r *Room) KickTimeoutPlayer() {
+	for _, gamer := range r.Gamers {
+		if player, _ := gamer.(*Player); player != nil {
+
+			nowTime := time.Now()
+			// 玩家無心跳超過X秒就踢出遊戲房
+			// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
+			if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
+				MyRoom.ResetRoom()
+			}
+		}
+
 	}
 }
 
+// 傳入玩家ID取得Player
+func (r *Room) GetGamerByID(gamerID string) Gamer {
+	for _, gamer := range r.Gamers {
+		if gamer != nil {
+			if gamer.GetID() == gamerID {
+				return gamer
+			}
+		}
+	}
+	return nil
+}
+
 func (r *Room) GamerExist(gamerID string) bool {
-	_, ok := r.Gamers[gamerID]
-	return ok
+	return r.GetGamerByID(gamerID) != nil
 }
 
 // 取得房間玩家數
@@ -105,7 +122,14 @@ func (r *Room) JoinGamer(gamer Gamer) error {
 		if joinErr != nil {
 			return fmt.Errorf("JoinPlayer時 r.DBMatchgame.JoinPlayer(gamer.GetID())錯誤: %v", joinErr)
 		}
-		r.Gamers[gamer.GetID()] = gamer
+		joinIdx := -1
+		for i, v := range r.Gamers {
+			if v == nil {
+				joinIdx = i
+				break
+			}
+		}
+		r.Gamers[joinIdx] = gamer
 	}
 
 	if r.GamerCount() > setting.PLAYER_NUMBER {
@@ -127,7 +151,8 @@ func (r *Room) ResetRoom() {
 		} else if bot, ok := v.(*Bot); ok {
 			r.KickBot(bot, "重置房間")
 		}
-	}
+	}	
+	r.GameState = GameState_End
 }
 
 // 將玩家踢出房間
@@ -162,7 +187,7 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 	} else {
 		log.Infof("%s 更新玩家 %s DB資料", logger.LOG_Room, player.GetID())
 	}
-	delete(r.Gamers, player.GetID())
+	r.Gamers[player.Idx] = nil
 	r.DBMatchgame.KickPlayer(player.GetID())
 	r.UpdateMatchgameToDB() // 更新房間DB
 
@@ -185,7 +210,7 @@ func (r *Room) KickBot(bot *Bot, reason string) {
 	r.MutexLock.Lock()
 	defer r.MutexLock.Unlock()
 
-	delete(r.Gamers, bot.GetID())
+	r.Gamers[bot.Idx] = nil
 	r.DBMatchgame.KickPlayer(bot.GetID())
 	r.UpdateMatchgameToDB() // 更新房間DB
 
@@ -210,14 +235,14 @@ func (r *Room) OnRoomPlayerChange() {
 
 // 透過TCPConn取得玩家ID
 func (r *Room) GetPlayerIDByTCPConn(conn net.Conn) string {
-	for id, v := range r.Gamers {
+	for _, v := range r.Gamers {
 		if player, ok := v.(*Player); ok {
 			if player.ConnTCP == nil {
 				continue
 			}
 
 			if player.ConnTCP.Conn == conn {
-				return id
+				return v.GetID()
 			}
 		}
 	}
@@ -226,14 +251,14 @@ func (r *Room) GetPlayerIDByTCPConn(conn net.Conn) string {
 
 // 透過ConnToken取得玩家座位索引
 func (r *Room) GetPlayerIdByConnToken(connToken string) string {
-	for id, v := range r.Gamers {
+	for _, v := range r.Gamers {
 		if player, ok := v.(*Player); ok {
 			if player.ConnUDP == nil {
 				continue
 			}
 
 			if player.ConnUDP.ConnToken == connToken {
-				return id
+				return v.GetID()
 			}
 		}
 	}
@@ -275,14 +300,14 @@ func (r *Room) ChangeState(state GameState) {
 	r.GameState = state
 }
 
-// 送封包給遊戲房間內所有玩家(TCP), 除了指定索引(exceptPlayerIdx)的玩家, 如果要所有玩家就傳入""就可以
-func (r *Room) BroadCastPacket(exceptPlayerID string, pack packet.Pack) {
+// 送封包給遊戲房間內所有玩家(TCP), 除了指定索引(exceptPlayerIdx)的玩家, 如果要所有玩家就傳入-1就可以
+func (r *Room) BroadCastPacket(exceptPlayerIdx int, pack packet.Pack) {
 	// if pack.CMD != packet.SPAWN_TOCLIENT {
 	// 	log.Infof("廣播封包給其他玩家 CMD: %v", pack.CMD)
 	// }
 	// 送封包給所有房間中的玩家
-	for id, gamer := range r.Gamers {
-		if id == exceptPlayerID {
+	for idx, gamer := range r.Gamers {
+		if idx == exceptPlayerIdx {
 			continue
 		}
 		if player, ok := gamer.(*Player); ok {
@@ -337,8 +362,9 @@ func (r *Room) GetPackPlayerStates() [setting.PLAYER_NUMBER]packet.PackPlayerSta
 			players[idx] = packet.PackPlayerState{}
 		} else {
 			players[idx] = packet.PackPlayerState{
-				ID:        gamer.GetID(),
-				Gladiator: gamer.GetGladiator().GetPackGladiator(),
+				ID:          gamer.GetID(),
+				BribeSkills: gamer.GetPackPlayerBribes(),
+				Gladiator:   gamer.GetGladiator().GetPackGladiator(),
 			}
 		}
 
@@ -375,13 +401,13 @@ func (r *Room) SendPacketToPlayer_UDP(playerID string, sendData []byte) {
 
 }
 
-// 送封包給遊戲房間內所有玩家(UDP), 除了指定ID(exceptPlayerID)的玩家, 如果要所有玩家就傳入-1就可以
-func (r *Room) BroadCastPacket_UDP(exceptPlayerID string, sendData []byte) {
+// 送封包給遊戲房間內所有玩家(UDP), 除了指定Idx(exceptPlayerIdx)的玩家, 如果要所有玩家就傳入-1就可以
+func (r *Room) BroadCastPacket_UDP(exceptPlayerIdx int, sendData []byte) {
 	if sendData == nil {
 		return
 	}
-	for key, gamer := range r.Gamers {
-		if exceptPlayerID == key {
+	for idx, gamer := range r.Gamers {
+		if exceptPlayerIdx == idx {
 			continue
 		}
 		if player, _ := gamer.(*Player); player != nil {

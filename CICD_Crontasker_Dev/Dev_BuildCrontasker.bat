@@ -28,11 +28,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -command "(Get-Content crontasker\
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Build image=======
-docker build --no-cache -f crontasker/Dockerfile -t asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-crontasker:0.1.1 .
+docker build --no-cache -f crontasker/Dockerfile -t asia-east1-docker.pkg.dev/gladiatortest1/gladiators/gladiators-crontasker:0.1.1 .
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Push image=======
-docker push asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-crontasker:0.1.1
+docker push asia-east1-docker.pkg.dev/gladiatortest1/gladiators/gladiators-crontasker:0.1.1
 @if ERRORLEVEL 1 exit /b 1
 
 REM =======Change go.mod back to local setting=======

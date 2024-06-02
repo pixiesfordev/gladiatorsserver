@@ -16,9 +16,11 @@ import (
 )
 
 const (
-	Init GameState = iota
-	Start
-	End
+	GameState_Inited GameState = iota
+	GameState_WaitingPlayers
+	GameState_Bribing
+	GameState_Started
+	GameState_End
 )
 
 const (
@@ -29,7 +31,17 @@ const (
 	TCP_CONN_TIMEOUT_SEC                   = 120   // TCP連線逾時時間X秒
 	TIMELOOP_MILISECS              int     = 100   // 遊戲每X毫秒循環
 	KICK_PLAYER_SECS               float64 = 20    // 最長允許玩家無心跳X秒後踢出遊戲房
-	BribeSkillCount                        = 6     // 有幾個賄賂技能可以購買
+	MarketBribeSkillCount                  = 6     // 有幾個賄賂技能可以購買
+	BribeSkillCount                        = 2     // 玩家可以買幾個賄賂技能
+	GladiatorSkillCount                    = 6     // 玩家有幾個技能
+)
+
+// 戰鬥
+const (
+	WallPos          = 100 // 牆壁的位置, 中心點距離牆壁的單位數, 100代表距離中心點100單位的位置是牆壁, 也就是場地總共有200單位
+	InitGladiatorPos = 50  // 雙方角鬥士初始位置, 距離中心點50單位的位置
+	GridUnit         = 20  // 每X單位(unit)算1格(grid)
+
 )
 
 var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
@@ -37,8 +49,10 @@ var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
 // standard:一般版本
 // non-agones: 個人測試模式(不使用Agones服務, non-agones的連線方式不會透過Matchmaker分配房間再把ip回傳給client, 而是直接讓client去連資料庫matchgame的ip)
 var Mode string
-var GameTime = float64(0)                                // 遊戲開始X秒
-var MarketJsonBribes [BribeSkillCount]gameJson.JsonBribe // 本局遊戲可購買的賄賂技能清單
+var GameTime = float64(0)                                      // 遊戲開始X秒
+var MarketJsonBribes [MarketBribeSkillCount]gameJson.JsonBribe // 本局遊戲可購買的賄賂技能清單
+var LeftGamer Gamer                                            // 左方玩家第1位玩家
+var RightGamer Gamer                                           // 右方玩家第2位玩家
 
 func InitGame() {
 	var err error
@@ -48,15 +62,15 @@ func InitGame() {
 		return
 	}
 }
-func GetRndBribeSkills() ([BribeSkillCount]gameJson.JsonBribe, error) {
+func GetRndBribeSkills() ([MarketBribeSkillCount]gameJson.JsonBribe, error) {
 	allJsonBribes, err := gameJson.GetJsonBribes()
 	if err != nil {
-		return [BribeSkillCount]gameJson.JsonBribe{}, fmt.Errorf("gameJson.GetJsonSkills()錯誤: %v", err)
+		return [MarketBribeSkillCount]gameJson.JsonBribe{}, fmt.Errorf("gameJson.GetJsonSkills()錯誤: %v", err)
 	}
-	var jsonBribes [BribeSkillCount]gameJson.JsonBribe
-	rndJsonBribes, err := utility.GetRandomNumberOfTFromMap(allJsonBribes, BribeSkillCount)
+	var jsonBribes [MarketBribeSkillCount]gameJson.JsonBribe
+	rndJsonBribes, err := utility.GetRandomNumberOfTFromMap(allJsonBribes, MarketBribeSkillCount)
 	if err != nil {
-		return [BribeSkillCount]gameJson.JsonBribe{}, fmt.Errorf("utility.GetRandomNumberOfTFromMap錯誤: %v", err)
+		return [MarketBribeSkillCount]gameJson.JsonBribe{}, fmt.Errorf("utility.GetRandomNumberOfTFromMap錯誤: %v", err)
 	}
 	for i, _ := range rndJsonBribes {
 		jsonBribes[i] = rndJsonBribes[i]
@@ -102,21 +116,35 @@ func RunGameTimer(stop chan struct{}) {
 	for {
 		select {
 		case <-ticker.C:
-			GameTime += float64(TIMELOOP_MILISECS) / float64(1000) // 更新遊戲時間
-			for _, gamer := range MyRoom.Gamers {
-				if player, _ := gamer.(*Player); player != nil {
-
-					nowTime := time.Now()
-					// 玩家無心跳超過X秒就踢出遊戲房
-					// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
-					if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
-						MyRoom.ResetRoom()
-					}
-				}
-
+			MyRoom.KickTimeoutPlayer()
+			if MyRoom.GameState == GameState_Started {
+				TimePass()
 			}
 		case <-stop:
 			return
 		}
 	}
+}
+
+func TimePass() {
+	GameTime += float64(TIMELOOP_MILISECS) / float64(1000) // 更新遊戲時間
+
+	// 腳色移動
+	MyRoom.Gamers[0].GetGladiator().Move()
+	MyRoom.Gamers[1].GetGladiator().Move()
+	log.Errorf("Left Unit: %v Grid: %v", MyRoom.Gamers[0].GetGladiator().CurUnit, MyRoom.Gamers[0].GetGladiator().CurGrid())
+	log.Errorf("Right Unit: %v Grid: %v", MyRoom.Gamers[1].GetGladiator().CurUnit, MyRoom.Gamers[1].GetGladiator().CurGrid())
+
+	// 碰撞
+	if IsCollide() {
+		RunCollision()
+	}
+}
+
+func IsCollide() bool {
+	return LeftGamer.GetGladiator().CurGrid() >= RightGamer.GetGladiator().CurGrid()
+}
+
+func RunCollision() {
+
 }

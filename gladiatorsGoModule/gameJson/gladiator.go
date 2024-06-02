@@ -19,6 +19,7 @@ type JsonGladiator struct {
 	VigorRegen float64 `json:"VigorRegen"`
 	Knockback  int     `json:"Knockback"`
 	INIT       int     `json:"INIT"`
+	Speed      int     `json:"Speed"`
 }
 
 func (jsonData JsonGladiator) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {

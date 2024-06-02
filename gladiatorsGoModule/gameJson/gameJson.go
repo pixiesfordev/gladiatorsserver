@@ -41,7 +41,6 @@ func Init(env string) error {
 
 	// 執行查詢
 	item := bucket.Objects(ctx, query)
-	index := 0
 	for {
 		attrs, err := item.Next()
 		if err == iterator.Done {
@@ -53,7 +52,6 @@ func Init(env string) error {
 
 		// 檢查是否為.json檔案
 		if len(attrs.Name) > 5 && attrs.Name[len(attrs.Name)-5:] == ".json" {
-			index++
 			object := bucket.Object(attrs.Name)
 			reader, err := object.NewReader(ctx)
 			if err != nil {
@@ -74,8 +72,12 @@ func Init(env string) error {
 				SetJsonDic(jsonName, data, JsonGladiator{})
 			case JsonName.Trait:
 				SetJsonDic(jsonName, data, TraitJsonData{})
+			case JsonName.Bribe:
+				SetJsonDic(jsonName, data, JsonBribe{})
 			case JsonName.Skill:
 				SetJsonDic(jsonName, data, JsonSkill{})
+			case JsonName.SkillEffect:
+				SetJsonDic(jsonName, data, JsonSkillEffect{})
 			case JsonName.Equip:
 				SetJsonDic(jsonName, data, JsonEquip{})
 			default:
@@ -95,6 +97,7 @@ type JsonNameStruct struct {
 	Gladiator   string
 	Equip       string
 	Skill       string
+	SkillEffect string
 	Bribe       string
 	Trait       string
 }
@@ -105,6 +108,7 @@ var JsonName = JsonNameStruct{
 	Gladiator:   "Gladiator",
 	Equip:       "Equip",
 	Skill:       "Skill",
+	SkillEffect: "SkillEffect",
 	Bribe:       "Bribe",
 	Trait:       "Trait",
 }

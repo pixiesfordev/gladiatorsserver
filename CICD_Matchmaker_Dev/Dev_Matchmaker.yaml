@@ -32,7 +32,7 @@ spec:
       serviceAccountName: default # 指定使用default serviceAccount
       containers:
       - name: gladiators-matchmaker
-        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-matchmaker:0.1.1
+        image: asia-east1-docker.pkg.dev/gladiatortest1/gladiators/gladiators-matchmaker:0.1.1
         resources:
           requests:
             memory: "1024Mi"

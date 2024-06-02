@@ -10,12 +10,12 @@ const (
 	MATCHGAME_TESTVER_TCP = "gladiators-matchgame-tcp" // 個人測試用遊戲房Services TCP名稱
 	MATCHGAME_TESTVER_UDP = "gladiators-matchgame-udp" // 個人測試用遊戲房Services UDP名稱
 
-	// 遊戲房舍定
+	// 遊戲房設定
 	PLAYER_NUMBER = 2 // 遊戲房最多X位玩家
 )
 
 var EnvGCPProject = map[string]string{
-	"Dev":     "mygladiators-dev",   // 開發版
+	"Dev":     "gladiatortest1",   // 開發版
 	"Release": "mygladiators-release", // 正式版
 }
 

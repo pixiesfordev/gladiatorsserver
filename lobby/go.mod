@@ -1,6 +1,6 @@
 module lobby
 
-go 1.21.0
+go 1.21.1
 
 replace gladiatorsGoModule => ../gladiatorsGoModule // for local
 
