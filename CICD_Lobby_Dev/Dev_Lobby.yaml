@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: gladiators-lobby
-        image: asia-east1-docker.pkg.dev/gladiatortest1/gladiators/gladiators-lobby:0.1.1
+        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-lobby:0.1.1
         resources:
           requests:
             memory: "512Mi"

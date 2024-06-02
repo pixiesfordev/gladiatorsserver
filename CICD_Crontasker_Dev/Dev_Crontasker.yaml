@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: gladiators-crontasker
-        image: asia-east1-docker.pkg.dev/gladiatortest1/gladiators/gladiators-crontasker:0.1.1
+        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-crontasker:0.1.1
         resources:
           requests:
             memory: "1024Mi"

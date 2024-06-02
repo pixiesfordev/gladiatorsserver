@@ -29,11 +29,11 @@ kubectl create namespace gladiators-service
 # 移除namespace
 kubectl delete namespace gladiators-service
 # 查看防火牆設定
-gcloud compute firewall-rules list --project=gladiatortest1
+gcloud compute firewall-rules list --project=mygladiators-dev
 # 新增火牆
 gcloud compute firewall-rules create gladiators-matchgame-firewall-tcp --allow tcp:7000-8000 --target-tags gladiators --description "Gladiators firewall to allow game server tcp traffic"
 # 刪除火牆
-gcloud compute firewall-rules delete gladiators-firewall-udp --project=gladiatortest1
+gcloud compute firewall-rules delete gladiators-firewall-udp --project=mygladiators-dev
 # 查詢某tag的nodes
 gcloud compute instances list --filter="tags.items:gladiators"
 # 查看node的tag

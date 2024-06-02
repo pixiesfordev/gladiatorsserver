@@ -15,7 +15,7 @@ const (
 )
 
 var EnvGCPProject = map[string]string{
-	"Dev":     "gladiatortest1",   // 開發版
+	"Dev":     "mygladiators-dev",     // 開發版
 	"Release": "mygladiators-release", // 正式版
 }
 
