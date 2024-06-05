@@ -30,7 +30,7 @@ const (
 	AGONES_HEALTH_PIN_INTERVAL_SEC         = 1     // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
 	TCP_CONN_TIMEOUT_SEC                   = 120   // TCP連線逾時時間X秒
 	TIMELOOP_MILISECS              int     = 100   // 遊戲每X毫秒循環
-	KICK_PLAYER_SECS               float64 = 20    // 最長允許玩家無心跳X秒後踢出遊戲房
+	KICK_PLAYER_SECS               float64 = 30    // 最長允許玩家無心跳X秒後踢出遊戲房
 	MarketBribeSkillCount                  = 6     // 有幾個賄賂技能可以購買
 	BribeSkillCount                        = 2     // 玩家可以買幾個賄賂技能
 	GladiatorSkillCount                    = 6     // 玩家有幾個技能

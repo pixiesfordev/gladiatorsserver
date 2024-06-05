@@ -13,6 +13,7 @@ import (
 )
 
 type Gamer interface {
+	SetIdx(idx int)
 	GetID() string
 	GetGold() int64
 	AddGold(value int64)
@@ -35,6 +36,9 @@ type Player struct {
 	ConnUDP      *ConnectionUDP               // UDP連線
 }
 
+func (player *Player) SetIdx(idx int) {
+	player.Idx = idx
+}
 func (player *Player) GetID() string {
 	return player.ID
 }

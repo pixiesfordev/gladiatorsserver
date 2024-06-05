@@ -129,6 +129,7 @@ func (r *Room) JoinGamer(gamer Gamer) error {
 				break
 			}
 		}
+		gamer.SetIdx(joinIdx)
 		r.Gamers[joinIdx] = gamer
 	}
 
@@ -151,7 +152,7 @@ func (r *Room) ResetRoom() {
 		} else if bot, ok := v.(*Bot); ok {
 			r.KickBot(bot, "重置房間")
 		}
-	}	
+	}
 	r.GameState = GameState_End
 }
 
@@ -193,8 +194,7 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 
 	player.CloseConnection() // 關閉連線
 	r.OnRoomPlayerChange()
-
-	log.Infof("%s 踢出玩家完成", logger.LOG_Room)
+	log.Infof("%s 踢出Player完成, 目前Gamer人數: %v", logger.LOG_Room, r.GamerCount())
 }
 
 // 將Bot踢出房間
@@ -215,8 +215,7 @@ func (r *Room) KickBot(bot *Bot, reason string) {
 	r.UpdateMatchgameToDB() // 更新房間DB
 
 	r.OnRoomPlayerChange()
-
-	log.Infof("%s 踢出Bot完成", logger.LOG_Room)
+	log.Infof("%s 踢出Bot完成, 目前Gamer人數: %v", logger.LOG_Room, r.GamerCount())
 }
 
 // 房間人數有異動處理

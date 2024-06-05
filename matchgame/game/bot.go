@@ -13,6 +13,9 @@ type Bot struct {
 	BribeSkills [BribeSkillCount]*BribeSkill // 賄賂技能
 }
 
+func (bot *Bot) SetIdx(idx int) {
+	bot.Idx = idx
+}
 func (bot *Bot) GetID() string {
 	return bot.ID
 }

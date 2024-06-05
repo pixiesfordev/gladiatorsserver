@@ -59,7 +59,7 @@ gsutil mb gs://gladiators_test_gamejson_dev/
 # 機器類型使用e2-standard-4, 這是相對便宜的機器, 機器類型可以參考 https://cloud.google.com/compute/docs/general-purpose-machines
 # --workload-pool是啟用Workload Identity(用於讓k8s下的pod能使用GCP的服務), 使用方式為--workload-pool PROJECT_ID.svc.id.goog
 gcloud services enable container.googleapis.com --project=mygladiators-dev
-gcloud container clusters create cluster-gladiators --zone=asia-east1-c --release-channel=regular --tags=gladiators --scopes=gke-default --num-nodes=1 --enable-image-streaming --machine-type=e2-standard-4 --workload-pool=mygladiators-dev.svc.id.goog
+gcloud container clusters create cluster-gladiators --zone=asia-east1-c --release-channel=regular --tags=gladiators --scopes=gke-default --num-nodes=1 --enable-image-streaming --machine-type=e2-medium --workload-pool=mygladiators-dev.svc.id.goog
 # 官方建議新建一個Agones專用的node pool, 避免跟遊戲server的機器共用, 但是Dev環境可以不用這麼做，所以註解掉，如果有需要可以使用註解的內容
 # gcloud container node-pools create agones-system --cluster=cluster-gladiators --zone=asia-east1-c --node-taints agones.dev/agones-system=true:NoExecute --node-labels agones.dev/agones-system=true --num-nodes=1 --machine-type=e2-standard-4
 # gcloud container clusters update cluster-gladiators --zone=asia-east1-c --workload-pool=mygladiators-dev.svc.id.goog
