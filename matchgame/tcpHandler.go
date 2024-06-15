@@ -107,6 +107,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 							IsAuth: false,
 						},
 					})
+					continue
 				}
 				isAuth = true
 				var player game.Player

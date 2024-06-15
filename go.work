@@ -1,11 +1,10 @@
-go 1.21.1
+go 1.22.0
 
 use (
 	./crontasker
-	./fortest/goredis
-	./gofortest
 	./gladiatorsGoModule
 	./lobby
 	./matchgame
 	./matchmaker
+	./gladiatorsClient
 )

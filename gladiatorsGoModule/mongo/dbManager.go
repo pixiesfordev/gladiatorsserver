@@ -4,9 +4,8 @@ package mongo
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	logger "gladiatorsGoModule/logger"
-
-	"github.com/google/martian/log"
 	"go.mongodb.org/mongo-driver/bson"
 	mongoDriver "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -142,6 +141,7 @@ func UpdateDocByInterface(col string, id string, updateData interface{}) (*mongo
 
 	return result, nil
 }
+
 // 文件存在就更新不存在就新增
 func AddOrUpdateDocByStruct(col string, docID string, addData interface{}) (*mongoDriver.UpdateResult, error) {
 
@@ -194,6 +194,3 @@ func AddDocByStruct(col string, addData interface{}) (*mongoDriver.InsertOneResu
 	}
 	return result, nil
 }
-
-
-
