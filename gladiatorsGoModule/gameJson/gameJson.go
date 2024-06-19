@@ -72,8 +72,6 @@ func Init(env string) error {
 				SetJsonDic(jsonName, data, JsonGladiator{})
 			case JsonName.Trait:
 				SetJsonDic(jsonName, data, TraitJsonData{})
-			case JsonName.Bribe:
-				SetJsonDic(jsonName, data, JsonBribe{})
 			case JsonName.Skill:
 				SetJsonDic(jsonName, data, JsonSkill{})
 			case JsonName.SkillEffect:
@@ -98,7 +96,6 @@ type JsonNameStruct struct {
 	Equip       string
 	Skill       string
 	SkillEffect string
-	Bribe       string
 	Trait       string
 }
 
@@ -109,7 +106,6 @@ var JsonName = JsonNameStruct{
 	Equip:       "Equip",
 	Skill:       "Skill",
 	SkillEffect: "SkillEffect",
-	Bribe:       "Bribe",
 	Trait:       "Trait",
 }
 

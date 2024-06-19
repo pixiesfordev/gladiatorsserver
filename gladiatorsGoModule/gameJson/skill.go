@@ -14,6 +14,7 @@ type JsonSkill struct {
 	Activation string `json:"Activation"`
 	Initiative int    `json:"Initiative"`
 	Vigor      int    `json:"Vigor"`
+	Divine     string `json:"Divine"`
 }
 
 func (jsonData JsonSkill) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {
