@@ -31,8 +31,8 @@ const (
 	TCP_CONN_TIMEOUT_SEC                   = 120   // TCP連線逾時時間X秒
 	TIMELOOP_MILISECS              int     = 100   // 遊戲每X毫秒循環
 	KICK_PLAYER_SECS               float64 = 30    // 最長允許玩家無心跳X秒後踢出遊戲房
-	MarketBribeSkillCount                  = 6     // 有幾個賄賂技能可以購買
-	BribeSkillCount                        = 2     // 玩家可以買幾個賄賂技能
+	MarketDivineSkillCount                 = 6     // 有幾個神祉技能可以購買
+	DivineSkillCount                       = 2     // 玩家可以買幾個神祉技能
 	GladiatorSkillCount                    = 6     // 玩家有幾個技能
 )
 
@@ -49,33 +49,33 @@ var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
 // standard:一般版本
 // non-agones: 個人測試模式(不使用Agones服務, non-agones的連線方式不會透過Matchmaker分配房間再把ip回傳給client, 而是直接讓client去連資料庫matchgame的ip)
 var Mode string
-var GameTime = float64(0)                                      // 遊戲開始X秒
-var MarketJsonBribes [MarketBribeSkillCount]gameJson.JsonBribe // 本局遊戲可購買的賄賂技能清單
-var LeftGamer Gamer                                            // 左方玩家第1位玩家
-var RightGamer Gamer                                           // 右方玩家第2位玩家
+var GameTime = float64(0)                                             // 遊戲開始X秒
+var MarketDivineJsonSkills [MarketDivineSkillCount]gameJson.JsonSkill // 本局遊戲可購買的神祉技能清單
+var LeftGamer Gamer                                                   // 左方玩家第1位玩家
+var RightGamer Gamer                                                  // 右方玩家第2位玩家
 
 func InitGame() {
 	var err error
-	MarketJsonBribes, err = GetRndBribeSkills()
+	MarketDivineJsonSkills, err = GetRndBribeSkills()
 	if err != nil {
 		log.Errorf("%s InitGame: %v", logger.LOG_Game, err)
 		return
 	}
 }
-func GetRndBribeSkills() ([MarketBribeSkillCount]gameJson.JsonBribe, error) {
-	allJsonBribes, err := gameJson.GetJsonBribes()
+func GetRndBribeSkills() ([MarketDivineSkillCount]gameJson.JsonSkill, error) {
+	allJsonSkills, err := gameJson.GetJsonSkills("Divine")
 	if err != nil {
-		return [MarketBribeSkillCount]gameJson.JsonBribe{}, fmt.Errorf("gameJson.GetJsonSkills()錯誤: %v", err)
+		return [MarketDivineSkillCount]gameJson.JsonSkill{}, fmt.Errorf("gameJson.GetJsonSkills()錯誤: %v", err)
 	}
-	var jsonBribes [MarketBribeSkillCount]gameJson.JsonBribe
-	rndJsonBribes, err := utility.GetRandomNumberOfTFromMap(allJsonBribes, MarketBribeSkillCount)
+	var JsonSkills [MarketDivineSkillCount]gameJson.JsonSkill
+	rndJsonSkills, err := utility.GetRandomNumberOfTFromMap(allJsonSkills, MarketDivineSkillCount)
 	if err != nil {
-		return [MarketBribeSkillCount]gameJson.JsonBribe{}, fmt.Errorf("utility.GetRandomNumberOfTFromMap錯誤: %v", err)
+		return [MarketDivineSkillCount]gameJson.JsonSkill{}, fmt.Errorf("utility.GetRandomNumberOfTFromMap錯誤: %v", err)
 	}
-	for i, _ := range rndJsonBribes {
-		jsonBribes[i] = rndJsonBribes[i]
+	for i, _ := range rndJsonSkills {
+		JsonSkills[i] = rndJsonSkills[i]
 	}
-	return jsonBribes, nil
+	return JsonSkills, nil
 }
 
 type ConnectionTCP struct {

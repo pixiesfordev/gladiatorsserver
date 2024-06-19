@@ -4,7 +4,7 @@ import (
 	"gladiatorsGoModule/gameJson"
 )
 
-type BribeSkill struct {
+type DivineSkill struct {
 	Used   bool
-	MyJson gameJson.JsonBribe
+	MyJson gameJson.JsonSkill
 }

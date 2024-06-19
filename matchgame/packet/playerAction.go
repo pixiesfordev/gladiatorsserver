@@ -1,9 +1,7 @@
 package packet
 
-import (
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
-)
 
 // 玩家動作
 type PlayerAction struct {
@@ -20,7 +18,7 @@ type PackAction_Skill struct {
 	SkillIdx int
 }
 
-// 施放賄賂技能
+// 施放神祉技能
 type PackAction_BribeSkill struct {
 	On            bool
 	BribeSkillIdx int

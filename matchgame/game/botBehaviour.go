@@ -35,12 +35,12 @@ func GetNewBot() (*Bot, error) {
 		return nil, err
 	}
 	// 隨機角鬥士技能
-	allJsonSkills, err := gameJson.GetJsonSkills()
+	normalJsonSkills, err := gameJson.GetJsonSkills("Normal")
 	if err != nil {
 		return nil, err
 	}
 	var jsonSkills [GladiatorSkillCount]gameJson.JsonSkill
-	rndJsonSkills, err := utility.GetRandomNumberOfTFromMap(allJsonSkills, 5)
+	rndJsonSkills, err := utility.GetRandomNumberOfTFromMap(normalJsonSkills, 5)
 	if err != nil {
 		return nil, err
 	}
@@ -59,26 +59,26 @@ func GetNewBot() (*Bot, error) {
 		return nil, err
 	}
 
-	// 設定賄賂技能
-	rndJsonBribes, err := utility.GetRandomNumberOfTFromSlice(MarketJsonBribes[:], BribeSkillCount)
+	// 設定神祉技能
+	rndJsonDivineSkills, err := utility.GetRandomNumberOfTFromSlice(MarketDivineJsonSkills[:], DivineSkillCount)
 	if err != nil {
 		return nil, err
 	}
-	var bribeSkills [BribeSkillCount]*BribeSkill
-	for i, _ := range bribeSkills {
-		if i < len(rndJsonBribes) {
-			bribeSkills[i] = &BribeSkill{
+	var divineSkills [DivineSkillCount]*DivineSkill
+	for i, _ := range divineSkills {
+		if i < len(rndJsonDivineSkills) {
+			divineSkills[i] = &DivineSkill{
 				Used:   false,
-				MyJson: rndJsonBribes[i],
+				MyJson: rndJsonDivineSkills[i],
 			}
 		} else {
-			bribeSkills[i] = nil
+			divineSkills[i] = nil
 		}
 	}
 	// 設定Bot
 	bot := &Bot{
 		ID:          botID,
-		BribeSkills: bribeSkills,
+		BribeSkills: divineSkills,
 		MyGladiator: &gladiator,
 	}
 	return bot, nil

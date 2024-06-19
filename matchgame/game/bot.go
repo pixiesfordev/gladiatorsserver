@@ -7,10 +7,10 @@ import (
 
 // 玩家
 type Bot struct {
-	ID          string                       // DBot的ID
-	Idx         int                          // 第一位玩家是0(左方) 第二位玩家是1(右方)
-	MyGladiator *Gladiator                   // 使用中的鬥士
-	BribeSkills [BribeSkillCount]*BribeSkill // 賄賂技能
+	ID          string                         // DBot的ID
+	Idx         int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
+	MyGladiator *Gladiator                     // 使用中的鬥士
+	BribeSkills [DivineSkillCount]*DivineSkill // 神祉技能
 }
 
 func (bot *Bot) SetIdx(idx int) {

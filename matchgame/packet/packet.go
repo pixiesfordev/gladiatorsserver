@@ -18,8 +18,8 @@ const (
 	SETPLAYER_TOCLIENT    = "SETPLAYER_TOCLIENT"   // (TCP)設定玩家資料-送Client
 	READY                 = "READY"                // (TCP)遊戲準備就緒
 	READY_TOCLIENT        = "READY_TOCLIENT"       // (TCP)遊戲準備就緒-送Client
-	BRIBE                 = "BRIBE"                // (TCP)賄賂選擇
-	BRIBE_TOCLIENT        = "BRIBE_TOCLIENT"       // (TCP)賄賂選擇-送Client
+	BRIBE                 = "BRIBE"                // (TCP)神祉選擇
+	BRIBE_TOCLIENT        = "BRIBE_TOCLIENT"       // (TCP)神祉選擇-送Client
 	PLAYERACTION          = "PLAYERACTION"         // (TCP)玩家指令
 	PLAYERACTION_TOCLIENT = "PLAYERACTIONTOCLIENT" // (TCP)玩家指令-送Client
 	BATTLESTATE           = "BATTLESTATE"          // (TCP)狀態更新

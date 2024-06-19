@@ -25,15 +25,15 @@ type Gamer interface {
 
 // 玩家
 type Player struct {
-	ID           string                       // DBPlayer的_id
-	Idx          int                          // 第一位玩家是0(左方) 第二位玩家是1(右方)
-	myGladiator  *Gladiator                   // 使用中的鬥士
-	gold         int64                        // 玩家金幣
-	ready        bool                         // 是否準備好了(進遊戲且收到雙方玩家資料後, client會送準備封包設定ready為true)
-	BribeSkills  [BribeSkillCount]*BribeSkill // 賄賂技能
-	LastUpdateAt time.Time                    // 上次收到玩家更新封包(心跳)
-	ConnTCP      *ConnectionTCP               // TCP連線
-	ConnUDP      *ConnectionUDP               // UDP連線
+	ID           string                         // DBPlayer的_id
+	Idx          int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
+	myGladiator  *Gladiator                     // 使用中的鬥士
+	gold         int64                          // 玩家金幣
+	ready        bool                           // 是否準備好了(進遊戲且收到雙方玩家資料後, client會送準備封包設定ready為true)
+	BribeSkills  [DivineSkillCount]*DivineSkill // 神祉技能
+	LastUpdateAt time.Time                      // 上次收到玩家更新封包(心跳)
+	ConnTCP      *ConnectionTCP                 // TCP連線
+	ConnUDP      *ConnectionUDP                 // UDP連線
 }
 
 func (player *Player) SetIdx(idx int) {

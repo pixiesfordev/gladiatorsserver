@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"gladiatorsGoModule/gameJson"
 	mongo "gladiatorsGoModule/mongo"
 	logger "matchgame/logger"
 	"matchgame/packet"
 	"net"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // 處理TCP訊息
@@ -65,25 +66,25 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			},
 		}
 
-			MyRoom.BroadCastPacket(-1, pack)
-	// ==========賄賂==========
+		MyRoom.BroadCastPacket(-1, pack)
+	// ==========神祉==========
 	case packet.BRIBE:
 		content := packet.Bribe{}
 		err := json.Unmarshal([]byte(pack.GetContentStr()), &content)
 		if err != nil {
 			return fmt.Errorf("%s parse %s failed", logger.LOG_Action, pack.CMD)
 		}
-		for i, jsonID := range content.JsonBribeIDs {
+		for i, jsonID := range content.JsonSkillIDs {
 			if jsonID == 0 {
 				player.BribeSkills[i] = nil
 			} else {
-				jsonBribe, err := gameJson.GetJsonBribe(jsonID)
+				JsonSkill, err := gameJson.GetJsonSkill(jsonID)
 				if err != nil {
-					return fmt.Errorf("%s gameJson.GetJsonBribe(jsonID)錯誤: %v", logger.LOG_Action, err)
+					return fmt.Errorf("%s gameJson.GetJsonSkill(jsonID)錯誤: %v", logger.LOG_Action, err)
 				}
-				player.BribeSkills[i] = &BribeSkill{
+				player.BribeSkills[i] = &DivineSkill{
 					Used:   false,
-					MyJson: jsonBribe,
+					MyJson: JsonSkill,
 				}
 			}
 		}

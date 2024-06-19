@@ -14,6 +14,7 @@ type JsonSkill struct {
 	Activation string `json:"Activation"`
 	Initiative int    `json:"Initiative"`
 	Vigor      int    `json:"Vigor"`
+	Type       string `json:"Type"`
 	Divine     string `json:"Divine"`
 }
 
@@ -35,22 +36,27 @@ func (jsonData JsonSkill) UnmarshalJSONData(jsonName string, jsonBytes []byte) (
 	return items, nil
 }
 
-func GetJsonSkills() (map[int]JsonSkill, error) {
+// 取得技能清單(傳入技能類型)
+func GetJsonSkills(skillType string) (map[int]JsonSkill, error) {
 	jsonName := JsonName.Skill
 	jsonDatas, err := getJsonDic(jsonName)
 	if err != nil {
 		return nil, err
 	}
-	datas := make(map[int]JsonSkill)
-	for _, v := range jsonDatas {
-		json, ok := v.(JsonSkill)
+
+	skills := make(map[int]JsonSkill)
+	for k, v := range jsonDatas {
+		jsonSkill, ok := v.(JsonSkill)
 		if ok {
-			datas[json.ID] = json
+			if jsonSkill.Type == skillType {
+				skills[k.(int)] = jsonSkill
+			}
 		} else {
 			return nil, fmt.Errorf("%s 取JsonDic時斷言失敗, JsonName: %s", logger.LOG_GameJson, jsonName)
 		}
+
 	}
-	return datas, nil
+	return skills, nil
 }
 
 func GetJsonSkill(id int) (JsonSkill, error) {
@@ -68,14 +74,15 @@ func GetJsonSkill(id int) (JsonSkill, error) {
 	}
 }
 
-func GetRndJsonSkill() (JsonSkill, error) {
-	jsonName := JsonName.Skill
-	jsonDatas, err := getJsonDic(jsonName)
+// 取得隨機技能(傳入技能類型)
+func GetRndJsonSkill(skillType string) (JsonSkill, error) {
+	normalSkills, err := GetJsonSkills(skillType)
 	if err != nil {
 		return JsonSkill{}, err
 	}
-	key := utility.GetRndKeyFromMap(jsonDatas)
-	data, err := GetJsonSkill(key.(int))
+
+	key := utility.GetRndKeyFromMap(normalSkills)
+	data, err := GetJsonSkill(key)
 	if err == nil {
 		return data, nil
 	} else {

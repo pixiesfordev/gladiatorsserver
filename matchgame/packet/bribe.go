@@ -7,7 +7,7 @@ import "gladiatorsGoModule/setting"
 
 type Bribe struct {
 	CMDContent
-	JsonBribeIDs [2]int
+	JsonSkillIDs [2]int
 }
 
 type Bribe_ToClient struct {
