@@ -6,7 +6,8 @@ package packet
 // 玩家動作
 type PlayerAction struct {
 	CMDContent
-	ActionType string
+	ActionType    string
+	ActionContent interface{}
 }
 type PlayerAction_ToClient struct {
 	CMDContent

@@ -83,12 +83,12 @@ func (player *Player) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackBr
 	var playerBribes [2]packet.PackBribeSkill
 
 	playerBribes[0] = packet.PackBribeSkill{
-		JsonID: player.BribeSkills[0].MyJson.ID,
-		Used:   player.BribeSkills[0].Used,
+		JsonID: 1,
+		Used:   false,
 	}
 	playerBribes[1] = packet.PackBribeSkill{
-		JsonID: player.BribeSkills[1].MyJson.ID,
-		Used:   player.BribeSkills[1].Used,
+		JsonID: 2,
+		Used:   false,
 	}
 
 	return playerBribes

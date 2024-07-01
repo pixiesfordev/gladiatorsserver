@@ -40,9 +40,26 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		// 設定玩家使用的角鬥士
 		player.myGladiator = &Gladiator{
 			ID: dbGladiator.ID,
+			GladiatorPos: GladiatorPos{
+				LeftSide:      true,
+				CurUnit:       -InitGladiatorPos,
+				Speed:         8,
+				CantMoveTimer: 0,
+			},
+			Knockback: 16,
 		}
+
 		if Mode == "non-agones" { // 遊戲模式是測試模式時, 自動加入Bot
 			AddBot() // 加入BOT
+		}
+
+		// 指定左右先放這。
+		if MyRoom.Gamers[0].GetGladiator().LeftSide {
+			LeftGamer = MyRoom.Gamers[0]
+			RightGamer = MyRoom.Gamers[1]
+		} else {
+			LeftGamer = MyRoom.Gamers[1]
+			RightGamer = MyRoom.Gamers[0]
 		}
 
 		log.Infof("%s 收到玩家(%s)的角鬥士(%s)", logger.LOG_Action, player.GetID(), dbGladiator.ID)
@@ -54,7 +71,8 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			},
 		}
 		MyRoom.BroadCastPacket(-1, pack)
-		// ==========設定準備就緒==========
+
+	// ==========設定準備就緒==========
 	case packet.READY:
 		player.ready = true
 		playerReadies := MyRoom.GetPlayerReadies()
@@ -65,8 +83,8 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				PlayerReadies: playerReadies,
 			},
 		}
-
 		MyRoom.BroadCastPacket(-1, pack)
+
 	// ==========神祉==========
 	case packet.BRIBE:
 		content := packet.Bribe{}
@@ -96,6 +114,65 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			},
 		}
 		MyRoom.BroadCastPacket(-1, pack)
+		time.Sleep(WAIT_BATTLE_START * time.Second)
+		GameTime = 0
+		MyRoom.ChangeState(GameState_Started)
+
+		// ==========施放技能==========
+	case packet.PLAYERACTION:
+		log.Infof("%s 收到玩家施放技能: %v", logger.LOG_Action, pack)
+		content := packet.PlayerAction{}
+		err := json.Unmarshal([]byte(pack.GetContentStr()), &content)
+		if err != nil {
+			return fmt.Errorf("%s parse %s failed", logger.LOG_Action, pack.CMD)
+		}
+		switch content.ActionType {
+		case packet.PLAYERACTION_RUSH:
+			actionRush := packet.PackAction_Rush{}
+			actionRushJson, err := json.Marshal(content.ActionContent)
+			if err != nil {
+				return err
+			}
+			err = json.Unmarshal(actionRushJson, &actionRush)
+			if err != nil {
+				return err
+			}
+			if actionRush.On {
+				player.GetGladiator().SetRush(4)
+			} else {
+				player.GetGladiator().SetRush(-4)
+			}
+		default:
+			//log.Infof("%s Unknow Player Action: %s, %v", logger.LOG_Player, content.ActionType, content)
+			return fmt.Errorf("%s Unknow Player Action: %s, %v", logger.LOG_Pack, content.ActionType, content)
+		}
+		pack := packet.Pack{
+			CMD:    packet.PLAYERACTION_TOCLIENT,
+			PackID: -1,
+			Content: &packet.PlayerAction_ToClient{
+				CMDContent: content,
+			},
+		}
+		MyRoom.BroadCastPacket(-1, pack)
+
+	case packet.BATTLESTATE:
+		content := packet.BattleState{}
+		err := json.Unmarshal([]byte(pack.GetContentStr()), &content)
+		if err != nil {
+			return fmt.Errorf("%s parse %s failed", logger.LOG_Action, pack.CMD)
+		}
+
+		pack := packet.Pack{
+			CMD:    packet.BATTLESTATE_TOCLIENT,
+			PackID: -1,
+			Content: &packet.BattleState_ToClient{
+				CMDContent:   content,
+				PlayerStates: [][2]packet.PackPlayerState{MyRoom.GetPackPlayerStates()},
+				GameTime:     sliceMiliSecsToSecs([]int{GameTime}),
+			},
+		}
+		MyRoom.BroadCastPacket(-1, pack)
+
 	}
 
 	return nil

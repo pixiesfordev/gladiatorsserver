@@ -154,6 +154,7 @@ func (r *Room) ResetRoom() {
 		}
 	}
 	r.GameState = GameState_End
+	GameTime = 0
 }
 
 // 將玩家踢出房間

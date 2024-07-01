@@ -1,0 +1,92 @@
+package game
+
+import (
+	"gladiatorsGoModule/setting"
+	"matchgame/packet"
+
+	log "github.com/sirupsen/logrus"
+)
+
+const (
+	GladiatorRush = 4
+	GirdUnit      = 1000
+	TimeUnit      = 20
+	TimeMili      = 1000
+)
+
+type GladiatorPos struct {
+	LeftSide      bool
+	CurUnit       int
+	Speed         int // grid/secs
+	Rush          int // grid/secs
+	CantMoveTimer int // milisecs
+}
+
+func (gPos *GladiatorPos) Dir() int {
+	if gPos.LeftSide {
+		return 1
+	} else {
+		return -1
+	}
+}
+
+func (gPos *GladiatorPos) SetRush(r int) {
+	gPos.Rush += r
+}
+
+func (gPos *GladiatorPos) CanMove() bool {
+	return gPos.CantMoveTimer <= 0
+}
+
+func (gPos *GladiatorPos) AddCantMoveTimer(milisecs int) {
+	gPos.CantMoveTimer += milisecs
+}
+
+func (gPos *GladiatorPos) Move() {
+	gPos.CurUnit += gPos.Speed * gPos.Dir()
+}
+
+func (gPos *GladiatorPos) MoveUnitByTime(milisecs int) bool { // 毫秒為單位
+	if gPos.CantMoveTimer > 0 {
+		gPos.CantMoveTimer -= milisecs
+		return false
+	}
+	totalSpeed := gPos.Speed + gPos.Rush
+	gPos.CurUnit += totalSpeed * GridUnit / TimeMili * milisecs * gPos.Dir()
+	return true
+}
+
+// 擊退xUnit,
+func (gPos *GladiatorPos) KnockBackUnitByTime(Unit int, milisecs int) {
+	gPos.AddCantMoveTimer(milisecs)
+	gPos.CurUnit -= Unit * gPos.Dir()
+}
+
+func (gPos *GladiatorPos) CurGrid() float64 {
+	return float64(gPos.CurUnit) / float64(GridUnit)
+}
+
+func IsCollide() bool {
+	dis := LeftGamer.GetGladiator().CurUnit - RightGamer.GetGladiator().CurUnit
+	if dis >= 0 {
+		return dis <= CollisionDis*GridUnit
+	} else {
+		return -dis <= CollisionDis*GridUnit
+	}
+}
+
+func GetCollisionData() ([setting.PLAYER_NUMBER]packet.PackPlayerState, int) {
+	collisionPos := 0 /*(LeftGamer.GetGladiator().CurUnit + RightGamer.GetGladiator().CurUnit) / 2*/
+	LeftBack := /*LeftGamer.GetGladiator().CurUnit - collisionPos +*/ (RightGamer.GetGladiator().Knockback * GridUnit)
+	RightBack := /*collisionPos - RightGamer.GetGladiator().CurUnit +*/ (LeftGamer.GetGladiator().Knockback * GridUnit)
+	LeftGamer.GetGladiator().KnockBackUnitByTime(LeftBack, KNOCK_BACK_TIME*TimeMili)
+	RightGamer.GetGladiator().KnockBackUnitByTime(RightBack, KNOCK_BACK_TIME*TimeMili)
+	log.Infof("GetCollision: End with POS(%d ,%d), collisionPos: %d, BackDis(%d, %d), Speed(%d, %d), Rush(%d, %d)",
+		LeftGamer.GetGladiator().CurUnit, RightGamer.GetGladiator().CurUnit,
+		collisionPos,
+		LeftBack, RightBack,
+		LeftGamer.GetGladiator().Speed, RightGamer.GetGladiator().Speed,
+		LeftGamer.GetGladiator().Rush, RightGamer.GetGladiator().Rush,
+	)
+	return MyRoom.GetPackPlayerStates(), GameTime + KNOCK_BACK_TIME*TimeMili
+}
