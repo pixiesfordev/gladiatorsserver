@@ -21,6 +21,7 @@ const (
 	BRIBE                 = "BRIBE"                // (TCP)神祉選擇
 	BRIBE_TOCLIENT        = "BRIBE_TOCLIENT"       // (TCP)神祉選擇-送Client
 	PLAYERACTION          = "PLAYERACTION"         // (TCP)玩家指令
+	PLAYERACTION_RUSH     = "PLAYERACTION_RUSH"    // (TCP)玩家指令-衝刺
 	PLAYERACTION_TOCLIENT = "PLAYERACTIONTOCLIENT" // (TCP)玩家指令-送Client
 	BATTLESTATE           = "BATTLESTATE"          // (TCP)狀態更新
 	BATTLESTATE_TOCLIENT  = "BATTLESTATE_TOCLIENT" // (TCP)狀態更新-送Client

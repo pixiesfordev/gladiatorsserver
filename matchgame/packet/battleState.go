@@ -1,5 +1,7 @@
 package packet
 
+import "gladiatorsGoModule/setting"
+
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
 
@@ -9,8 +11,8 @@ type BattleState struct {
 
 type BattleState_ToClient struct {
 	CMDContent
-	PlayerStates [2]PackPlayerState
-	GameTime     float64
+	PlayerStates [][setting.PLAYER_NUMBER]PackPlayerState
+	GameTime     []float64
 }
 
 type PackPlayerState struct {
@@ -25,6 +27,7 @@ type PackBribeSkill struct {
 }
 
 type PackGladiator struct {
+	LeftSide        bool
 	JsonGladiatorID int
 	JsonSkillIDs    [6]int
 	JsonTraitIDs    []int
@@ -40,9 +43,9 @@ type PackGladiator struct {
 	CRIT            float64
 	INIT            int
 	Knockback       int
-	BattlePos       int // 戰鬥位置
-	Speed           int
-	StagePos        [2]float64 // 場景上實際位置
+	Speed           int     // 當前速率(N表示每秒前進N*GridUnit個Unit)
+	BattlePos       int     // 戰鬥位置(Server計算用)
+	StagePos        float64 // 場景上實際位置(Client表演用)
 	Buffers         []PackBuffer
 }
 

@@ -3,6 +3,8 @@ package game
 import (
 	"gladiatorsGoModule/gameJson"
 	"matchgame/packet"
+
+	log "github.com/sirupsen/logrus"
 	// log "github.com/sirupsen/logrus"
 	// "gladiatorsGoModule/utility"
 	// "matchgame/logger"
@@ -10,7 +12,6 @@ import (
 
 type Gladiator struct {
 	ID              string // DBGladiator的_id
-	LeftSide        bool   // true是左方玩家(第一位), false是右方玩家(第二位)
 	JsonGladiator   gameJson.JsonGladiator
 	JsonSkills      [GladiatorSkillCount]gameJson.JsonSkill
 	JsonTraits      []gameJson.TraitJsonData
@@ -26,34 +27,36 @@ type Gladiator struct {
 	CRIT            float64
 	INIT            int
 	Knockback       int
-	CurUnit         int
-	Speed           int
+	GladiatorPos
 }
 
 func NewGladiator(id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [GladiatorSkillCount]gameJson.JsonSkill,
 	jsonTraits []gameJson.TraitJsonData, jsonEquips []gameJson.JsonEquip) (Gladiator, error) {
 	pos := -InitGladiatorPos
 	leftSide := true
-	if len(MyRoom.Gamers) == 1 {
+	log.Infof("NewGladiator when myRoom: %v, %d", MyRoom.Gamers, len(MyRoom.Gamers))
+	if len(MyRoom.Gamers) >= 1 {
 		pos = InitGladiatorPos
 		leftSide = false
 	}
 
 	gladiator := Gladiator{
 		ID:            id,
-		LeftSide:      leftSide,
 		JsonGladiator: jsonGladiator,
 		JsonSkills:    jsonSkills,
 		JsonTraits:    jsonTraits,
 		JsonEquips:    jsonEquips,
-		CurUnit:       pos,
-		Speed:         jsonGladiator.Speed,
+		Knockback:     jsonGladiator.Knockback,
+		GladiatorPos: GladiatorPos{
+			LeftSide: leftSide,
+			CurUnit:  pos,
+			Speed:    jsonGladiator.Speed,
+		},
 	}
 	return gladiator, nil
 }
 
 func (gladiator *Gladiator) GetPackGladiator() packet.PackGladiator {
-
 	var jsonSkillIDs [GladiatorSkillCount]int
 	jsonTraitIDs := make([]int, 0)
 	jsonEquipIDs := make([]int, 0)
@@ -66,6 +69,7 @@ func (gladiator *Gladiator) GetPackGladiator() packet.PackGladiator {
 	}
 
 	packGladiator := packet.PackGladiator{
+		LeftSide:        gladiator.LeftSide, // 之後可刪
 		JsonGladiatorID: gladiator.JsonGladiator.ID,
 		JsonSkillIDs:    jsonSkillIDs,
 		JsonTraitIDs:    jsonTraitIDs,
@@ -74,25 +78,12 @@ func (gladiator *Gladiator) GetPackGladiator() packet.PackGladiator {
 		HP:              gladiator.HP,
 		CurHP:           gladiator.CurHP,
 		CurVigor:        gladiator.CurVigor,
+		Knockback:       gladiator.Knockback,
 		Speed:           gladiator.Speed,
+		BattlePos:       gladiator.CurUnit,
+		StagePos:        gladiator.CurGrid(),
 	}
 	return packGladiator
-}
-
-func (gladiator *Gladiator) Dir() int {
-	if gladiator.LeftSide {
-		return 1
-	} else {
-		return -1
-	}
-}
-
-func (gladiator *Gladiator) Move() {
-	gladiator.CurUnit += gladiator.Speed * gladiator.Dir()
-}
-
-func (gladiator *Gladiator) CurGrid() int {
-	return gladiator.CurUnit / GridUnit
 }
 
 func (gladiator *Gladiator) DmgBuff() float64 {
