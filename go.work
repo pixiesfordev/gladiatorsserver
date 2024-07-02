@@ -1,10 +1,5 @@
-go 1.22.0
+go 1.22.3
 
 use (
-	./crontasker
 	./gladiatorsGoModule
-	./lobby
-	./matchgame
-	./matchmaker
-	./gladiatorsClient
 )
