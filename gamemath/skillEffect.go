@@ -23,7 +23,9 @@ type Effect struct {
 // 效果數值設定
 const (
 	VulnerableValue       float64 = -0.3 // 無力造成傷害減少
-	EffectTriggerInterval float64 = 1    // 時間性觸發效果間格時間, 例如流血, 填1就是每秒觸發1次
+	WeakValue             float64 = -0.3 // 虛弱造成防禦減少
+	FatigueValue          float64 = -0.3 // 疲勞造成體力回復減少
+	EffectTriggerInterval int     = 1    // 時間性觸發效果間格時間, 例如流血, 填1就是每秒觸發1次
 )
 
 // GetEffectValue 取得第X個T類數值
@@ -66,13 +68,37 @@ const (
 	Neutral            = "Neutral" // 中性效果
 )
 
-// BelongToBuffer 是否屬於狀態效果
-func (e *Effect) BelongToBuffer() bool {
+// IsBuffer 是否為狀態效果
+func (e *Effect) IsBuffer() bool {
 	switch e.Type {
 	case gameJson.RegenHP, gameJson.RegenVigor, gameJson.Dizzy, gameJson.Poison, gameJson.Bleeding, gameJson.Burning,
 		gameJson.Fearing, gameJson.Vulnerable, gameJson.Weak, gameJson.Fatigue, gameJson.Protection, gameJson.MeleeSkillReflect, gameJson.RangeSkillReflect,
 		gameJson.Enraged, gameJson.PDefUp, gameJson.MDefUp, gameJson.StrUp, gameJson.Barrier, gameJson.Poisoning, gameJson.ComboAttack, gameJson.Vampire, gameJson.CriticalUp,
 		gameJson.InitUp, gameJson.Indomitable, gameJson.Berserk, gameJson.StrUpByHp, gameJson.Chaos, gameJson.SkillVigorUp:
+		return true
+	}
+	return false
+}
+
+// IsMobileRestriction 是否為移動限制類效果
+func (e *Effect) IsMobileRestriction() bool {
+	if !e.IsBuffer() {
+		return false
+	}
+	switch e.Type {
+	case gameJson.Fearing, gameJson.Dizzy, gameJson.Pull:
+		return true
+	}
+	return false
+}
+
+// IsInstantSkillRestriction 是否為立即技能限制類效果
+func (e *Effect) IsInstantSkillRestriction() bool {
+	if !e.IsBuffer() {
+		return false
+	}
+	switch e.Type {
+	case gameJson.Dizzy:
 		return true
 	}
 	return false
@@ -158,6 +184,26 @@ func (e *Effect) GetMDefUpValue() int {
 	return addValue
 }
 
+// GetPDefMultiple 取得物理防禦加乘
+func (e *Effect) GetPDefMultiple() float64 {
+	value := 0.0
+	switch e.Type {
+	case gameJson.Weak:
+		value = WeakValue
+	}
+	return value
+}
+
+// GetMDefMultiple 取得魔法防禦加乘
+func (e *Effect) GetMDefMultiple() float64 {
+	value := 0.0
+	switch e.Type {
+	case gameJson.Weak:
+		value = WeakValue
+	}
+	return value
+}
+
 // GetPDmgValue 取得物理傷害
 func (e *Effect) GetPDmgValue() int {
 	if e.Type != gameJson.PDmg {
@@ -189,17 +235,17 @@ func (e *Effect) GetPDmgMultiple() float64 {
 	value := 0.0
 	switch e.Type {
 	case gameJson.Vulnerable:
-		value = gameJson.VulnerableValue
+		value = VulnerableValue
 	}
 	return value
 }
 
-// GetMDmgMultiple 取得物理傷害加乘
+// GetMDmgMultiple 取得魔法傷害加乘
 func (e *Effect) GetMDmgMultiple() float64 {
 	value := 0.0
 	switch e.Type {
 	case gameJson.Vulnerable:
-		value = gameJson.VulnerableValue
+		value = VulnerableValue
 	}
 	return value
 }
@@ -230,50 +276,67 @@ func (e *Effect) GetRestoreVigorValue() float64 {
 	return value
 }
 
-// TriggerDmg_Time 觸發傷害_時間
-func (e *Effect) TriggerDmg_Time() int {
-	var dmg int
+// Trigger_Time 時間觸發
+func (e *Effect) Trigger_Time() {
+	if !e.IsBuffer() || e.NextTriggerAt >= GameTimer {
+		return
+	}
 	switch e.Type {
+	case gameJson.RegenHP: // 回復生命
+		e.NextTriggerAt += float64(EffectTriggerInterval) // 更新觸發時間
+		value, err := GetEffectValue[int](e, 0)
+		if err != nil {
+			log.Errorf("%v錯誤: %v", e.Type, err)
+			return
+		}
+		e.Duration -= EffectTriggerInterval
+		e.Target.AddHp(value)
+	case gameJson.RegenVigor: // 回復體力
+		e.NextTriggerAt += float64(EffectTriggerInterval) // 更新觸發時間
+		value, err := GetEffectValue[float64](e, 0)
+		if err != nil {
+			log.Errorf("%v錯誤: %v", e.Type, err)
+			return
+		}
+		e.Duration -= EffectTriggerInterval
+		e.Target.AddVigor(value)
 	case gameJson.Poison: // 中毒
-		if e.NextTriggerAt >= GameTimer {
-			return 0
-		}
-		e.NextTriggerAt += EffectTriggerInterval // 更新觸發時間
+		e.NextTriggerAt += float64(EffectTriggerInterval) // 更新觸發時間
 		value, err := GetEffectValue[int](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
-			return 0
+			return
 		}
-		dmg = value
+		e.Duration -= EffectTriggerInterval
+		e.Target.AddHp(-value)
 	case gameJson.Burning: // 著火
-		if e.NextTriggerAt >= GameTimer {
-			return 0
-		}
-		e.NextTriggerAt += EffectTriggerInterval // 更新觸發時間
+		e.NextTriggerAt += float64(EffectTriggerInterval) // 更新觸發時間
 		value, err := GetEffectValue[int](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
-			return 0
+			return
 		}
-		dmg = value
 		e.Duration = e.Duration / 2
+		e.Target.AddHp(-value)
+	case gameJson.Bleeding: // 不會隨時間消逝的Buffer放這裡
+
+	default:
+
+		e.Duration -= EffectTriggerInterval
 	}
 
-	return dmg
 }
 
-// GetTimeDmg 觸發傷害_受擊
-func (e *Effect) TriggerDmg_BeHit() int {
-	var dmg int
+// TriggerDmg_BeHit 受擊觸發傷害
+func (e *Effect) TriggerDmg_BeHit() {
 	switch e.Type {
 	case gameJson.Bleeding: // 流血
 		value, err := GetEffectValue[int](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
-			return 0
+			return
 		}
-		dmg = value
+		e.Duration -= 1
+		e.Target.AddHp(-value)
 	}
-
-	return dmg
 }

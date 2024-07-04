@@ -60,6 +60,16 @@ func (g *Gladiator) IsAlive() bool {
 	return (g.CurHp > 0)
 }
 
+// CanMove 是否能移動
+func (g *Gladiator) CanMove() bool {
+	for _, effects := range g.Effects {
+		if len(effects) != 0 && effects[0].IsMobileRestriction() {
+			return false
+		}
+	}
+	return true
+}
+
 // GetStr 取得力量
 func (g *Gladiator) GetStr() int {
 	str := g.Str
@@ -83,10 +93,10 @@ func (g *Gladiator) GetPDef() int {
 	for _, effects := range g.Effects {
 		for _, v := range effects {
 			addPDef += v.GetPDefUpValue()
-			multiplePDef += v.GetPDmgMultiple()
+			multiplePDef += v.GetPDefMultiple()
 		}
 	}
-	pdef = int(math.Round(float64(pdef)*multiplePDef + float64(addPDef)))
+	pdef = int(math.Round(float64(pdef)*(1+multiplePDef) + float64(addPDef)))
 	return pdef
 }
 
@@ -99,11 +109,22 @@ func (g *Gladiator) GetMDef() int {
 	for _, effects := range g.Effects {
 		for _, v := range effects {
 			addMDef += v.GetMDefUpValue()
-			multipleMDef += v.GetPDmgMultiple()
+			multipleMDef += v.GetPDefMultiple()
 		}
 	}
-	mdef = int(math.Round(float64(mdef)*multipleMDef + float64(addMDef)))
+	mdef = int(math.Round(float64(mdef)*(1+multipleMDef) + float64(addMDef)))
 	return mdef
+}
+
+// GetVigorRegen 取得體力回復
+func (g *Gladiator) GetVigorRegen() float64 {
+	vigorRegen := g.VigorRegen
+	multipleVigorRegen := 0.0
+	if _, ok := g.Effects[gameJson.Fatigue]; ok {
+		multipleVigorRegen += FatigueValue
+	}
+	vigorRegen = float64(vigorRegen) * (1 + multipleVigorRegen)
+	return vigorRegen
 }
 
 // AddEffect 新增狀態效果
@@ -157,17 +178,23 @@ func (myself *Gladiator) Spell(skill *Skill, target *Gladiator) {
 
 		switch effect.Type {
 		case gameJson.PDmg: // 物理攻擊
-			dmg := int(math.Round(float64(myself.GetStr()) * float64(effect.GetPDmgValue())))
+			multiple := (1 + effect.GetPDmgMultiple())
+			effectDmg := float64(effect.GetPDmgValue())
+			str := float64(myself.GetStr())
+			dmg := int(math.Round(str * effectDmg * multiple))
 			myself.Attack(effect.Target, dmg, effect.Target.GetPDef())
-		case gameJson.MDmg: // 物理防禦
-			dmg := int(math.Round(float64(myself.GetStr()) * float64(effect.GetMDmgValue())))
+		case gameJson.MDmg: // 魔法攻擊
+			multiple := (1 + effect.GetMDmgMultiple())
+			effectDmg := float64(effect.GetMDmgValue())
+			str := float64(myself.GetStr())
+			dmg := int(math.Round(str * effectDmg * multiple))
 			myself.Attack(effect.Target, dmg, effect.Target.GetMDef())
 		case gameJson.RestoreHP: // 回復生命
 			effect.Target.AddHp(effect.GetRestoreHPValue())
 		case gameJson.RestoreVigor: // 回復體力
 			effect.Target.AddVigor(effect.GetRestoreVigorValue())
 		default:
-			if effect.BelongToBuffer() { // 賦予狀態
+			if effect.IsBuffer() { // 賦予狀態
 				myself.AddEffect(&effect)
 			}
 		}
@@ -183,8 +210,7 @@ func (myself *Gladiator) TriggerBuffer_Time(value int) {
 	}
 	for _, effects := range myself.Effects {
 		for _, v := range effects {
-			dmg := v.TriggerDmg_Time()
-			myself.AddHp(-dmg)
+			v.Trigger_Time()
 		}
 	}
 }
@@ -196,8 +222,7 @@ func (myself *Gladiator) TriggerBuffer_BeHit(value int) {
 	}
 	for _, effects := range myself.Effects {
 		for _, v := range effects {
-			dmg := v.TriggerDmg_BeHit()
-			myself.AddHp(-dmg)
+			v.TriggerDmg_BeHit()
 		}
 	}
 }
