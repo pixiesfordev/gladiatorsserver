@@ -123,11 +123,9 @@ func GetRandomNumberOfTFromMap[K comparable, V any](m map[K]V, count int) ([]V, 
 }
 
 // 傳入機率回傳結果 EX. 傳入0.3就是有30%機率返回true
-func GetProbResult(prob float64) bool {
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
-	randomFloat := r.Float64()
-	return randomFloat <= prob
+func GetProbResult(prob float64, rnd *rand.Rand) bool {
+	randomFloat := rnd.Float64()
+	return randomFloat < prob
 }
 
 // 範例: 傳入"100~200" 回傳100~199之間的int

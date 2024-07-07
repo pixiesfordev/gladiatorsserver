@@ -14,6 +14,7 @@ type JsonSkill struct {
 	Activation string `json:"Activation"`
 	Initiative int    `json:"Initiative"`
 	Vigor      int    `json:"Vigor"`
+	Knockback  int    `json:"Knockback"`
 	Type       string `json:"Type"`
 	Divine     string `json:"Divine"`
 }

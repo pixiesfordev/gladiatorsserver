@@ -22,6 +22,7 @@ type Gladiator struct {
 	PDef          int                               // 物理防禦
 	MDef          int                               // 魔法防禦
 	Crit          float64                           // 爆擊率
+	CritDmg       float64                           // 爆擊傷害
 	VigorRegen    float64                           // 體力回復
 	Knockback     int                               // 擊退
 	Init          int                               // 先攻
@@ -46,6 +47,7 @@ func NewGladiator(id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [6
 		PDef:          jsonGladiator.DEF,
 		MDef:          jsonGladiator.MDEF,
 		Crit:          jsonGladiator.CRIT,
+		CritDmg:       jsonGladiator.CRITDmg,
 		VigorRegen:    jsonGladiator.VigorRegen,
 		Knockback:     jsonGladiator.Knockback,
 		Init:          jsonGladiator.INIT,
@@ -70,6 +72,16 @@ func (g *Gladiator) CanMove() bool {
 	return true
 }
 
+// Knockbackable 是否能被擊退
+func (g *Gladiator) Knockbackable() bool {
+	for _, effects := range g.Effects {
+		if len(effects) != 0 && effects[0].IsImmuneToKnockback() {
+			return false
+		}
+	}
+	return true
+}
+
 // GetStr 取得力量
 func (g *Gladiator) GetStr() int {
 	str := g.Str
@@ -82,6 +94,48 @@ func (g *Gladiator) GetStr() int {
 	}
 	str += addStr
 	return str
+}
+
+// GetCrtit 取得爆擊率
+func (g *Gladiator) GetCrit() float64 {
+	crit := g.Crit
+	// 計算影響爆擊率的所有狀態
+	addCirt := 0.0
+	for _, effects := range g.Effects {
+		for _, v := range effects {
+			addCirt = v.GetCritUpValue()
+		}
+	}
+	crit += addCirt
+	return crit
+}
+
+// GetKnockback 取得擊退值
+func (g *Gladiator) GetKnockback() int {
+	knockback := g.Knockback
+	// 計算影響擊退的所有狀態
+	addKnockback := 0
+	for _, effects := range g.Effects {
+		for _, v := range effects {
+			addKnockback = v.GetKnockbackUpValue()
+		}
+	}
+	knockback += addKnockback
+	return knockback
+}
+
+// GetInit 取得先攻
+func (g *Gladiator) GetInit() int {
+	init := g.Init
+	// 計算影響先攻的所有狀態
+	addInit := 0
+	for _, effects := range g.Effects {
+		for _, v := range effects {
+			addInit = v.GetInitUpValue()
+		}
+	}
+	init += addInit
+	return init
 }
 
 // GetPDef 取得物理防禦
@@ -109,7 +163,7 @@ func (g *Gladiator) GetMDef() int {
 	for _, effects := range g.Effects {
 		for _, v := range effects {
 			addMDef += v.GetMDefUpValue()
-			multipleMDef += v.GetPDefMultiple()
+			multipleMDef += v.GetMDefMultiple()
 		}
 	}
 	mdef = int(math.Round(float64(mdef)*(1+multipleMDef) + float64(addMDef)))
@@ -127,19 +181,85 @@ func (g *Gladiator) GetVigorRegen() float64 {
 	return vigorRegen
 }
 
-// AddEffect 新增狀態效果
+// GetImmuneTypes 取得體力回復
+func (g *Gladiator) GetImmuneTypes() map[ImmuneType]struct{} {
+
+	immuneTypes := make(map[ImmuneType]struct{})
+
+	for _, effects := range g.Effects {
+		for _, v := range effects {
+			if v.IsImmuneToKnockback() {
+				immuneTypes[Immune_Knockback] = struct{}{}
+				break
+			}
+			if v.IsImmuneToMobileRestriction() {
+				immuneTypes[Immune_MobileRestriction] = struct{}{}
+				break
+			}
+		}
+	}
+	return immuneTypes
+}
+
+// AddEffect 賦予狀態效果
 func (g *Gladiator) AddEffect(effect *Effect) {
+
+	//對要被賦予的狀態免疫時就返回
+	immuneTypes := g.GetImmuneTypes()
+	for i, _ := range immuneTypes {
+		switch i {
+		case Immune_MobileRestriction:
+			if effect.IsImmuneToKnockback() {
+				return
+			}
+		}
+	}
+
+	//當賦予的狀態會免疫某些類型狀態時, 要移除被免疫的狀態
+	removeEffectTypes := make([]gameJson.EffectType, 0)
+	switch effect.Type {
+	case gameJson.Indomitable: // 免疫行動控制類的負面效果
+		// 移除所有行動限制類負面效果
+		for _, effects := range g.Effects {
+			for _, v := range effects {
+				if v.IsMobileRestriction() {
+					removeEffectTypes = append(removeEffectTypes, v.Type)
+					break
+				}
+			}
+		}
+	}
+	g.RemoveEffects(removeEffectTypes)
+
 	g.Effects[effect.Type] = append(g.Effects[effect.Type], effect)
 }
 
-// RemoveEffects 移除一個或多個狀態效果
-func (g *Gladiator) RemoveEffects(types ...gameJson.EffectType) {
+// RemoveEffectsByBufferType 移除狀態
+func (g *Gladiator) RemoveEffectsByBufferType(bufferType BufferType) {
+	effectTypes := make([]gameJson.EffectType, 0)
+	for effectType, v := range g.Effects {
+		if len(v) != 0 && bufferType == v[0].GetBufferType() {
+			effectTypes = append(effectTypes, effectType)
+		}
+	}
+	if len(effectTypes) > 0 {
+		g.RemoveEffects(effectTypes)
+	}
+}
+
+// RemoveEffects 移除多個狀態效果
+func (g *Gladiator) RemoveEffects(types []gameJson.EffectType) {
 	if len(types) == 0 {
 		return
 	}
 	for _, t := range types {
 		delete(g.Effects, t)
 	}
+}
+
+// RemoveEffects 移除一個或多個狀態效果
+func (g *Gladiator) RemoveEffect(effectType gameJson.EffectType) {
+	delete(g.Effects, effectType)
 }
 
 // RemoveSpecificEffect 移除指定的狀態效果
@@ -153,17 +273,40 @@ func (g *Gladiator) RemoveSpecificEffect(targetEffect *Effect) {
 		}
 		// 如果某個效果類型下沒有剩餘的效果，則從map中移除該類型
 		if len(g.Effects[effectType]) == 0 {
-			g.RemoveEffects(effectType)
+			g.RemoveEffect(effectType)
 		}
 	}
 }
 
-// Spell 發動技能
-func (myself *Gladiator) Spell(skill *Skill, target *Gladiator) {
-	if myself == nil || skill == nil || target == nil {
+// 執行擊退
+func (myself *Gladiator) DoKnockback(knockbackValue float64) {
+
+	//對擊退免疫就返回
+	immuneTypes := myself.GetImmuneTypes()
+	if _, ok := immuneTypes[Immune_Knockback]; ok {
 		return
 	}
 
+	// 執行擊退位移
+	if myself.LeftSide {
+		myself.CurUnit -= knockbackValue
+	} else {
+		myself.CurUnit += knockbackValue
+	}
+}
+
+// Spell 發動技能
+func (myself *Gladiator) Spell(skill *Skill) {
+	if myself == nil || skill == nil {
+		return
+	}
+
+	// 檢查是否通過技能施法條件
+	if !myself.IsPassingSpellCondition(skill) {
+		return
+	}
+
+	// 執行技能效果
 	for _, effect := range skill.Effects {
 
 		// 如果施法者或目標死亡就跳過
@@ -172,7 +315,7 @@ func (myself *Gladiator) Spell(skill *Skill, target *Gladiator) {
 		}
 
 		// 如果沒觸發成功就跳過
-		if !utility.GetProbResult(effect.Prob) {
+		if !utility.GetProbResult(effect.Prob, Rnd) {
 			continue
 		}
 
@@ -193,6 +336,8 @@ func (myself *Gladiator) Spell(skill *Skill, target *Gladiator) {
 			effect.Target.AddHp(effect.GetRestoreHPValue())
 		case gameJson.RestoreVigor: // 回復體力
 			effect.Target.AddVigor(effect.GetRestoreVigorValue())
+		case gameJson.Purge: // 移除負面狀態
+			effect.Target.RemoveEffectsByBufferType(Debuff)
 		default:
 			if effect.IsBuffer() { // 賦予狀態
 				myself.AddEffect(&effect)
@@ -201,6 +346,38 @@ func (myself *Gladiator) Spell(skill *Skill, target *Gladiator) {
 	}
 
 	log.Infof("勇士 %s 發動技能: %v", myself.ID, skill.JsonSkill.ID)
+
+	// 如果有ComboAttack就重複觸發技能
+	if effects, ok := myself.Effects[gameJson.ComboAttack]; ok {
+		if len(effects) != 0 {
+			effects[0].AddDuration(-1)
+			myself.Spell(skill)
+		}
+	}
+
+}
+
+// IsPassingSpellCondition 施法條件檢查, 全部偷過才返回true(代表可以觸發)
+func (myself *Gladiator) IsPassingSpellCondition(skill *Skill) bool {
+	if !myself.IsAlive() {
+		return false
+	}
+	for _, effects := range myself.Effects {
+		for _, v := range effects {
+			switch v.Type {
+			case gameJson.Condition_SkillVigorBelow:
+				value, err := GetEffectValue[int](v, 0)
+				if err != nil {
+					log.Errorf("%v錯誤: %v", v.Type, err)
+					return false
+				}
+				if skill.Vigor > value {
+					return false
+				}
+			}
+		}
+	}
+	return true
 }
 
 // TriggerBuffer_Time 時間性觸發Buffer
@@ -215,14 +392,26 @@ func (myself *Gladiator) TriggerBuffer_Time(value int) {
 	}
 }
 
-// TriggerBuffer_BeHit 受擊時觸發Buffer
-func (myself *Gladiator) TriggerBuffer_BeHit(value int) {
+// TriggerBuffer_AfterBeAttack 受擊後觸發Buffer
+func (myself *Gladiator) TriggerBuffer_AfterBeAttack(dmg int) {
 	if !myself.IsAlive() {
 		return
 	}
 	for _, effects := range myself.Effects {
 		for _, v := range effects {
-			v.TriggerDmg_BeHit()
+			v.Trigger_AfterBeAttack(dmg)
+		}
+	}
+}
+
+// TriggerBuffer_AfterBeAttack 攻擊後觸發Buffer
+func (myself *Gladiator) TriggerBuffer_AfterAttack(dmg int) {
+	if !myself.IsAlive() {
+		return
+	}
+	for _, effects := range myself.Effects {
+		for _, v := range effects {
+			v.Trigger_AfterAttack(dmg)
 		}
 	}
 }
@@ -260,5 +449,28 @@ func (myself *Gladiator) OnDeath() {
 // Attack 造成傷害
 func (myself *Gladiator) Attack(target *Gladiator, dmg int, def int) {
 	dealDmg := dmg - def
+
+	// 計算目標狀態減傷
+	multiple := 0.0
+	for _, effects := range target.Effects {
+		for _, v := range effects {
+			multiple += v.GetTakeDmgMultiple()
+		}
+	}
+	dealDmg = int(math.Round(float64(dealDmg) * (1 + multiple)))
+
+	// 計算爆擊
+	crit := myself.GetCrit()
+	extraCritDmg := 0.0
+	if crit > 1 { // 溢出的爆擊率要加到爆擊傷害上
+		extraCritDmg = 1 - crit
+	}
+	if utility.GetProbResult(myself.GetCrit(), Rnd) {
+		dealDmg = int(math.Round(float64(dealDmg) * (myself.CritDmg + extraCritDmg)))
+	}
+
+	target.TriggerBuffer_AfterBeAttack(dealDmg)
+	myself.TriggerBuffer_AfterAttack(dealDmg)
+
 	target.AddHp(dealDmg)
 }

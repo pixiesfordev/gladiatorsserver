@@ -16,6 +16,7 @@ type JsonGladiator struct {
 	DEF        int     `json:"DEF"`
 	MDEF       int     `json:"MDEF"`
 	CRIT       float64 `json:"CRIT"`
+	CRITDmg    float64 `json:"CRITDmg"`
 	VigorRegen float64 `json:"VigorRegen"`
 	Knockback  int     `json:"Knockback"`
 	INIT       int     `json:"INIT"`

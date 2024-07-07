@@ -7,18 +7,20 @@ import (
 type Skill struct {
 	JsonSkill gameJson.JsonSkill
 	Speller   *Gladiator
-	Target    *Gladiator
+	Init      int
 	Vigor     int
+	Knockback int
 	Effects   []Effect
 }
 
-func NewSkill(speller *Gladiator, target *Gladiator, jsonSkill gameJson.JsonSkill) (Skill, error) {
+func NewSkill(speller *Gladiator, opponent *Gladiator, jsonSkill gameJson.JsonSkill) (Skill, error) {
 
 	skill := Skill{
 		JsonSkill: jsonSkill,
 		Speller:   speller,
-		Target:    target,
 		Vigor:     jsonSkill.Vigor,
+		Init:      jsonSkill.Initiative,
+		Knockback: jsonSkill.Knockback,
 	}
 
 	effects := make([]Effect, 0)
@@ -27,9 +29,9 @@ func NewSkill(speller *Gladiator, target *Gladiator, jsonSkill gameJson.JsonSkil
 		for _, jsonSkillEffect := range jsonSkillEffects {
 			var skillEffectTarget *Gladiator
 			if jsonSkillEffect.Target == "Myslef" {
-				skillEffectTarget = target
-			} else if jsonSkillEffect.Target == "Enemy" {
 				skillEffectTarget = speller
+			} else if jsonSkillEffect.Target == "Enemy" {
+				skillEffectTarget = opponent
 			}
 			for _, v := range jsonSkillEffect.Effects {
 				effect := Effect{
