@@ -44,6 +44,7 @@ type PackGladiator struct {
 	INIT            int
 	Knockback       int
 	Speed           int     // 當前速率(N表示每秒前進N*GridUnit個Unit)
+	Rush            bool    // 衝刺加速度
 	BattlePos       int     // 戰鬥位置(Server計算用)
 	StagePos        float64 // 場景上實際位置(Client表演用)
 	Buffers         []PackBuffer

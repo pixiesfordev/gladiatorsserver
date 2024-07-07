@@ -63,8 +63,9 @@ func parseEffects(data map[string]interface{}) []Effect {
 		effectValue := int(data[valueKey].(float64))
 		effectProb := data[probKey].(float64)
 
+		sEffectType := effectType.(string)
 		effects = append(effects, Effect{
-			Type:  effectType.(EffectType),
+			Type:  EffectType(sEffectType),
 			Value: effectValue,
 			Prob:  effectProb,
 		})
