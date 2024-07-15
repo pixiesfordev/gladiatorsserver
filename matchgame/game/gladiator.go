@@ -79,9 +79,10 @@ func (gladiator *Gladiator) GetPackGladiator() packet.PackGladiator {
 		CurHP:           gladiator.CurHP,
 		CurVigor:        gladiator.CurVigor,
 		Knockback:       gladiator.Knockback,
-		Speed:           gladiator.Speed,
+		Speed:           gladiator.Speed + gladiator.Rush,
 		BattlePos:       gladiator.CurUnit,
 		StagePos:        gladiator.CurGrid(),
+		Rush:            gladiator.Rush > 0,
 	}
 	return packGladiator
 }

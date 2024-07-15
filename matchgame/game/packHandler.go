@@ -114,7 +114,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			},
 		}
 		MyRoom.BroadCastPacket(-1, pack)
-		time.Sleep(WAIT_BATTLE_START * time.Second)
+		time.Sleep(4 * time.Second)
 		GameTime = 0
 		MyRoom.ChangeState(GameState_Started)
 
@@ -137,20 +137,24 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			if err != nil {
 				return err
 			}
-			if actionRush.On {
-				player.GetGladiator().SetRush(4)
-			} else {
-				player.GetGladiator().SetRush(-4)
-			}
+			player.GetGladiator().SetRush(actionRush.On, 4)
 		default:
 			//log.Infof("%s Unknow Player Action: %s, %v", logger.LOG_Player, content.ActionType, content)
 			return fmt.Errorf("%s Unknow Player Action: %s, %v", logger.LOG_Pack, content.ActionType, content)
+		}
+		pStates := [2]packet.PackPlayerState{
+			MyRoom.GetPackPlayerStates()[0],
+			packet.PackPlayerState{},
 		}
 		pack := packet.Pack{
 			CMD:    packet.PLAYERACTION_TOCLIENT,
 			PackID: -1,
 			Content: &packet.PlayerAction_ToClient{
-				CMDContent: content,
+				CMDContent:    content,
+				ActionType:    content.ActionType,
+				ActionContent: content.ActionContent,
+				PlayerStates:  [][2]packet.PackPlayerState{pStates},
+				GameTime:      sliceMiliSecsToSecs([]int{GameTime}),
 			},
 		}
 		MyRoom.BroadCastPacket(-1, pack)
