@@ -1,12 +1,12 @@
 {"Gladiator":[
-	{	"ID{n)": "1",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "2",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "3",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "4",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "5",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "6",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "7",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "8",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "9",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
-	{	"ID{n)": "10",	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"}
+	{	"ID": 1,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 2,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 3,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 4,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 5,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 6,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 7,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 8,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 9,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"},
+	{	"ID": 10,	"HP{n)": "300",	"STR{n)": "20",	"DEF{n)": "10",	"MDEF{n)": "10",	"CRIT{d)": "0.05",	"CRITDmg{d)": "1.5",	"VigorRegen{d)": "1",	"Knockback{n)": "16",	"INIT{n)": "0",	"Speed{n)": "8"}
 ]}
