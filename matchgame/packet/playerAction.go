@@ -1,5 +1,7 @@
 package packet
 
+import "gladiatorsGoModule/setting"
+
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
 
@@ -11,6 +13,10 @@ type PlayerAction struct {
 }
 type PlayerAction_ToClient struct {
 	CMDContent
+	ActionType    string
+	ActionContent interface{}
+	PlayerStates  [][setting.PLAYER_NUMBER]PackPlayerState
+	GameTime      []float64
 }
 
 // 施放技能

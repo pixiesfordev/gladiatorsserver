@@ -33,7 +33,7 @@ const (
 	TCP_CONN_TIMEOUT_SEC                   = 120   // TCP連線逾時時間X秒
 	TIMELOOP_MILISECS              int     = 20    // 遊戲每X毫秒循環(client幀數更新精度)
 	PERIODIC_SYNC_MOVE_TIME        int     = 1000  // 週期性同步位置
-	KICK_PLAYER_SECS               float64 = 30    // 最長允許玩家無心跳X秒後踢出遊戲房
+	KICK_PLAYER_SECS               float64 = 90    // 最長允許玩家無心跳X秒後踢出遊戲房
 	MarketDivineSkillCount                 = 6     // 有幾個神祉技能可以購買
 	DivineSkillCount                       = 2     // 玩家可以買幾個神祉技能
 	GladiatorSkillCount                    = 6     // 玩家有幾個技能
@@ -164,7 +164,14 @@ func TimePass() {
 			notify = true
 			stateStack = append(stateStack, MyRoom.GetPackPlayerStates())
 			timeStack = append(timeStack, GameTime)
-			log.Infof("PeriodicMoveNotify: End with POS(%d, %d), Speed: (%d, %d) ", LeftGamer.GetGladiator().CurUnit, RightGamer.GetGladiator().CurUnit, RightGamer.GetGladiator().Speed*GridUnit, LeftGamer.GetGladiator().Speed*GridUnit)
+			log.Infof("PeriodicMoveNotify: GameTime(%f ,%d) End with POS(%d, %d), Speed: (%d, %d) ",
+				float64(GameTime)/float64(TimeMili),
+				GameTime,
+				LeftGamer.GetGladiator().CurUnit,
+				RightGamer.GetGladiator().CurUnit,
+				RightGamer.GetGladiator().Speed*GridUnit,
+				LeftGamer.GetGladiator().Speed*GridUnit,
+			)
 			PeriodicSyncMoveTimer = PERIODIC_SYNC_MOVE_TIME
 		} else {
 			// 事件發生中，週期性同步跳過一次

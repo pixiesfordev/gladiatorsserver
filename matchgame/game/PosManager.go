@@ -10,7 +10,7 @@ import (
 const (
 	GladiatorRush = 4
 	GirdUnit      = 1000
-	TimeUnit      = 20
+	TimeUnit      = 10
 	TimeMili      = 1000
 )
 
@@ -30,8 +30,12 @@ func (gPos *GladiatorPos) Dir() int {
 	}
 }
 
-func (gPos *GladiatorPos) SetRush(r int) {
-	gPos.Rush += r
+func (gPos *GladiatorPos) SetRush(on bool, rush int) {
+	if on && gPos.Rush == 0 {
+		gPos.Rush += rush
+	} else if !on && gPos.Rush >= 0 {
+		gPos.Rush = 0
+	}
 }
 
 func (gPos *GladiatorPos) CanMove() bool {
@@ -42,8 +46,13 @@ func (gPos *GladiatorPos) AddCantMoveTimer(milisecs int) {
 	gPos.CantMoveTimer += milisecs
 }
 
-func (gPos *GladiatorPos) Move() {
-	gPos.CurUnit += gPos.Speed * gPos.Dir()
+func (gPos *GladiatorPos) MoveAhead(d int) {
+	gPos.CurUnit += d * gPos.Dir()
+	if gPos.CurUnit > WallPos {
+		gPos.CurUnit = WallPos
+	} else if gPos.CurUnit < -WallPos {
+		gPos.CurUnit = -WallPos
+	}
 }
 
 func (gPos *GladiatorPos) MoveUnitByTime(milisecs int) bool { // 毫秒為單位
@@ -52,14 +61,14 @@ func (gPos *GladiatorPos) MoveUnitByTime(milisecs int) bool { // 毫秒為單位
 		return false
 	}
 	totalSpeed := gPos.Speed + gPos.Rush
-	gPos.CurUnit += totalSpeed * GridUnit / TimeMili * milisecs * gPos.Dir()
+	gPos.MoveAhead(totalSpeed * GridUnit / TimeMili * milisecs)
 	return true
 }
 
 // 擊退xUnit,
 func (gPos *GladiatorPos) KnockBackUnitByTime(Unit int, milisecs int) {
 	gPos.AddCantMoveTimer(milisecs)
-	gPos.CurUnit -= Unit * gPos.Dir()
+	gPos.MoveAhead(-Unit)
 }
 
 func (gPos *GladiatorPos) CurGrid() float64 {
@@ -81,7 +90,9 @@ func GetCollisionData() ([setting.PLAYER_NUMBER]packet.PackPlayerState, int) {
 	RightBack := /*collisionPos - RightGamer.GetGladiator().CurUnit +*/ (LeftGamer.GetGladiator().Knockback * GridUnit)
 	LeftGamer.GetGladiator().KnockBackUnitByTime(LeftBack, KNOCK_BACK_TIME*TimeMili)
 	RightGamer.GetGladiator().KnockBackUnitByTime(RightBack, KNOCK_BACK_TIME*TimeMili)
-	log.Infof("GetCollision: End with POS(%d ,%d), collisionPos: %d, BackDis(%d, %d), Speed(%d, %d), Rush(%d, %d)",
+	log.Infof("GetCollision: GameTime(%f, %d) End with POS(%d ,%d), collisionPos: %d, BackDis(%d, %d), Speed(%d, %d), Rush(%d, %d)",
+		float64(GameTime)/float64(TimeMili),
+		GameTime,
 		LeftGamer.GetGladiator().CurUnit, RightGamer.GetGladiator().CurUnit,
 		collisionPos,
 		LeftBack, RightBack,
