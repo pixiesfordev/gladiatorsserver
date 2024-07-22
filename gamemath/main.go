@@ -31,7 +31,7 @@ func Melee(g1 *Gladiator, g2 *Gladiator, g1Skill *Skill, g2Skill *Skill) {
 		g2.Spell(g2Skill)
 		g1.Spell(g1Skill)
 	} else { // 先攻值一樣的話就隨機一方先攻
-		if utility.GetProbResult(0.5, Rnd) {
+		if utility.GetProbResult(0.5) {
 			g1.Spell(g1Skill)
 			g2.Spell(g2Skill)
 		} else {

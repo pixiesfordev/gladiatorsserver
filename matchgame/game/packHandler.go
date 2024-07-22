@@ -154,7 +154,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				ActionType:    content.ActionType,
 				ActionContent: content.ActionContent,
 				PlayerStates:  [][2]packet.PackPlayerState{pStates},
-				GameTime:      sliceMiliSecsToSecs([]int{GameTime}),
+				GameTime:      []float64{GameTime},
 			},
 		}
 		MyRoom.BroadCastPacket(-1, pack)
@@ -172,7 +172,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			Content: &packet.BattleState_ToClient{
 				CMDContent:   content,
 				PlayerStates: [][2]packet.PackPlayerState{MyRoom.GetPackPlayerStates()},
-				GameTime:     sliceMiliSecsToSecs([]int{GameTime}),
+				GameTime:     []float64{GameTime},
 			},
 		}
 		MyRoom.BroadCastPacket(-1, pack)

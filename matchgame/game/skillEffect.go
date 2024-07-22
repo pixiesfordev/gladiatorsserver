@@ -1,8 +1,8 @@
-package main
+package game
 
 import (
 	"fmt"
-	gameJson "gladiatorsGoModule/gamejson"
+	"gladiatorsGoModule/gameJson"
 	"math"
 	"strconv"
 	"strings"
@@ -391,7 +391,7 @@ func (e *Effect) GetRestoreVigorValue() float64 {
 
 // Trigger_Time 時間觸發
 func (e *Effect) Trigger_Time() {
-	if !e.IsBuffer() || e.NextTriggerAt >= GameTimer {
+	if !e.IsBuffer() || e.NextTriggerAt >= GameTime {
 		return
 	}
 	switch e.Type {

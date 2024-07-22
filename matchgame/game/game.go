@@ -39,16 +39,16 @@ const (
 	GladiatorSkillCount                    = 6     // 玩家有幾個技能
 	MarketBribeSkillCount                  = 6     // 有幾個賄賂技能可以購買
 	BribeSkillCount                        = 2     // 玩家可以買幾個賄賂技能
-	KNOCK_BACK_TIME                        = 1     // 擊退表演時間
+	KNOCK_BACK_SECS                float64 = 1     // 擊退表演時間
 	WAIT_BATTLE_START                      = 2     // BattleStart等待時間
 	CollisionDis                           = 4     // 相距X單位就算碰撞
+	MaxVigor                       int     = 20    // 最大體力
 )
 
 // 戰鬥
 const (
-	GridUnit         = 1000          // 每X單位(unit)算1格(grid),
-	WallPos          = 20 * GridUnit // 牆壁的位置, 中心點距離牆壁的單位數, XX代表距離中心點XX單位的位置是牆壁, 也就是場地總共有2*XX單位
-	InitGladiatorPos = 16 * GridUnit // 雙方角鬥士初始位置, 距離中心點XX單位的位置
+	WallPos          = 20.0 // 牆壁的位置, 中心點距離牆壁的單位數, XX代表距離中心點XX單位的位置是牆壁, 也就是場地總共有2*XX單位
+	InitGladiatorPos = 16.0 // 雙方角鬥士初始位置, 距離中心點XX單位的位置
 )
 
 var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
@@ -56,7 +56,7 @@ var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
 // standard:一般版本
 // non-agones: 個人測試模式(不使用Agones服務, non-agones的連線方式不會透過Matchmaker分配房間再把ip回傳給client, 而是直接讓client去連資料庫matchgame的ip)
 var Mode string
-var GameTime = int(0)                                                 // 遊戲開始X秒
+var GameTime = float64(0)                                             // 遊戲開始X秒
 var MarketDivineJsonSkills [MarketDivineSkillCount]gameJson.JsonSkill // 本局遊戲可購買的神祉技能清單
 var LeftGamer Gamer                                                   // 左方玩家第1位玩家
 var RightGamer Gamer                                                  // 右方玩家第2位玩家
@@ -135,11 +135,10 @@ func RunGameTimer(stop chan struct{}) {
 }
 
 func TimePass() {
-	milisecs := TIMELOOP_MILISECS
-	//secs := float64(milisecs) / float64(1000) // 幀數更新率
-	GameTime += milisecs
+	secs := float64(TIMELOOP_MILISECS) / 1000.0
+	GameTime += secs
 	stateStack := [][setting.PLAYER_NUMBER]packet.PackPlayerState{}
-	timeStack := []int{}
+	timeStack := []float64{}
 	notify := false
 	defer func() {
 		if notify && len(timeStack) > 0 {
@@ -150,7 +149,7 @@ func TimePass() {
 		PeriodicSyncMoveTimer -= TIMELOOP_MILISECS
 	}
 
-	isCollide, collideState, collideTime, _ := gladiatorsMove(milisecs)
+	isCollide, collideState, collideTime, _ := gladiatorsMove(secs)
 	if isCollide {
 		notify = true
 		stateStack = append(stateStack, collideState...)
@@ -169,8 +168,8 @@ func TimePass() {
 				GameTime,
 				LeftGamer.GetGladiator().CurUnit,
 				RightGamer.GetGladiator().CurUnit,
-				RightGamer.GetGladiator().Speed*GridUnit,
-				LeftGamer.GetGladiator().Speed*GridUnit,
+				RightGamer.GetGladiator().Speed,
+				LeftGamer.GetGladiator().Speed,
 			)
 			PeriodicSyncMoveTimer = PERIODIC_SYNC_MOVE_TIME
 		} else {
@@ -181,12 +180,12 @@ func TimePass() {
 	}
 }
 
-func gladiatorsMove(milisec int) (bool, [][setting.PLAYER_NUMBER]packet.PackPlayerState, []int, error) {
+func gladiatorsMove(secs float64) (bool, [][setting.PLAYER_NUMBER]packet.PackPlayerState, []float64, error) {
 	stateStack := [][setting.PLAYER_NUMBER]packet.PackPlayerState{}
-	timeStack := []int{}
+	timeStack := []float64{}
 
-	lMove := LeftGamer.GetGladiator().MoveUnitByTime(milisec)
-	rMove := RightGamer.GetGladiator().MoveUnitByTime(milisec)
+	lMove := LeftGamer.GetGladiator().MoveUnitByTime(secs)
+	rMove := RightGamer.GetGladiator().MoveUnitByTime(secs)
 	if lMove || rMove {
 		stateStack = append(stateStack, MyRoom.GetPackPlayerStates())
 		timeStack = append(timeStack, GameTime)
@@ -200,26 +199,18 @@ func gladiatorsMove(milisec int) (bool, [][setting.PLAYER_NUMBER]packet.PackPlay
 		return true, stateStack, timeStack, nil
 	}
 
-	return false, [][setting.PLAYER_NUMBER]packet.PackPlayerState{}, []int{0}, nil
+	return false, [][setting.PLAYER_NUMBER]packet.PackPlayerState{}, []float64{0}, nil
 }
 
-func NotifyMove(stateStack [][setting.PLAYER_NUMBER]packet.PackPlayerState, timeStack []int) {
+func NotifyMove(stateStack [][setting.PLAYER_NUMBER]packet.PackPlayerState, timeStack []float64) {
 	pack := packet.Pack{
 		CMD:    packet.BATTLESTATE_TOCLIENT,
 		PackID: -1,
 		Content: &packet.BattleState_ToClient{
 			CMDContent:   nil,
 			PlayerStates: stateStack,
-			GameTime:     sliceMiliSecsToSecs(timeStack),
+			GameTime:     timeStack,
 		},
 	}
 	MyRoom.BroadCastPacket(-1, pack)
-}
-
-func sliceMiliSecsToSecs(sMilisecs []int) []float64 {
-	f := []float64{}
-	for _, v := range sMilisecs {
-		f = append(f, float64(v)/float64(1000))
-	}
-	return f
 }

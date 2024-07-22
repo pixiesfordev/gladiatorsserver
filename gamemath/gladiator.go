@@ -26,7 +26,7 @@ type Gladiator struct {
 	VigorRegen    float64                           // 體力回復
 	Knockback     int                               // 擊退
 	Init          int                               // 先攻
-	Spd           int                               // 移動
+	Spd           float64                           // 移動
 	CurUnit       float64                           // 目前位置
 	Effects       map[gameJson.EffectType][]*Effect // 狀態清單
 }

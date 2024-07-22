@@ -16,13 +16,13 @@ const (
 
 type GladiatorPos struct {
 	LeftSide      bool
-	CurUnit       int
-	Speed         int // grid/secs
-	Rush          int // grid/secs
-	CantMoveTimer int // milisecs
+	CurUnit       float64
+	Speed         float64
+	Rush          float64
+	CantMoveTimer float64
 }
 
-func (gPos *GladiatorPos) Dir() int {
+func (gPos *GladiatorPos) Dir() float64 {
 	if gPos.LeftSide {
 		return 1
 	} else {
@@ -30,7 +30,7 @@ func (gPos *GladiatorPos) Dir() int {
 	}
 }
 
-func (gPos *GladiatorPos) SetRush(on bool, rush int) {
+func (gPos *GladiatorPos) SetRush(on bool, rush float64) {
 	if on && gPos.Rush == 0 {
 		gPos.Rush += rush
 	} else if !on && gPos.Rush >= 0 {
@@ -42,11 +42,11 @@ func (gPos *GladiatorPos) CanMove() bool {
 	return gPos.CantMoveTimer <= 0
 }
 
-func (gPos *GladiatorPos) AddCantMoveTimer(milisecs int) {
-	gPos.CantMoveTimer += milisecs
+func (gPos *GladiatorPos) AddCantMoveTimer(secs float64) {
+	gPos.CantMoveTimer += secs
 }
 
-func (gPos *GladiatorPos) MoveAhead(d int) {
+func (gPos *GladiatorPos) MoveAhead(d float64) {
 	gPos.CurUnit += d * gPos.Dir()
 	if gPos.CurUnit > WallPos {
 		gPos.CurUnit = WallPos
@@ -55,41 +55,37 @@ func (gPos *GladiatorPos) MoveAhead(d int) {
 	}
 }
 
-func (gPos *GladiatorPos) MoveUnitByTime(milisecs int) bool { // 毫秒為單位
+func (gPos *GladiatorPos) MoveUnitByTime(secs float64) bool { // 毫秒為單位
 	if gPos.CantMoveTimer > 0 {
-		gPos.CantMoveTimer -= milisecs
+		gPos.CantMoveTimer -= secs
 		return false
 	}
 	totalSpeed := gPos.Speed + gPos.Rush
-	gPos.MoveAhead(totalSpeed * GridUnit / TimeMili * milisecs)
+	gPos.MoveAhead(totalSpeed * secs)
 	return true
 }
 
 // 擊退xUnit,
-func (gPos *GladiatorPos) KnockBackUnitByTime(Unit int, milisecs int) {
-	gPos.AddCantMoveTimer(milisecs)
-	gPos.MoveAhead(-Unit)
-}
-
-func (gPos *GladiatorPos) CurGrid() float64 {
-	return float64(gPos.CurUnit) / float64(GridUnit)
+func (gPos *GladiatorPos) KnockBackUnitByTime(unit float64, secs float64) {
+	gPos.AddCantMoveTimer(secs)
+	gPos.MoveAhead(-unit)
 }
 
 func IsCollide() bool {
 	dis := LeftGamer.GetGladiator().CurUnit - RightGamer.GetGladiator().CurUnit
 	if dis >= 0 {
-		return dis <= CollisionDis*GridUnit
+		return dis <= CollisionDis
 	} else {
-		return -dis <= CollisionDis*GridUnit
+		return -dis <= CollisionDis
 	}
 }
 
-func GetCollisionData() ([setting.PLAYER_NUMBER]packet.PackPlayerState, int) {
+func GetCollisionData() ([setting.PLAYER_NUMBER]packet.PackPlayerState, float64) {
 	collisionPos := 0 /*(LeftGamer.GetGladiator().CurUnit + RightGamer.GetGladiator().CurUnit) / 2*/
-	LeftBack := /*LeftGamer.GetGladiator().CurUnit - collisionPos +*/ (RightGamer.GetGladiator().Knockback * GridUnit)
-	RightBack := /*collisionPos - RightGamer.GetGladiator().CurUnit +*/ (LeftGamer.GetGladiator().Knockback * GridUnit)
-	LeftGamer.GetGladiator().KnockBackUnitByTime(LeftBack, KNOCK_BACK_TIME*TimeMili)
-	RightGamer.GetGladiator().KnockBackUnitByTime(RightBack, KNOCK_BACK_TIME*TimeMili)
+	LeftBack := float64(RightGamer.GetGladiator().Knockback)
+	RightBack := float64(LeftGamer.GetGladiator().Knockback)
+	LeftGamer.GetGladiator().KnockBackUnitByTime(LeftBack, KNOCK_BACK_SECS*TimeMili)
+	RightGamer.GetGladiator().KnockBackUnitByTime(RightBack, KNOCK_BACK_SECS*TimeMili)
 	log.Infof("GetCollision: GameTime(%f, %d) End with POS(%d ,%d), collisionPos: %d, BackDis(%d, %d), Speed(%d, %d), Rush(%d, %d)",
 		float64(GameTime)/float64(TimeMili),
 		GameTime,
@@ -99,5 +95,5 @@ func GetCollisionData() ([setting.PLAYER_NUMBER]packet.PackPlayerState, int) {
 		LeftGamer.GetGladiator().Speed, RightGamer.GetGladiator().Speed,
 		LeftGamer.GetGladiator().Rush, RightGamer.GetGladiator().Rush,
 	)
-	return MyRoom.GetPackPlayerStates(), GameTime + KNOCK_BACK_TIME*TimeMili
+	return MyRoom.GetPackPlayerStates(), GameTime + KNOCK_BACK_SECS
 }

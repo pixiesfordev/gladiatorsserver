@@ -8,14 +8,16 @@ import (
 	"time"
 )
 
+var (
+	rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
 // RandomFloatBetweenInts 從兩個整數之間生成一個隨機float64
 func RandomFloatBetweenInts(min, max int) (float64, error) {
 	if min > max {
 		return 0, fmt.Errorf("RandomFloatBetweenInts傳入值不符合規則 最小值<=最大值")
 	}
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
-	return float64(min) + r.Float64()*(float64(max)-float64(min)), nil
+	return float64(min) + rnd.Float64()*(float64(max)-float64(min)), nil
 }
 
 // 從兩個整數之間生成一個隨機int 傳入0,100會回傳0到100(包含0和100)的隨機整數
@@ -23,9 +25,7 @@ func GetRandomIntFromMinMax(min, max int) (int, error) {
 	if min > max {
 		return 0, fmt.Errorf("RandomIntBetweenInts傳入值不符合規則 最小值<=最大值")
 	}
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
-	return r.Intn(max-min+1) + min, nil
+	return rnd.Intn(max-min+1) + min, nil
 }
 
 // GetRandomTFromSlice 傳入泛型切片，返回隨機1個元素。
@@ -34,10 +34,7 @@ func GetRandomTFromSlice[T any](slice []T) (T, error) {
 		var value T
 		return value, fmt.Errorf("GetRandomTFromSlice傳入參數錯誤")
 	}
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
-	randIndex := r.Intn(len(slice))
-	return slice[randIndex], nil
+	return slice[rnd.Intn(len(slice))], nil
 }
 
 // 傳入泛型切片和要返回的隨機元素數量x，返回x個隨機且不重複的元素。
@@ -64,8 +61,6 @@ func GetRandomNumberOfTFromSlice[T any](slice []T, count int) ([]T, error) {
 
 // 從map中取隨機key值出來
 func GetRndKeyFromMap[K comparable, V any](m map[K]V) K {
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
 	keys := make([]K, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
@@ -76,13 +71,11 @@ func GetRndKeyFromMap[K comparable, V any](m map[K]V) K {
 		return defaultK // 如果map為空, 返回K類型的零值
 	}
 
-	return keys[r.Intn(len(keys))] // 隨機選擇一個鍵並返回
+	return keys[rnd.Intn(len(keys))] // 隨機選擇一個鍵並返回
 }
 
 // 從map中取隨機value值出來
 func GetRndValueFromMap[K comparable, V any](m map[K]V) V {
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
 	values := make([]V, 0, len(m))
 	for _, v := range m {
 		values = append(values, v)
@@ -92,7 +85,7 @@ func GetRndValueFromMap[K comparable, V any](m map[K]V) V {
 		var defaultV V
 		return defaultV // 如果map為空, 返回V類型的零值
 	}
-	return values[r.Intn(len(values))] // 隨機選擇一個值並返回
+	return values[rnd.Intn(len(values))] // 隨機選擇一個值並返回
 }
 
 // 傳入泛型map和要返回的隨機元素數量x，返回x個隨機且不重複的元素。
@@ -121,11 +114,9 @@ func GetRandomNumberOfTFromMap[K comparable, V any](m map[K]V, count int) ([]V, 
 
 	return selected, nil
 }
-
 // 傳入機率回傳結果 EX. 傳入0.3就是有30%機率返回true
-func GetProbResult(prob float64, rnd *rand.Rand) bool {
-	randomFloat := rnd.Float64()
-	return randomFloat < prob
+func GetProbResult(prob float64) bool {
+	return rnd.Float64() < prob
 }
 
 // 範例: 傳入"100~200" 回傳100~199之間的int
@@ -151,32 +142,51 @@ func GetRndIntFromRangeStr(input string, delimiter string) (int, error) {
 
 // 範例: 傳入"100,200,300" 回傳隨機一個值, 例如200
 func GetRndIntFromString(input string, delimiter string) (int, error) {
-	parts := strings.Split(input, delimiter)
-	numbers := make([]int, len(parts))
-
-	for i, part := range parts {
-		number, err := strconv.Atoi(part)
-		if err != nil {
-			return 0, err
-		}
-		numbers[i] = number
+	// 檢查 input 不為空字串
+	if input == "" {
+		return 0, fmt.Errorf("input string is empty or incorrect format")
 	}
 
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
-	randomIndex := r.Intn(len(numbers))
-	return numbers[randomIndex], nil
+	// 收集合法 parts
+	parts := strings.Split(input, delimiter)
+	validNumbers := make([]int, 0, len(parts))
+	for _, part := range parts {
+		if part != "" {
+			number, err := strconv.Atoi(part)
+			if err == nil {
+				validNumbers = append(validNumbers, number)
+			}
+		}
+	}
+
+	// 檢查是否不存在任何合法 parts
+	if len(validNumbers) == 0 {
+		return 0, fmt.Errorf("no valid numbers found in the input string")
+	}
+
+	return validNumbers[rnd.Intn(len(validNumbers))], nil
 }
 
 // 範例: 傳入"100,200,300" 回傳隨機一個字串, 例如"200"
 func GetRndStrFromString(input string, delimiter string) (string, error) {
-	parts := strings.Split(input, delimiter)
-	if len(parts) == 0 {
+	// 檢查 input 不為空字串
+	if input == "" {
 		return "", fmt.Errorf("input string is empty or incorrect format")
 	}
 
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
-	randomIndex := r.Intn(len(parts))
-	return parts[randomIndex], nil
+	// 收集合法 parts
+	parts := strings.Split(input, delimiter)
+	validParts := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part != "" {
+			validParts = append(validParts, part)
+		}
+	}
+
+	// 檢查是否不存在任何合法 parts
+	if len(validParts) == 0 {
+		return "", fmt.Errorf("no valid parts after string splits")
+	}
+
+	return validParts[rnd.Intn(len(validParts))], nil
 }
