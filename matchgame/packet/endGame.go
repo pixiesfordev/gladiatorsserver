@@ -13,10 +13,8 @@ type EndGame_ToClient struct {
 }
 
 type PackPlayerResult struct {
-	Result                  string // Win,Lose,Tie
-	DBPlayerID              string
-	GainGold                int
-	GainEXP                 int
-	JsonBattleEffectIDs     []string // 戰鬥效果JsonID清單
-	JsonPerformanceTitleIDs []string // 戰鬥評價JsonID清單
+	Result     string // Win,Lose,Tie
+	DBPlayerID string
+	GainGold   int
+	GainEXP    int
 }

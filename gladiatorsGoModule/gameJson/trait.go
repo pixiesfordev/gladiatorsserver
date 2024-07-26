@@ -5,11 +5,11 @@ import (
 	"fmt"
 )
 
-type TraitJsonData struct {
+type TraitJson struct {
 	ID int `json:"ID"`
 }
 
-func (jsonData TraitJsonData) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {
+func (jsonData TraitJson) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {
 	var wrapper map[string][]json.RawMessage
 	if err := json.Unmarshal(jsonBytes, &wrapper); err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func (jsonData TraitJsonData) UnmarshalJSONData(jsonName string, jsonBytes []byt
 
 	items := make(map[interface{}]interface{})
 	for _, rawData := range rawDatas {
-		var item TraitJsonData
+		var item TraitJson
 		if err := json.Unmarshal(rawData, &item); err != nil {
 			return nil, err
 		}

@@ -19,8 +19,6 @@ type Gamer interface {
 	AddGold(value int64)
 	GetGladiator() *Gladiator
 	IsReady() bool
-	GetPackPlayerState() packet.PackPlayerState
-	GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackBribeSkill
 }
 
 // 玩家
@@ -46,13 +44,16 @@ func (player *Player) GetID() string {
 func (player *Player) GetGold() int64 {
 	return player.gold
 }
-
 func (player *Player) AddGold(value int64) {
 	player.gold += value
 }
 
 func (player *Player) GetGladiator() *Gladiator {
 	return player.myGladiator
+}
+
+func (player *Player) SetReady() {
+	player.ready = true
 }
 
 func (player *Player) IsReady() bool {
@@ -79,26 +80,43 @@ func (player *Player) CloseConnection() {
 	log.Infof("%s 關閉玩家(%s)連線", logger.LOG_Player, player.GetID())
 }
 
-func (player *Player) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackBribeSkill {
-	var playerBribes [2]packet.PackBribeSkill
-
-	playerBribes[0] = packet.PackBribeSkill{
-		JsonID: 1,
-		Used:   false,
-	}
-	playerBribes[1] = packet.PackBribeSkill{
-		JsonID: 2,
-		Used:   false,
-	}
-
+func (player *Player) GetPackDivineSkills() [setting.PLAYER_NUMBER]packet.PackDivineSkill {
+	var playerBribes [2]packet.PackDivineSkill
 	return playerBribes
 }
 
+// GetPackPlayerState 取得玩家的狀態封包
+func (player *Player) GetPackPlayer() packet.PackPlayer {
+	packPlayer := packet.PackPlayer{
+		DBID: player.GetID(),
+	}
+	return packPlayer
+}
+
+// GetPackPlayerState 取得玩家的狀態封包
+func (player *Player) GetOpponentPackPlayer() packet.PackPlayer {
+	if LeftGamer.GetID() == player.ID {
+		return (RightGamer.(*Player)).GetPackPlayer()
+	} else {
+		return (LeftGamer.(*Player)).GetPackPlayer()
+	}
+}
+
+// GetPackPlayerState 取得玩家的狀態封包
 func (player *Player) GetPackPlayerState() packet.PackPlayerState {
 	packPlayerState := packet.PackPlayerState{
-		ID:          player.GetID(),
-		BribeSkills: player.GetPackPlayerBribes(),
-		Gladiator:   player.GetGladiator().GetPackGladiator(),
+		DBID:           player.GetID(),
+		DivineSkills:   player.GetPackDivineSkills(),
+		GladiatorState: player.GetGladiator().GetPackGladiatorState(),
 	}
 	return packPlayerState
+}
+
+// GetOpponentPackPlayerState 取得玩家對手的狀態封包
+func (player *Player) GetOpponentPackPlayerState() packet.PackPlayerState {
+	if LeftGamer.GetID() == player.ID {
+		return (RightGamer.(*Player)).GetPackPlayerState()
+	} else {
+		return (LeftGamer.(*Player)).GetPackPlayerState()
+	}
 }

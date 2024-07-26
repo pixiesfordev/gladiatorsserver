@@ -1,7 +1,5 @@
 package packet
 
-import "gladiatorsGoModule/setting"
-
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
 
@@ -11,51 +9,29 @@ type BattleState struct {
 
 type BattleState_ToClient struct {
 	CMDContent
-	PlayerStates [][setting.PLAYER_NUMBER]PackPlayerState
-	GameTime     []float64
+	MyPlayerState       PackPlayerState
+	OpponentPlayerState PackPlayerState
+	GameTime            float64
 }
 
 type PackPlayerState struct {
-	ID          string // 玩家DBID
-	BribeSkills [2]PackBribeSkill
-	Gladiator   PackGladiator
+	DBID           string // 玩家DBID
+	DivineSkills   [2]PackDivineSkill
+	GladiatorState PackGladiatorState
 }
 
-type PackBribeSkill struct {
+type PackDivineSkill struct {
 	JsonID int
 	Used   bool
 }
 
-type PackGladiator struct {
-	LeftSide        bool
-	JsonGladiatorID int
-	JsonSkillIDs    [6]int
-	JsonTraitIDs    []int
-	JsonEquipIDs    []int
-	CurSkills       [4]PackSkill
-	HP              int
-	CurHP           int
-	CurVigor        float64
-	VigorRegen      float64
-	STR             int
-	DEF             int
-	MDEF            int
-	CRIT            float64
-	INIT            int
-	Knockback       int
-	Speed           float64 // 當前速率(N表示每秒前進N*GridUnit個Unit)
-	Rush            bool    // 衝刺加速度
-	BattlePos       float64 // 戰鬥位置(Server計算用)
-	StagePos        float64 // 場景上實際位置(Client表演用)
-	Buffers         []PackBuffer
-}
-
-type PackSkill struct {
-	JsonID int
-	On     bool
-}
-
-type PackBuffer struct {
-	JsonID string
-	Stack  int
+type PackGladiatorState struct {
+	HandSkillIDs            [4]int   // (玩家自己才會收到)
+	CurHp                   int      // 目前生命
+	CurVigor                float64  // 目前體力
+	CurSpd                  float64  // 目前速度
+	CurPos                  float64  // 目前位置
+	IsRush                  bool     // 是否正在衝刺中
+	EffectTypes             []string // 狀態清單
+	ActivedMeleeJsonSkillID int      // (玩家自己才會收到)啟用中的肉搏技能ID, 玩家啟用中的肉搏技能, 如果是0代表沒有啟用中的肉搏技能
 }

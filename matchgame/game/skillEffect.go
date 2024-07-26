@@ -288,12 +288,12 @@ func (e *Effect) GetCritUpValue() float64 {
 }
 
 // GetInitUpValue 取得先攻提升值
-func (e *Effect) GetInitUpValue() int {
-	addValue := 0
+func (e *Effect) GetInitUpValue() float64 {
+	addValue := 0.0
 	var err error
 	switch e.Type {
 	case gameJson.InitUp:
-		addValue, err = GetEffectValue[int](e, 0)
+		addValue, err = GetEffectValue[float64](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
 			return 0
@@ -303,12 +303,12 @@ func (e *Effect) GetInitUpValue() int {
 }
 
 // GetKnockbackUpValue 取得擊退提升值
-func (e *Effect) GetKnockbackUpValue() int {
-	addValue := 0
+func (e *Effect) GetKnockbackUpValue() float64 {
+	addValue := 0.0
 	var err error
 	switch e.Type {
 	case gameJson.KnockbackUp:
-		addValue, err = GetEffectValue[int](e, 0)
+		addValue, err = GetEffectValue[float64](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
 			return 0

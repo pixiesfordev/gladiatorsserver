@@ -1,34 +1,38 @@
 package packet
 
-import "gladiatorsGoModule/setting"
-
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
+
+type ActionType string
+
+const (
+	Action_Skill       ActionType = "Action_Skill"       // 啟用技能
+	Action_Rush                   = "Action_Rush"        // 衝刺
+	Action_DivineSkill            = "Action_DivineSkill" // 啟用神祉技能
+)
 
 // 玩家動作
 type PlayerAction struct {
 	CMDContent
-	ActionType    string
+	ActionType    ActionType
 	ActionContent interface{}
 }
 type PlayerAction_ToClient struct {
 	CMDContent
-	ActionType    string
+	ActionType    ActionType
 	ActionContent interface{}
-	PlayerStates  [][setting.PLAYER_NUMBER]PackPlayerState
-	GameTime      []float64
 }
 
 // 施放技能
 type PackAction_Skill struct {
-	On       bool
-	SkillIdx int
+	On      bool
+	SkillID int
 }
 
 // 施放神祉技能
 type PackAction_BribeSkill struct {
-	On            bool
-	BribeSkillIdx int
+	On      bool
+	SkillID int
 }
 
 // 衝刺

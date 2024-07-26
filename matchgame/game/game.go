@@ -3,52 +3,49 @@ package game
 import (
 	"fmt"
 	"gladiatorsGoModule/gameJson"
-	"gladiatorsGoModule/setting"
 	"gladiatorsGoModule/utility"
+	"math"
 	"net"
 
 	"encoding/json"
 	logger "matchgame/logger"
-	"matchgame/packet"
-	"runtime/debug"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
+type GameState string // 目前遊戲狀態列舉
 const (
-	GameState_Inited GameState = iota
-	GameState_WaitingPlayers
-	GameState_Bribing
-	GameState_Started
-	GameState_End
+	GameState_Initializing         GameState = "GameState_Initializing"
+	GameState_Inited                         = "GameState_Inited"
+	GameState_WaitingPlayers                 = "GameState_WaitingPlayers"       // 等待雙方玩家入場
+	GameState_SelectingDivineSkill           = "GameState_SelectingDivineSkill" // 選擇神祉技能
+	GameState_CountingDown                   = "GameState_CountingDown"         // 戰鬥倒數開始中
+	GameState_Fighting                       = "GameState_Fighting"             // 戰鬥中
+	GameState_End                            = "GameState_End"                  // 結束戰鬥
 )
 
 const (
-	GAMEUPDATE_MS                          = 1000  // 每X毫秒送UPDATEGAME_TOCLIENT封包給client(遊戲狀態更新並心跳檢測)
-	PLAYERUPDATE_MS                        = 1000  // 每X毫秒送UPDATEPLAYER_TOCLIENT封包給client(玩家狀態更新)
-	SCENEUPDATE_MS                         = 10000 // 每X毫秒送UPDATESCENE_TOCLIENT封包給client(場景狀態更新)
-	AGONES_HEALTH_PIN_INTERVAL_SEC         = 1     // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
-	TCP_CONN_TIMEOUT_SEC                   = 120   // TCP連線逾時時間X秒
-	TIMELOOP_MILISECS              int     = 20    // 遊戲每X毫秒循環(client幀數更新精度)
-	PERIODIC_SYNC_MOVE_TIME        int     = 1000  // 週期性同步位置
-	KICK_PLAYER_SECS               float64 = 90    // 最長允許玩家無心跳X秒後踢出遊戲房
-	MarketDivineSkillCount                 = 6     // 有幾個神祉技能可以購買
-	DivineSkillCount                       = 2     // 玩家可以買幾個神祉技能
-	GladiatorSkillCount                    = 6     // 玩家有幾個技能
-	MarketBribeSkillCount                  = 6     // 有幾個賄賂技能可以購買
-	BribeSkillCount                        = 2     // 玩家可以買幾個賄賂技能
-	KNOCK_BACK_SECS                float64 = 1     // 擊退表演時間
-	WAIT_BATTLE_START                      = 2     // BattleStart等待時間
-	CollisionDis                           = 4     // 相距X單位就算碰撞
-	MaxVigor                       int     = 20    // 最大體力
+	GAMEUPDATE_MS                          = 1000 // 每X毫秒送UPDATEGAME_TOCLIENT封包給client(遊戲狀態更新並心跳檢測)
+	AGONES_HEALTH_PIN_INTERVAL_SEC         = 1    // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
+	TCP_CONN_TIMEOUT_SEC                   = 120  // TCP連線逾時時間X秒
+	TIMELOOP_MILISECS              int     = 10   // 遊戲每X毫秒循環
+	KICK_PLAYER_SECS               float64 = 60   // 最長允許玩家無心跳X秒後踢出遊戲房
+	MarketDivineSkillCount                 = 4    // 有幾個神祉技能可以購買
+	DivineSkillCount                       = 2    // 玩家可以買幾個神祉技能
+	GladiatorSkillCount                    = 6    // 玩家有幾個技能
+	HandSkillCount                         = 4    // 玩家手牌技能, 索引0的技能是下一張牌
+	WAIT_BATTLE_START                      = 2    // (測試用)BattleStart等待時間
+	CollisionDis                           = 4    // 相距X單位就算碰撞
+	MaxVigor                       float64 = 20   // 最大體力
+	FightingCountDownSecs          int     = 4    // 戰鬥倒數秒數
 )
 
 // 戰鬥
 const (
-	WallPos          = 20.0 // 牆壁的位置, 中心點距離牆壁的單位數, XX代表距離中心點XX單位的位置是牆壁, 也就是場地總共有2*XX單位
-	InitGladiatorPos = 16.0 // 雙方角鬥士初始位置, 距離中心點XX單位的位置
+	WallPos          = 20.0 // 中心點距離牆壁的單位數, 填20代表中心點左右20單位是牆壁, 也就是戰鬥場地總長度是40
+	InitGladiatorPos = 16.0 // 雙方角鬥士初始位置, 填16代表, 角鬥士戰鬥開始的起始位置距離中心點16單位
 )
 
 var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
@@ -57,10 +54,11 @@ var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
 // non-agones: 個人測試模式(不使用Agones服務, non-agones的連線方式不會透過Matchmaker分配房間再把ip回傳給client, 而是直接讓client去連資料庫matchgame的ip)
 var Mode string
 var GameTime = float64(0)                                             // 遊戲開始X秒
+var TickTimePass = float64(TIMELOOP_MILISECS) / 1000.0                // 每幀時間流逝秒數
 var MarketDivineJsonSkills [MarketDivineSkillCount]gameJson.JsonSkill // 本局遊戲可購買的神祉技能清單
 var LeftGamer Gamer                                                   // 左方玩家第1位玩家
 var RightGamer Gamer                                                  // 右方玩家第2位玩家
-var PeriodicSyncMoveTimer = PERIODIC_SYNC_MOVE_TIME
+var MyGameState = GameState_Initializing                              // 遊戲狀態
 
 func InitGame() {
 	var err error
@@ -112,11 +110,29 @@ type ConnectionUDP struct {
 	MyLoopChan *LoopChan
 }
 
+// StartFighting 開始戰鬥
+func StartFighting() {
+	GameTime = 0
+	ChangeGameState(GameState_CountingDown)
+}
+
+// ResetGame 重置遊戲
+func ResetGame() {
+	ChangeGameState(GameState_Inited)
+	GameTime = 0
+	MyRoom.ResetRoom()
+}
+
+// 改變遊戲階段
+func ChangeGameState(state GameState) {
+	MyGameState = state
+}
+
 // 遊戲計時器
 func RunGameTimer(stop chan struct{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("%s RoomTimer錯誤: %v.\n%s", logger.LOG_Room, err, string(debug.Stack()))
+			log.Errorf("%s RoomTimer錯誤: %v", logger.LOG_Room, err)
 			stop <- struct{}{}
 		}
 	}()
@@ -125,7 +141,7 @@ func RunGameTimer(stop chan struct{}) {
 		select {
 		case <-ticker.C:
 			MyRoom.KickTimeoutPlayer()
-			if MyRoom.GameState == GameState_Started {
+			if MyGameState == GameState_Fighting {
 				TimePass()
 			}
 		case <-stop:
@@ -135,82 +151,75 @@ func RunGameTimer(stop chan struct{}) {
 }
 
 func TimePass() {
-	secs := float64(TIMELOOP_MILISECS) / 1000.0
-	GameTime += secs
-	stateStack := [][setting.PLAYER_NUMBER]packet.PackPlayerState{}
-	timeStack := []float64{}
-	notify := false
-	defer func() {
-		if notify && len(timeStack) > 0 {
-			NotifyMove(stateStack, timeStack)
+	GameTime += TickTimePass
+
+	// 雙方移動
+	gladiatorsMove()
+	// 有碰撞就進行肉搏
+	if checkCollision() {
+		melee()
+	}
+}
+
+// gladiatorsMove 雙方移動
+func gladiatorsMove() {
+	LeftGamer.GetGladiator().Move()
+	RightGamer.GetGladiator().Move()
+}
+
+// checkCollision 碰撞檢測
+func checkCollision() bool {
+	dis := math.Abs(LeftGamer.GetGladiator().CurPos - RightGamer.GetGladiator().CurPos)
+	return dis <= CollisionDis
+}
+
+// melee 雙方進行肉搏
+func melee() {
+	var err error
+	g1 := LeftGamer.GetGladiator()
+	g2 := RightGamer.GetGladiator()
+
+	// 初始化雙方肉搏技能
+	g1SpellInit := g1.GetInit()
+	var g1Skill *Skill
+	if g1.ActivedMeleeJsonSkill != nil {
+		g1Skill, err = NewSkill(g1, g2, *g1.ActivedMeleeJsonSkill)
+		if err != nil {
+			log.Errorf("NewSkill錯誤")
 		}
-	}()
-	if PERIODIC_SYNC_MOVE_TIME > 0 {
-		PeriodicSyncMoveTimer -= TIMELOOP_MILISECS
+		g1SpellInit += g1Skill.JsonSkill.Init
+	}
+	g2SpellInit := g2.GetInit()
+	var g2Skill *Skill
+	if g2.ActivedMeleeJsonSkill != nil {
+		g2Skill, err = NewSkill(g2, g1, *g2.ActivedMeleeJsonSkill)
+		if err != nil {
+			log.Errorf("NewSkill錯誤")
+		}
+		g2SpellInit += g2Skill.JsonSkill.Init
 	}
 
-	isCollide, collideState, collideTime, _ := gladiatorsMove(secs)
-	if isCollide {
-		notify = true
-		stateStack = append(stateStack, collideState...)
-		timeStack = append(timeStack, collideTime...)
-		return
-	}
-
-	if PERIODIC_SYNC_MOVE_TIME > 0 && PeriodicSyncMoveTimer <= 0 {
-		if LeftGamer.GetGladiator().CanMove() && RightGamer.GetGladiator().CanMove() {
-			// 沒事，但週期性回傳修正
-			notify = true
-			stateStack = append(stateStack, MyRoom.GetPackPlayerStates())
-			timeStack = append(timeStack, GameTime)
-			log.Infof("PeriodicMoveNotify: GameTime(%f ,%d) End with POS(%d, %d), Speed: (%d, %d) ",
-				float64(GameTime)/float64(TimeMili),
-				GameTime,
-				LeftGamer.GetGladiator().CurUnit,
-				RightGamer.GetGladiator().CurUnit,
-				RightGamer.GetGladiator().Speed,
-				LeftGamer.GetGladiator().Speed,
-			)
-			PeriodicSyncMoveTimer = PERIODIC_SYNC_MOVE_TIME
+	// 雙方技能施放
+	if g1SpellInit > g2SpellInit { // g1先攻
+		g1.Spell(g1Skill)
+		g2.Spell(g2Skill)
+	} else if g1SpellInit < g2SpellInit { // g2先攻
+		g2.Spell(g2Skill)
+		g1.Spell(g1Skill)
+	} else { // 先攻值一樣的話就隨機一方先攻
+		if utility.GetProbResult(0.5) {
+			g1.Spell(g1Skill)
+			g2.Spell(g2Skill)
 		} else {
-			// 事件發生中，週期性同步跳過一次
-			PeriodicSyncMoveTimer += PERIODIC_SYNC_MOVE_TIME
+			g2.Spell(g2Skill)
+			g1.Spell(g1Skill)
 		}
-		return
-	}
-}
-
-func gladiatorsMove(secs float64) (bool, [][setting.PLAYER_NUMBER]packet.PackPlayerState, []float64, error) {
-	stateStack := [][setting.PLAYER_NUMBER]packet.PackPlayerState{}
-	timeStack := []float64{}
-
-	lMove := LeftGamer.GetGladiator().MoveUnitByTime(secs)
-	rMove := RightGamer.GetGladiator().MoveUnitByTime(secs)
-	if lMove || rMove {
-		stateStack = append(stateStack, MyRoom.GetPackPlayerStates())
-		timeStack = append(timeStack, GameTime)
 	}
 
-	// 碰撞
-	if IsCollide() {
-		collisionState, time := GetCollisionData()
-		stateStack = append(stateStack, collisionState)
-		timeStack = append(timeStack, time)
-		return true, stateStack, timeStack, nil
-	}
+	// 雙方擊退
+	g1Knockback := g1.GetKnockback() + g1Skill.JsonSkill.Knockback
+	g2Knockback := g2.GetKnockback() + g2Skill.JsonSkill.Knockback
 
-	return false, [][setting.PLAYER_NUMBER]packet.PackPlayerState{}, []float64{0}, nil
-}
-
-func NotifyMove(stateStack [][setting.PLAYER_NUMBER]packet.PackPlayerState, timeStack []float64) {
-	pack := packet.Pack{
-		CMD:    packet.BATTLESTATE_TOCLIENT,
-		PackID: -1,
-		Content: &packet.BattleState_ToClient{
-			CMDContent:   nil,
-			PlayerStates: stateStack,
-			GameTime:     timeStack,
-		},
-	}
-	MyRoom.BroadCastPacket(-1, pack)
+	g1.DoKnockback(g2Knockback)
+	g2.DoKnockback(g1Knockback)
 }

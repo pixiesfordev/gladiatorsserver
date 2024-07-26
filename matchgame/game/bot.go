@@ -34,14 +34,14 @@ func (bot *Bot) GetGladiator() *Gladiator {
 func (bot *Bot) IsReady() bool {
 	return true
 }
-func (bot *Bot) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackBribeSkill {
-	var botBribes [2]packet.PackBribeSkill
+func (bot *Bot) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackDivineSkill {
+	var botBribes [2]packet.PackDivineSkill
 
-	botBribes[0] = packet.PackBribeSkill{
+	botBribes[0] = packet.PackDivineSkill{
 		JsonID: bot.BribeSkills[0].MyJson.ID,
 		Used:   bot.BribeSkills[0].Used,
 	}
-	botBribes[1] = packet.PackBribeSkill{
+	botBribes[1] = packet.PackDivineSkill{
 		JsonID: bot.BribeSkills[1].MyJson.ID,
 		Used:   bot.BribeSkills[1].Used,
 	}
@@ -51,9 +51,9 @@ func (bot *Bot) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackBribeSki
 
 func (bot *Bot) GetPackPlayerState() packet.PackPlayerState {
 	packBotState := packet.PackPlayerState{
-		ID:          bot.GetID(),
-		BribeSkills: bot.GetPackPlayerBribes(),
-		Gladiator:   bot.GetGladiator().GetPackGladiator(),
+		DBID:           bot.GetID(),
+		DivineSkills:   bot.GetPackPlayerBribes(),
+		GladiatorState: bot.GetGladiator().GetPackGladiatorState(),
 	}
 	return packBotState
 }

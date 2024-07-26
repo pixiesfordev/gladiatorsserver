@@ -71,7 +71,7 @@ func Init(env string) error {
 			case JsonName.Gladiator:
 				SetJsonDic(jsonName, data, JsonGladiator{})
 			case JsonName.Trait:
-				SetJsonDic(jsonName, data, TraitJsonData{})
+				SetJsonDic(jsonName, data, TraitJson{})
 			case JsonName.Skill:
 				SetJsonDic(jsonName, data, JsonSkill{})
 			case JsonName.SkillEffect:

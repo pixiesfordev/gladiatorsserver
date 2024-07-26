@@ -54,7 +54,7 @@ func GetNewBot() (*Bot, error) {
 	}
 	jsonSkills[5] = talentSkillJson
 	// 設定角鬥士
-	gladiator, err := NewGladiator(botID, rndJsonGladiator, jsonSkills, []gameJson.TraitJsonData{}, []gameJson.JsonEquip{})
+	gladiator, err := NewGladiator(botID, rndJsonGladiator, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 	if err != nil {
 		return nil, err
 	}

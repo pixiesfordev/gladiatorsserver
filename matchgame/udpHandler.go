@@ -95,12 +95,8 @@ func openConnectUDP(stop chan struct{}, src string) {
 func updateGameLoop(player *game.Player, stop chan struct{}) {
 	log.Infof("%s (UDP)開始updateGameLoop", logger.LOG_Main)
 	gameUpdateTimer := time.NewTicker(game.GAMEUPDATE_MS * time.Millisecond)
-	playerUpdateTimer := time.NewTicker(game.PLAYERUPDATE_MS * time.Millisecond)
-	sceneUpdateTimer := time.NewTicker(game.SCENEUPDATE_MS * time.Millisecond)
 
 	defer gameUpdateTimer.Stop()
-	defer playerUpdateTimer.Stop()
-	defer sceneUpdateTimer.Stop()
 
 	loopChan := &game.LoopChan{
 		StopChan:      make(chan struct{}, 1),

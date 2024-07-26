@@ -11,16 +11,17 @@ import (
 
 type JsonGladiator struct {
 	ID         int     `json:"ID"`
-	HP         int     `json:"HP"`
-	STR        int     `json:"STR"`
-	DEF        int     `json:"DEF"`
-	MDEF       int     `json:"MDEF"`
-	CRIT       float64 `json:"CRIT"`
-	CRITDmg    float64 `json:"CRITDmg"`
+	Hp         int     `json:"Hp"`
+	Str        int     `json:"Str"`
+	PDef       int     `json:"PDef"`
+	MDef       int     `json:"MDef"`
+	Crit       float64 `json:"Crit"`
+	CritDmg    float64 `json:"CritDmg"`
 	VigorRegen float64 `json:"VigorRegen"`
-	Knockback  int     `json:"Knockback"`
-	INIT       int     `json:"INIT"`
-	Speed      float64 `json:"Speed"`
+	Knockback  float64 `json:"Knockback"`
+	Init       float64 `json:"Init"`
+	Spd        float64 `json:"Spd"`
+	RushSpd    float64 `json:"RushSpd"`
 }
 
 func (jsonData JsonGladiator) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {

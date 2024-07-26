@@ -248,7 +248,8 @@ func main() {
 	src := ":" + *port
 	go openConnectTCP(stopChan, src)
 	// go openConnectUDP(stopChan, src)
-	go game.RunGameTimer(stopChan) // 開始遊戲房計時器
+	game.ChangeGameState(game.GameState_Inited) // 遊戲階段設定為初始化完成
+	go game.RunGameTimer(stopChan)              // 開始遊戲房計時器
 
 	select {
 	case <-stopChan:

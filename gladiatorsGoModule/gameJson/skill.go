@@ -10,13 +10,13 @@ import (
 )
 
 type JsonSkill struct {
-	ID         int    `json:"ID"`
-	Activation string `json:"Activation"`
-	Initiative int    `json:"Initiative"`
-	Vigor      int    `json:"Vigor"`
-	Knockback  int    `json:"Knockback"`
-	Type       string `json:"Type"`
-	Divine     string `json:"Divine"`
+	ID         int     `json:"ID"`
+	Activation string  `json:"Activation"`
+	Init       float64 `json:"Init"`
+	Vigor      int     `json:"Vigor"`
+	Knockback  float64 `json:"Knockback"`
+	Type       string  `json:"Type"`
+	Divine     string  `json:"Divine"`
 }
 
 func (jsonData JsonSkill) UnmarshalJSONData(jsonName string, jsonBytes []byte) (map[interface{}]interface{}, error) {

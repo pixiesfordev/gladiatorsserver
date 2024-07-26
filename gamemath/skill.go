@@ -1,15 +1,15 @@
 package main
 
 import (
-	gameJson "gladiatorsGoModule/gamejson"
+	"gladiatorsGoModule/gameJson"
 )
 
 type Skill struct {
 	JsonSkill gameJson.JsonSkill
 	Speller   *Gladiator
-	Init      int
+	Init      float64
 	Vigor     int
-	Knockback int
+	Knockback float64
 	Effects   []Effect
 }
 
@@ -19,7 +19,7 @@ func NewSkill(speller *Gladiator, opponent *Gladiator, jsonSkill gameJson.JsonSk
 		JsonSkill: jsonSkill,
 		Speller:   speller,
 		Vigor:     jsonSkill.Vigor,
-		Init:      jsonSkill.Initiative,
+		Init:      jsonSkill.Init,
 		Knockback: jsonSkill.Knockback,
 	}
 

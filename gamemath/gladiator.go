@@ -1,7 +1,7 @@
 package main
 
 import (
-	gameJson "gladiatorsGoModule/gamejson"
+	"gladiatorsGoModule/gameJson"
 	utility "gladiatorsGoModule/utility"
 	"math"
 
@@ -24,9 +24,10 @@ type Gladiator struct {
 	Crit          float64                           // 爆擊率
 	CritDmg       float64                           // 爆擊傷害
 	VigorRegen    float64                           // 體力回復
-	Knockback     int                               // 擊退
-	Init          int                               // 先攻
-	Spd           float64                           // 移動
+	Knockback     float64                           // 擊退
+	Init          float64                           // 先攻
+	Spd           float64                           // 移動速度
+	RushSpd       float64                           // 衝刺增加速度
 	CurUnit       float64                           // 目前位置
 	Effects       map[gameJson.EffectType][]*Effect // 狀態清單
 }
@@ -40,18 +41,19 @@ func NewGladiator(id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [6
 		JsonSkills:    jsonSkills,
 		JsonTraits:    jsonTraits,
 		JsonEquips:    jsonEquips,
-		Hp:            jsonGladiator.HP,
-		CurHp:         jsonGladiator.HP,
+		Hp:            jsonGladiator.Hp,
+		CurHp:         jsonGladiator.Hp,
 		CurVigor:      20,
-		Str:           jsonGladiator.STR,
-		PDef:          jsonGladiator.DEF,
-		MDef:          jsonGladiator.MDEF,
-		Crit:          jsonGladiator.CRIT,
-		CritDmg:       jsonGladiator.CRITDmg,
+		Str:           jsonGladiator.Str,
+		PDef:          jsonGladiator.PDef,
+		MDef:          jsonGladiator.MDef,
+		Crit:          jsonGladiator.Crit,
+		CritDmg:       jsonGladiator.CritDmg,
 		VigorRegen:    jsonGladiator.VigorRegen,
 		Knockback:     jsonGladiator.Knockback,
-		Init:          jsonGladiator.INIT,
-		Spd:           jsonGladiator.Speed,
+		Init:          jsonGladiator.Init,
+		Spd:           jsonGladiator.Spd,
+		RushSpd:       jsonGladiator.RushSpd,
 		Effects:       make(map[gameJson.EffectType][]*Effect, 0),
 	}
 	return gladiator, nil
@@ -111,10 +113,10 @@ func (g *Gladiator) GetCrit() float64 {
 }
 
 // GetKnockback 取得擊退值
-func (g *Gladiator) GetKnockback() int {
+func (g *Gladiator) GetKnockback() float64 {
 	knockback := g.Knockback
 	// 計算影響擊退的所有狀態
-	addKnockback := 0
+	addKnockback := 0.0
 	for _, effects := range g.Effects {
 		for _, v := range effects {
 			addKnockback = v.GetKnockbackUpValue()
@@ -125,10 +127,10 @@ func (g *Gladiator) GetKnockback() int {
 }
 
 // GetInit 取得先攻
-func (g *Gladiator) GetInit() int {
+func (g *Gladiator) GetInit() float64 {
 	init := g.Init
 	// 計算影響先攻的所有狀態
-	addInit := 0
+	addInit := 0.0
 	for _, effects := range g.Effects {
 		for _, v := range effects {
 			addInit = v.GetInitUpValue()
@@ -315,7 +317,7 @@ func (myself *Gladiator) Spell(skill *Skill) {
 		}
 
 		// 如果沒觸發成功就跳過
-		if !utility.GetProbResult(effect.Prob, Rnd) {
+		if !utility.GetProbResult(effect.Prob) {
 			continue
 		}
 
@@ -465,7 +467,7 @@ func (myself *Gladiator) Attack(target *Gladiator, dmg int, def int) {
 	if crit > 1 { // 溢出的爆擊率要加到爆擊傷害上
 		extraCritDmg = 1 - crit
 	}
-	if utility.GetProbResult(myself.GetCrit(), Rnd) {
+	if utility.GetProbResult(myself.GetCrit()) {
 		dealDmg = int(math.Round(float64(dealDmg) * (myself.CritDmg + extraCritDmg)))
 	}
 

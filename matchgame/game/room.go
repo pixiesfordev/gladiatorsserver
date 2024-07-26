@@ -17,12 +17,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type GameState int // 目前遊戲狀態列舉
-
 type Room struct {
 	Gamers      [setting.PLAYER_NUMBER]Gamer // 玩家map
 	RoomName    string                       // 房間名稱(也是DB文件ID)(房主UID+時間轉 MD5)
-	GameState   GameState                    // 遊戲狀態
 	DBMatchgame *mongo.DBMatchgame           // DB遊戲房資料
 	MutexLock   sync.RWMutex
 }
@@ -54,7 +51,6 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 	MyRoom = &Room{
 		Gamers:      [setting.PLAYER_NUMBER]Gamer{},
 		RoomName:    roomName,
-		GameState:   GameState_Inited,
 		DBMatchgame: &dbMatchgame,
 	}
 	MyRoom.UpdateMatchgameToDB()
@@ -70,7 +66,7 @@ func (r *Room) KickTimeoutPlayer() {
 			// 玩家無心跳超過X秒就踢出遊戲房
 			// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
 			if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
-				MyRoom.ResetRoom()
+				ResetGame()
 			}
 		}
 
@@ -153,8 +149,6 @@ func (r *Room) ResetRoom() {
 			r.KickBot(bot, "重置房間")
 		}
 	}
-	r.GameState = GameState_End
-	GameTime = 0
 }
 
 // 將玩家踢出房間
@@ -295,11 +289,6 @@ func (r *Room) GetPlayerByConnToken(connToken string) *Player {
 	return nil
 }
 
-// 改變遊戲狀態
-func (r *Room) ChangeState(state GameState) {
-	r.GameState = state
-}
-
 // 送封包給遊戲房間內所有玩家(TCP), 除了指定索引(exceptPlayerIdx)的玩家, 如果要所有玩家就傳入-1就可以
 func (r *Room) BroadCastPacket(exceptPlayerIdx int, pack packet.Pack) {
 	// if pack.CMD != packet.SPAWN_TOCLIENT {
@@ -334,43 +323,6 @@ func (r *Room) SendPacketToPlayer(playerID string, pack packet.Pack) {
 			log.Errorf("%s SendPacketToPlayer error: %v", logger.LOG_Room, err)
 		}
 	}
-}
-
-// 取得要送封包的玩家陣列
-func (r *Room) GetPackPlayers() [setting.PLAYER_NUMBER]packet.PackPlayer {
-	var players [setting.PLAYER_NUMBER]packet.PackPlayer
-	idx := 0
-	for _, gamer := range r.Gamers {
-		if gamer == nil {
-			continue
-		}
-		players[idx] = packet.PackPlayer{
-			ID:        gamer.GetID(),
-			Gladiator: gamer.GetGladiator().GetPackGladiator(),
-		}
-		idx++
-	}
-	return players
-}
-
-// 取得要送封包的玩家陣列
-func (r *Room) GetPackPlayerStates() [setting.PLAYER_NUMBER]packet.PackPlayerState {
-	var players [setting.PLAYER_NUMBER]packet.PackPlayerState
-	idx := 0
-	for _, gamer := range r.Gamers {
-		if gamer == nil {
-			players[idx] = packet.PackPlayerState{}
-		} else {
-			players[idx] = packet.PackPlayerState{
-				ID:          gamer.GetID(),
-				BribeSkills: gamer.GetPackPlayerBribes(),
-				Gladiator:   gamer.GetGladiator().GetPackGladiator(),
-			}
-		}
-
-		idx++
-	}
-	return players
 }
 
 // 取得玩家準備狀態, 都準備好就會回傳都是true的array
