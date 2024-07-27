@@ -6,14 +6,20 @@ import (
 	"math"
 )
 
-func (gladiator *Gladiator) GetPackGladiator() packet.PackGladiator {
+func (gladiator *Gladiator) GetPackGladiator(myselfPack bool) packet.PackGladiator {
 	var jsonSkillIDs [GladiatorSkillCount]int
 	var handSkills [HandSkillCount]int
-	for i, _ := range handSkills {
-		handSkills[i] = gladiator.HandSkills[i].ID
-	}
+	curVigor := 0.0
 	for i, v := range gladiator.JsonSkills {
 		jsonSkillIDs[i] = v.ID
+	}
+
+	// 玩家自己才需要知道資料
+	if myselfPack {
+		for i, v := range gladiator.HandSkills {
+			handSkills[i] = v.ID
+		}
+		curVigor = gladiator.CurVigor
 	}
 
 	packGladiator := packet.PackGladiator{
@@ -22,7 +28,7 @@ func (gladiator *Gladiator) GetPackGladiator() packet.PackGladiator {
 		SkillIDs:     jsonSkillIDs,
 		HandSkillIDs: handSkills,
 		CurHp:        gladiator.CurHp,
-		CurVigor:     gladiator.CurVigor,
+		CurVigor:     curVigor,
 		CurSpd:       gladiator.Spd,
 		CurPos:       gladiator.CurPos,
 		EffectTypes:  []string{},
@@ -30,24 +36,25 @@ func (gladiator *Gladiator) GetPackGladiator() packet.PackGladiator {
 	return packGladiator
 }
 
-func (gladiator *Gladiator) GetPackGladiatorState() packet.PackGladiatorState {
-	var jsonSkillIDs [GladiatorSkillCount]int
+func (gladiator *Gladiator) GetPackGladiatorState(myselfPack bool) packet.PackGladiatorState {
 	var handSkills [HandSkillCount]int
-	for i, _ := range handSkills {
-		handSkills[i] = gladiator.HandSkills[i].ID
-	}
-	for i, v := range gladiator.JsonSkills {
-		jsonSkillIDs[i] = v.ID
+	curVigor := 0.0
+	activedMeleeJsonSkillID := 0
+	if myselfPack {
+		for i, _ := range handSkills {
+			handSkills[i] = gladiator.HandSkills[i].ID
+		}
+		activedMeleeJsonSkillID = gladiator.ActivedMeleeJsonSkill.ID
 	}
 
 	packGladiator := packet.PackGladiatorState{
 		HandSkillIDs:            handSkills,
 		CurHp:                   gladiator.CurHp,
-		CurVigor:                gladiator.CurVigor,
+		CurVigor:                curVigor,
 		CurSpd:                  gladiator.Spd,
 		CurPos:                  gladiator.CurPos,
 		EffectTypes:             []string{},
-		ActivedMeleeJsonSkillID: gladiator.ActivedMeleeJsonSkill.ID,
+		ActivedMeleeJsonSkillID: activedMeleeJsonSkillID,
 	}
 	return packGladiator
 }

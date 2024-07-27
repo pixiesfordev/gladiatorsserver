@@ -39,6 +39,7 @@ const (
 	WAIT_BATTLE_START                      = 2    // (測試用)BattleStart等待時間
 	CollisionDis                           = 4    // 相距X單位就算碰撞
 	MaxVigor                       float64 = 20   // 最大體力
+	SelectDivineCountDownSecs      int     = 15   // 選神祉技能倒數秒數
 	FightingCountDownSecs          int     = 4    // 戰鬥倒數秒數
 )
 
@@ -113,7 +114,6 @@ type ConnectionUDP struct {
 // StartFighting 開始戰鬥
 func StartFighting() {
 	GameTime = 0
-	ChangeGameState(GameState_CountingDown)
 }
 
 // ResetGame 重置遊戲

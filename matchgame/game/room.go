@@ -300,13 +300,7 @@ func (r *Room) BroadCastPacket(exceptPlayerIdx int, pack packet.Pack) {
 			continue
 		}
 		if player, ok := gamer.(*Player); ok {
-			if player.ConnTCP.Conn == nil {
-				continue
-			}
-			err := packet.SendPack(player.ConnTCP.Encoder, pack)
-			if err != nil {
-				log.Errorf("%s 廣播封包(%s)錯誤: %v", logger.LOG_Room, pack.CMD, err)
-			}
+			player.SendPacketToPlayer(pack)
 		}
 	}
 }
@@ -315,13 +309,7 @@ func (r *Room) BroadCastPacket(exceptPlayerIdx int, pack packet.Pack) {
 func (r *Room) SendPacketToPlayer(playerID string, pack packet.Pack) {
 	gamer := r.GetGamerByID(playerID)
 	if player, _ := gamer.(*Player); player != nil {
-		if player.ConnTCP.Conn == nil {
-			return
-		}
-		err := packet.SendPack(player.ConnTCP.Encoder, pack)
-		if err != nil {
-			log.Errorf("%s SendPacketToPlayer error: %v", logger.LOG_Room, err)
-		}
+		player.SendPacketToPlayer(pack)
 	}
 }
 

@@ -34,6 +34,9 @@ func (bot *Bot) GetGladiator() *Gladiator {
 func (bot *Bot) IsReady() bool {
 	return true
 }
+func (bot *Bot) IsSelectedDivineSkill() bool {
+	return true
+}
 func (bot *Bot) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackDivineSkill {
 	var botBribes [2]packet.PackDivineSkill
 
@@ -49,11 +52,25 @@ func (bot *Bot) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackDivineSk
 	return botBribes
 }
 
-func (bot *Bot) GetPackPlayerState() packet.PackPlayerState {
+// GetPackPlayer 取得玩家封包
+func (bot *Bot) GetPackPlayer(myself bool) packet.PackPlayer {
+	packPlayer := packet.PackPlayer{
+		DBID:            bot.GetID(),
+		MyPackGladiator: bot.MyGladiator.GetPackGladiator(myself),
+	}
+	return packPlayer
+}
+
+func (bot *Bot) GetPackPlayerState(myselfPack bool) packet.PackPlayerState {
 	packBotState := packet.PackPlayerState{
 		DBID:           bot.GetID(),
 		DivineSkills:   bot.GetPackPlayerBribes(),
-		GladiatorState: bot.GetGladiator().GetPackGladiatorState(),
+		GladiatorState: bot.GetGladiator().GetPackGladiatorState(myselfPack),
 	}
 	return packBotState
+}
+
+func (bot *Bot) GetPackDivineSkills() [setting.PLAYER_NUMBER]packet.PackDivineSkill {
+	var packDivineSkills [2]packet.PackDivineSkill
+	return packDivineSkills
 }
