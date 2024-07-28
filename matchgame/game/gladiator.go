@@ -237,3 +237,13 @@ func (myself *Gladiator) AddVigor(value float64) {
 func (myself *Gladiator) OnDeath() {
 
 }
+
+// GetSkill 傳入skillID取得目標JsonSkill
+func (g *Gladiator) GetSkill(skillID int) (gameJson.JsonSkill, error) {
+	for _, jsonSkill := range g.HandSkills {
+		if jsonSkill.ID == skillID {
+			return jsonSkill, nil
+		}
+	}
+	return gameJson.JsonSkill{}, fmt.Errorf("玩家選擇的技能不存在手牌技能中")
+}

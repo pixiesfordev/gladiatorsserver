@@ -25,6 +25,9 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 	conn.SetDeadline(time.Time{}) // 移除連線超時設定
 	// 處理各類型封包
 	switch pack.CMD {
+	// ==========心跳==========
+	case packet.PING:
+		player.LastUpdateAt = time.Now() // 更新心跳
 	// ==========設定玩家==========
 	case packet.SETPLAYER:
 		content := packet.SetPlayer{}
@@ -163,15 +166,46 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		}
 		log.Infof("%s 收到玩家動作: %v", logger.LOG_Action, content.ActionType)
 		switch content.ActionType {
-		case packet.PLAYERACTION_RUSH: // 衝刺
+		case packet.Action_Rush: // 衝刺
 			if rushAction, ok := content.ActionContent.(packet.PackAction_Rush); ok {
 				player.GetGladiator().SetRush(rushAction.On)
+				// 回送封包
+				pack := packet.Pack{
+					CMD:    packet.PLAYERACTION_TOCLIENT,
+					PackID: -1,
+					Content: &packet.PlayerAction_ToClient{
+						PlayerDBID: player.ID,
+						ActionType: packet.Action_Rush,
+						ActionContent: &packet.PackAction_Rush_ToClient{
+							On: rushAction.On,
+						},
+					},
+				}
+				MyRoom.BroadCastPacket(-1, pack)
 			} else {
-				return fmt.Errorf("PackAction_Rush轉型錯誤: %v", pack.CMD)
+				return fmt.Errorf("PackAction_Rush轉型錯誤")
 			}
-		case packet.Action_Skill:
+		case packet.Action_Skill: // 技能施放
 			if skillAction, ok := content.ActionContent.(packet.PackAction_Skill); ok {
-				player.GetGladiator().ActiveSkill(skillAction.SkillID, skillAction.On)
+				targetSkill, err := player.GetGladiator().GetSkill(skillAction.SkillID)
+				if err != nil {
+					return fmt.Errorf("PackAction_Skill錯誤: %v", err)
+				}
+				player.GetGladiator().ActiveSkill(targetSkill, skillAction.On)
+				// 回送封包
+				myPack := packet.Pack{
+					CMD:    packet.PLAYERACTION_TOCLIENT,
+					PackID: -1,
+					Content: &packet.PlayerAction_ToClient{
+						PlayerDBID: player.ID,
+						ActionType: packet.Action_Rush,
+						ActionContent: &packet.PackAction_Skill_ToClient{
+							On:      skillAction.On,
+							SkillID: targetSkill.ID,
+						},
+					},
+				}
+				player.SendPacketToPlayer(myPack)
 			} else {
 				return fmt.Errorf("PackAction_Skill轉型錯誤: %v", pack.CMD)
 			}

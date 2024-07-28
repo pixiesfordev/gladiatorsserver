@@ -110,7 +110,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					continue
 				}
 				isAuth = true
-				var player game.Player
+				var player *game.Player
 				// 斷線重連檢測
 				reConnection := false
 				for _, v := range game.MyRoom.Gamers {
@@ -118,7 +118,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 						if p.GetID() == playerID {
 							log.Infof("玩家(%v)斷線重連", playerID)
 							reConnection = true
-							player = *p
+							player = p
 							break
 						}
 					}
@@ -144,7 +144,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					}
 
 					// 將玩家加入遊戲房
-					player = game.Player{
+					player = &game.Player{
 						ID:           dbPlayer.ID,
 						LastUpdateAt: time.Now(),
 						ConnTCP: &game.ConnectionTCP{
@@ -157,13 +157,12 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 							ConnToken: newConnToken,
 						},
 					}
-					err = game.MyRoom.JoinGamer(&player)
+					err = game.MyRoom.JoinGamer(player)
 					if err != nil {
 						log.Errorf("%s 玩家加入房間失敗: %v", logger.LOG_Main, err)
 						packReadChan.ClosePackReadStopChan()
 						return
 					}
-
 				} else { // 斷線重連時使用已存在的玩家資料, 不須重建資料
 					player.ConnTCP.Conn = conn
 					player.ConnUDP.ConnToken = newConnToken
@@ -180,6 +179,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				if err != nil {
 					continue
 				}
+				go pingLoop(player, stop) // 建立PingLoop
 
 			} else {
 				err = game.HandleTCPMsg(conn, pack)

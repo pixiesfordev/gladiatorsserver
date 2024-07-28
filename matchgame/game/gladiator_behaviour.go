@@ -13,22 +13,11 @@ func (g *Gladiator) SetRush(on bool) {
 }
 
 // ActiveSkill 啟用技能
-func (g *Gladiator) ActiveSkill(skillID int, on bool) {
-	targetSkill := &gameJson.JsonSkill{}
-	for _, jsonSkill := range g.HandSkills {
-		if jsonSkill.ID == skillID {
-			targetSkill = &jsonSkill
-			break
-		}
-	}
-	if targetSkill == nil {
-		log.Errorf("玩家選擇的技能不存在手牌技能中")
-		return
-	}
-	switch targetSkill.Activation {
+func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) {
+	switch jsonSkill.Activation {
 	case "Melee": // 肉搏技能
 		if on {
-			g.ActivedMeleeJsonSkill = targetSkill
+			g.ActivedMeleeJsonSkill = &jsonSkill
 		} else {
 			g.ActivedMeleeJsonSkill = nil
 		}
@@ -37,7 +26,7 @@ func (g *Gladiator) ActiveSkill(skillID int, on bool) {
 			// 發動即時技能
 		}
 	default:
-		log.Errorf("未定義的技能啟用類型: %v", targetSkill.Activation)
+		log.Errorf("未定義的技能啟用類型: %v", jsonSkill.Activation)
 	}
 }
 

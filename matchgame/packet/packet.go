@@ -21,12 +21,12 @@ const (
 	SETDIVINESKILL          = "SETDIVINESKILL"          // (TCP)神祉選擇
 	SETDIVINESKILL_TOCLIENT = "SETDIVINESKILL_TOCLIENT" // (TCP)神祉選擇-送Client
 	PLAYERACTION            = "PLAYERACTION"            // (TCP)玩家指令
-	PLAYERACTION_RUSH       = "PLAYERACTION_RUSH"       // (TCP)玩家指令-衝刺
 	PLAYERACTION_TOCLIENT   = "PLAYERACTION_TOCLIENT"   // (TCP)玩家指令-送Client
 	BATTLESTATE             = "BATTLESTATE"             // (TCP)狀態更新
 	BATTLESTATE_TOCLIENT    = "BATTLESTATE_TOCLIENT"    // (TCP)狀態更新-送Client
 	ENDGAME_TOCLIENT        = "ENDGAME_TOCLIENT"        // (TCP)遊戲結算-送Client
 	PING                    = "PING"                    // (TCP)心跳(太久沒收到回傳會視玩家斷線)
+	PING_TOCLIENT           = "PING_TOCLIENT"           // (TCP)心跳-送Client(太久沒收到回傳會視玩家斷線)
 	UDPAUTH                 = "UDPAUTH"                 // (UDP)身分驗證
 )
 

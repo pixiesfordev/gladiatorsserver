@@ -19,6 +19,7 @@ type PlayerAction struct {
 }
 type PlayerAction_ToClient struct {
 	CMDContent
+	PlayerDBID    string
 	ActionType    ActionType
 	ActionContent interface{}
 }
@@ -37,6 +38,11 @@ type PackAction_BribeSkill struct {
 
 // 衝刺
 type PackAction_Rush struct {
+	On bool
+}
+
+// 衝刺ToClient
+type PackAction_Rush_ToClient struct {
 	On bool
 }
 

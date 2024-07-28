@@ -135,7 +135,7 @@ func (r *Room) JoinGamer(gamer Gamer) error {
 
 	r.UpdateMatchgameToDB() // 更新DB
 	r.OnRoomPlayerChange()
-
+	
 	log.Infof("%s 玩家(%s) 已加入房間(%v/%v) 房間資訊: %+v", logger.LOG_Room, gamer.GetID(), r.GamerCount(), setting.PLAYER_NUMBER, r)
 	return nil
 }

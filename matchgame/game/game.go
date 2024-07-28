@@ -9,6 +9,7 @@ import (
 
 	"encoding/json"
 	logger "matchgame/logger"
+	"matchgame/packet"
 	"sync"
 	"time"
 
@@ -27,10 +28,10 @@ const (
 )
 
 const (
-	GAMEUPDATE_MS                          = 1000 // 每X毫秒送UPDATEGAME_TOCLIENT封包給client(遊戲狀態更新並心跳檢測)
-	AGONES_HEALTH_PIN_INTERVAL_SEC         = 1    // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
+	PingMiliSecs                           = 1000 // 每X毫秒送Ping封包給client(心跳檢測)
+	AGONES_HEALTH_PIN_INTERVAL_SEC         = 2    // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
 	TCP_CONN_TIMEOUT_SEC                   = 120  // TCP連線逾時時間X秒
-	TIMELOOP_MILISECS              int     = 10   // 遊戲每X毫秒循環
+	TIMELOOP_MILISECS              int     = 50   // 遊戲每X毫秒循環
 	KICK_PLAYER_SECS               float64 = 60   // 最長允許玩家無心跳X秒後踢出遊戲房
 	MarketDivineSkillCount                 = 4    // 有幾個神祉技能可以購買
 	DivineSkillCount                       = 2    // 玩家可以買幾個神祉技能
@@ -142,7 +143,8 @@ func RunGameTimer(stop chan struct{}) {
 		case <-ticker.C:
 			MyRoom.KickTimeoutPlayer()
 			if MyGameState == GameState_Fighting {
-				TimePass()
+				timePass()
+				snedBattleStatePackToClient()
 			}
 		case <-stop:
 			return
@@ -150,7 +152,39 @@ func RunGameTimer(stop chan struct{}) {
 	}
 }
 
-func TimePass() {
+func snedBattleStatePackToClient() {
+
+	leftPlayer := LeftGamer.(*Player)
+	if leftPlayer != nil {
+		leftPack := packet.Pack{
+			CMD:    packet.BATTLESTATE_TOCLIENT,
+			PackID: -1,
+			Content: &packet.BattleState_ToClient{
+				MyPlayerState:       leftPlayer.GetPackPlayerState(true),
+				OpponentPlayerState: leftPlayer.GetOpponentPackPlayerState(),
+				GameTime:            GameTime,
+			},
+		}
+		leftPlayer.SendPacketToPlayer(leftPack)
+	}
+
+	rightPlayer := RightGamer.(*Player)
+	if rightPlayer != nil {
+		rightPack := packet.Pack{
+			CMD:    packet.BATTLESTATE_TOCLIENT,
+			PackID: -1,
+			Content: &packet.BattleState_ToClient{
+				MyPlayerState:       rightPlayer.GetPackPlayerState(true),
+				OpponentPlayerState: rightPlayer.GetOpponentPackPlayerState(),
+				GameTime:            GameTime,
+			},
+		}
+		rightPlayer.SendPacketToPlayer(rightPack)
+	}
+
+}
+
+func timePass() {
 	GameTime += TickTimePass
 
 	// 雙方移動
