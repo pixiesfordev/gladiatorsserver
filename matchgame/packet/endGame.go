@@ -8,7 +8,6 @@ import (
 type EndGame_ToClient struct {
 	CMDContent
 	Result        string // Die(有一方死亡), Surrender(有一方投降), Timeout(時間到)
-	WinDBPlayerID string // 勝利玩家ID
 	PlayerResults []PackPlayerResult
 }
 

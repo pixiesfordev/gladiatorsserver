@@ -34,6 +34,9 @@ func (bot *Bot) GetGladiator() *Gladiator {
 func (bot *Bot) IsReady() bool {
 	return true
 }
+func (bot *Bot) Surrender() {
+
+}
 func (bot *Bot) IsSelectedDivineSkill() bool {
 	return true
 }

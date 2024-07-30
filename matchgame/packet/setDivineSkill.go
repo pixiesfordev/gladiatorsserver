@@ -3,12 +3,12 @@ package packet
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
 
-type DivineSkill struct {
+type SetDivineSkill struct {
 	CMDContent
 	JsonSkillIDs [2]int
 }
 
-type DivineSkill_ToClient struct {
+type SetDivineSkill_ToClient struct {
 	CMDContent
 	MyPlayerState       PackPlayerState
 	OpponentPlayerState PackPlayerState

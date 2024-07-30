@@ -20,6 +20,7 @@ type Gamer interface {
 	GetGladiator() *Gladiator
 	IsReady() bool
 	IsSelectedDivineSkill() bool
+	Surrender()
 	GetPackPlayer(myself bool) packet.PackPlayer
 	GetPackPlayerState(myselfPack bool) packet.PackPlayerState
 }
@@ -58,6 +59,9 @@ func (player *Player) GetGladiator() *Gladiator {
 
 func (player *Player) SetReady() {
 	player.ready = true
+}
+func (player *Player) Surrender() {
+
 }
 
 func (player *Player) IsReady() bool {
