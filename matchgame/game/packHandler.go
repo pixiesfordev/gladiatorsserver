@@ -53,21 +53,19 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		}
 
 		ChangeGameState(GameState_WaitingPlayers)
-
 		// 回送封包
 		myPack := packet.Pack{
 			CMD:    packet.SETPLAYER_TOCLIENT,
 			PackID: -1,
 			Content: &packet.SetPlayer_ToClient{
 				MyPackPlayer:       player.GetPackPlayer(true),
-				OpponentPackPlayer: player.GetOpponent().GetPackPlayer(false),
+				OpponentPackPlayer: player.GetOpponentPackPlayer(false),
 			},
 		}
 		player.SendPacketToPlayer(myPack)
-
 		// 送對手封包
-		opponent := player.GetOpponent().(*Player)
-		if opponent != nil {
+		opponent, ok := player.GetOpponent().(*Player)
+		if ok {
 			opponentPack := packet.Pack{
 				CMD:    packet.SETPLAYER_TOCLIENT,
 				PackID: -1,
@@ -80,11 +78,11 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		}
 
 	// ==========設定準備就緒==========
-	case packet.READY:
+	case packet.SETREADY:
 		player.SetReady()
 		playerReadies := MyRoom.GetPlayerReadies()
 		pack := packet.Pack{
-			CMD:    packet.READY_TOCLIENT,
+			CMD:    packet.SETREADY_TOCLIENT,
 			PackID: -1,
 			Content: &packet.SetReady_ToClient{
 				PlayerReadies: playerReadies,
@@ -92,14 +90,18 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		}
 		MyRoom.BroadCastPacket(-1, pack)
 		if playerReadies[0] && playerReadies[1] {
-			if MyGameState != GameState_SelectingDivineSkill { // 如果雙方都準備好 且 還沒進入選神祉階段就進入選神祉階段 並 進入神祉技能倒數
+			if MyGameState == GameState_WaitingPlayers { // 如果雙方都準備好 且 目前是等待玩家準備階段 並 進入神祉技能倒數
 				ChangeGameState(GameState_SelectingDivineSkill)
-				time.Sleep(time.Duration(SelectDivineCountDownSecs) * time.Second) // 等待後開始戰鬥
-				if MyGameState != GameState_CountingDown {                         // 如果選神祉倒數結束還沒進入戰鬥開始倒數階段就進入戰鬥開始倒數階段
-					ChangeGameState(GameState_CountingDown)
-					time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
-					StartFighting()
-				}
+				go func() {
+					time.Sleep(time.Duration(SelectDivineCountDownSecs) * time.Second) // 等待後進入下一階段
+					if MyGameState == GameState_SelectingDivineSkill {                 // 如果選神祉倒數結束還沒進入戰鬥開始倒數階段就進入戰鬥開始倒數階段
+						ChangeGameState(GameState_CountingDown)
+						go func() {
+							time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
+							StartFighting()
+						}()
+					}
+				}()
 			}
 		}
 
@@ -124,7 +126,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				}
 			}
 		}
-		player.SetSelectedDivineSkill()
+		player.FinishSelectedDivineSkill()
 
 		// 回送封包
 		myPack := packet.Pack{
@@ -136,10 +138,9 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			},
 		}
 		player.SendPacketToPlayer(myPack)
-
 		// 送對手封包
-		opponent := player.GetOpponent().(*Player)
-		if opponent != nil {
+		opponent, ok := player.GetOpponent().(*Player)
+		if ok {
 			opponentPack := packet.Pack{
 				CMD:    packet.SETPLAYER_TOCLIENT,
 				PackID: -1,
@@ -150,13 +151,21 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			}
 			opponent.SendPacketToPlayer(opponentPack)
 		}
+		log.Infof("f")
 
 		// 如果對手也選好技能 且 還沒進入戰鬥開始倒數階段就進入戰鬥開始倒數階段
-		if player.GetOpponent().IsSelectedDivineSkill() && MyGameState != GameState_CountingDown {
+		log.Infof("player.GetOpponent().IsSelectedDivineSkill(): %v", player.GetOpponent().IsSelectedDivineSkill())
+		log.Infof("MyGameState: %v", MyGameState)
+		if player.GetOpponent().IsSelectedDivineSkill() && MyGameState == GameState_SelectingDivineSkill {
+			log.Infof("g")
 			ChangeGameState(GameState_CountingDown)
-			time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
-			StartFighting()
+			go func() {
+				time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
+				StartFighting()
+				log.Infof("h")
+			}()
 		}
+		log.Infof("i")
 	// ==========施放技能==========
 	case packet.PLAYERACTION:
 		content := packet.PlayerAction{}
@@ -225,8 +234,8 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				player.SendPacketToPlayer(myPack)
 
 				// 如果是立即技能就送對手封包
-				opponent := player.GetOpponent().(*Player)
-				if opponent != nil && targetSkill.Type == "Instant" {
+				opponent, ok := player.GetOpponent().(*Player)
+				if ok && targetSkill.Type == "Instant" {
 					opponentPack := packet.Pack{
 						CMD:    packet.PLAYERACTION_TOCLIENT,
 						PackID: -1,
@@ -267,8 +276,8 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				player.SendPacketToPlayer(myPack)
 
 				// 如果是立即技能就送對手封包
-				opponent := player.GetOpponent().(*Player)
-				if opponent != nil && targetSkill.Type == "Instant" {
+				opponent, ok := player.GetOpponent().(*Player)
+				if ok && targetSkill.Type == "Instant" {
 					opponentPack := packet.Pack{
 						CMD:    packet.PLAYERACTION_TOCLIENT,
 						PackID: -1,

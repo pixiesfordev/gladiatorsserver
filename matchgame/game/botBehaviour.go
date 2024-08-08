@@ -1,7 +1,6 @@
 package game
 
 import (
-	"fmt"
 	"gladiatorsGoModule/gameJson"
 	"gladiatorsGoModule/utility"
 	"matchgame/logger"
@@ -26,8 +25,6 @@ func AddBot() {
 
 // 建立新Bot玩家
 func GetNewBot() (*Bot, error) {
-	botIdx := IDAccumulator.GetNextIdx("BotIdx") // 取下一個BotIdx
-	botID := fmt.Sprintf("bot%v", botIdx)
 
 	// 取得隨機角鬥士
 	rndJsonGladiator, err := gameJson.GetRndJsonGladiator()
@@ -54,7 +51,7 @@ func GetNewBot() (*Bot, error) {
 	}
 	jsonSkills[5] = talentSkillJson
 	// 設定角鬥士
-	gladiator, err := NewGladiator(botID, rndJsonGladiator, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
+	gladiator, err := NewGladiator("botGladiator", rndJsonGladiator, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 	if err != nil {
 		return nil, err
 	}
@@ -76,10 +73,6 @@ func GetNewBot() (*Bot, error) {
 		}
 	}
 	// 設定Bot
-	bot := &Bot{
-		ID:          botID,
-		BribeSkills: divineSkills,
-		MyGladiator: &gladiator,
-	}
+	bot := NewBot(&gladiator, divineSkills)
 	return bot, nil
 }

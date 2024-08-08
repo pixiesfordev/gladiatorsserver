@@ -60,7 +60,7 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 
 func (r *Room) KickTimeoutPlayer() {
 	for _, gamer := range r.Gamers {
-		if player, _ := gamer.(*Player); player != nil {
+		if player, ok := gamer.(*Player); ok {
 
 			nowTime := time.Now()
 			// 玩家無心跳超過X秒就踢出遊戲房
@@ -135,7 +135,11 @@ func (r *Room) JoinGamer(gamer Gamer) error {
 
 	r.UpdateMatchgameToDB() // 更新DB
 	r.OnRoomPlayerChange()
-	
+	if r.GamerCount() == 1 {
+		LeftGamer = gamer
+	} else {
+		RightGamer = gamer
+	}
 	log.Infof("%s 玩家(%s) 已加入房間(%v/%v) 房間資訊: %+v", logger.LOG_Room, gamer.GetID(), r.GamerCount(), setting.PLAYER_NUMBER, r)
 	return nil
 }
@@ -159,6 +163,12 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 	if gamer == nil {
 		log.Infof("%s 要踢掉的玩家已經不存在", logger.LOG_Room)
 		return
+	}
+
+	if LeftGamer == gamer {
+		LeftGamer = nil
+	} else if RightGamer == gamer {
+		RightGamer = nil
 	}
 
 	// 取mongoDB player doc
@@ -308,7 +318,7 @@ func (r *Room) BroadCastPacket(exceptPlayerIdx int, pack packet.Pack) {
 // 送封包給玩家(TCP)
 func (r *Room) SendPacketToPlayer(playerID string, pack packet.Pack) {
 	gamer := r.GetGamerByID(playerID)
-	if player, _ := gamer.(*Player); player != nil {
+	if player, ok := gamer.(*Player); ok {
 		player.SendPacketToPlayer(pack)
 	}
 }
@@ -330,7 +340,7 @@ func (r *Room) GetPlayerReadies() [setting.PLAYER_NUMBER]bool {
 // 送封包給玩家(UDP)
 func (r *Room) SendPacketToPlayer_UDP(playerID string, sendData []byte) {
 	gamer := r.GetGamerByID(playerID)
-	if player, _ := gamer.(*Player); player != nil {
+	if player, ok := gamer.(*Player); ok {
 		sendData = append(sendData, '\n')
 		_, sendErr := player.ConnUDP.Conn.WriteTo(sendData, player.ConnUDP.Addr)
 		if sendErr != nil {
@@ -350,7 +360,7 @@ func (r *Room) BroadCastPacket_UDP(exceptPlayerIdx int, sendData []byte) {
 		if exceptPlayerIdx == idx {
 			continue
 		}
-		if player, _ := gamer.(*Player); player != nil {
+		if player, ok := gamer.(*Player); ok {
 			sendData = append(sendData, '\n')
 			_, sendErr := player.ConnUDP.Conn.WriteTo(sendData, player.ConnUDP.Addr)
 			if sendErr != nil {

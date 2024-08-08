@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"gladiatorsGoModule/setting"
 	"matchgame/packet"
 )
@@ -11,6 +12,17 @@ type Bot struct {
 	Idx         int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
 	MyGladiator *Gladiator                     // 使用中的鬥士
 	BribeSkills [DivineSkillCount]*DivineSkill // 神祉技能
+}
+
+func NewBot(gladiator *Gladiator, divineSkills [DivineSkillCount]*DivineSkill) *Bot {
+	botIdx := IDAccumulator.GetNextIdx("BotIdx") // 取下一個BotIdx
+	botID := fmt.Sprintf("bot%v", botIdx)
+	bot := &Bot{
+		ID:          botID,
+		BribeSkills: divineSkills,
+		MyGladiator: gladiator,
+	}
+	return bot
 }
 
 func (bot *Bot) SetIdx(idx int) {

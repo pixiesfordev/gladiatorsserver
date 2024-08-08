@@ -44,7 +44,9 @@ func (gladiator *Gladiator) GetPackGladiatorState(myselfPack bool) packet.PackGl
 		for i, _ := range handSkills {
 			handSkills[i] = gladiator.HandSkills[i].ID
 		}
-		activedMeleeJsonSkillID = gladiator.ActivedMeleeJsonSkill.ID
+		if gladiator.ActivedMeleeJsonSkill != nil {
+			activedMeleeJsonSkillID = gladiator.ActivedMeleeJsonSkill.ID
+		}
 	}
 
 	packGladiator := packet.PackGladiatorState{

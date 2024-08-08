@@ -142,21 +142,17 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 							},
 						})
 					}
-
-					// 將玩家加入遊戲房
-					player = &game.Player{
-						ID:           dbPlayer.ID,
-						LastUpdateAt: time.Now(),
-						ConnTCP: &game.ConnectionTCP{
-							Conn:       conn,
-							MyLoopChan: packReadChan,
-							Encoder:    encoder,
-							Decoder:    decoder,
-						},
-						ConnUDP: &game.ConnectionUDP{
-							ConnToken: newConnToken,
-						},
+					connTCP := &game.ConnectionTCP{
+						Conn:       conn,
+						MyLoopChan: packReadChan,
+						Encoder:    encoder,
+						Decoder:    decoder,
 					}
+					connUDP := &game.ConnectionUDP{
+						ConnToken: newConnToken,
+					}
+					// 將玩家加入遊戲房
+					player = game.NewPlayer(dbPlayer.ID, connTCP, connUDP)
 					err = game.MyRoom.JoinGamer(player)
 					if err != nil {
 						log.Errorf("%s 玩家加入房間失敗: %v", logger.LOG_Main, err)
@@ -194,6 +190,42 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 			}
 		}
 
+	}
+}
+
+// 定時更新遊戲狀態給Client
+func pingLoop(player *game.Player, stop chan struct{}) {
+	log.Infof("%s (UDP)開始updateGameLoop", logger.LOG_Main)
+	gameUpdateTimer := time.NewTicker(game.PingMiliSecs * time.Millisecond)
+
+	defer gameUpdateTimer.Stop()
+
+	loopChan := &game.LoopChan{
+		StopChan:      make(chan struct{}, 1),
+		ChanCloseOnce: sync.Once{},
+	}
+	player.ConnUDP.MyLoopChan = loopChan
+
+	for {
+		select {
+		case <-stop:
+			log.Infof("強制終止玩家updateGameLoop")
+			return
+		case <-loopChan.StopChan:
+			log.Infof("終止玩家updateGameLoop")
+			return
+		// ==========心跳==========
+		case <-gameUpdateTimer.C:
+			if player == nil || player.ConnTCP == nil {
+				return
+			}
+			pack := packet.Pack{
+				CMD:     packet.PING_TOCLIENT,
+				PackID:  -1,
+				Content: &packet.Ping_ToClient{},
+			}
+			player.SendPacketToPlayer(pack)
+		}
 	}
 }
 

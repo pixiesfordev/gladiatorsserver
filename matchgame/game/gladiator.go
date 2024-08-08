@@ -3,9 +3,6 @@ package game
 import (
 	"fmt"
 	"gladiatorsGoModule/gameJson"
-
-	log "github.com/sirupsen/logrus"
-	// "matchgame/logger"
 )
 
 type Gladiator struct {
@@ -62,7 +59,6 @@ func NewGladiator(id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [G
 	jsonTraits []gameJson.TraitJson, jsonEquips []gameJson.JsonEquip) (Gladiator, error) {
 	pos := -InitGladiatorPos
 	leftSide := true
-	log.Infof("NewGladiator when myRoom: %v, %d", MyRoom.Gamers, len(MyRoom.Gamers))
 	if len(MyRoom.Gamers) >= 1 {
 		pos = InitGladiatorPos
 		leftSide = false

@@ -27,16 +27,26 @@ type Gamer interface {
 
 // 玩家
 type Player struct {
-	ID                  string                         // DBPlayer的_id
-	Idx                 int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
-	MyGladiator         *Gladiator                     // 使用中的鬥士
-	gold                int64                          // 玩家金幣
-	ready               bool                           // 是否準備好了(進遊戲且收到雙方玩家資料後, client會送準備封包設定ready為true)
-	selectedDivineSkill bool                           // 是否已經選好神祉技能(雙方都選好神祉技能, 或倒數結束就會進入戰鬥)
-	DivineSkills        [DivineSkillCount]*DivineSkill // 神祉技能
-	LastUpdateAt        time.Time                      // 上次收到玩家更新封包(心跳)
-	ConnTCP             *ConnectionTCP                 // TCP連線
-	ConnUDP             *ConnectionUDP                 // UDP連線
+	ID                        string                         // DBPlayer的_id
+	Idx                       int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
+	MyGladiator               *Gladiator                     // 使用中的鬥士
+	gold                      int64                          // 玩家金幣
+	ready                     bool                           // 是否準備好了(進遊戲且收到雙方玩家資料後, client會送準備封包設定ready為true)
+	selectDivineSkillFinished bool                           // 是否已經選好神祉技能(雙方都選好神祉技能, 或倒數結束就會進入戰鬥)
+	DivineSkills              [DivineSkillCount]*DivineSkill // 神祉技能
+	LastUpdateAt              time.Time                      // 上次收到玩家更新封包(心跳)
+	ConnTCP                   *ConnectionTCP                 // TCP連線
+	ConnUDP                   *ConnectionUDP                 // UDP連線
+}
+
+func NewPlayer(id string, connTCP *ConnectionTCP, connUDP *ConnectionUDP) *Player {
+	player := &Player{
+		ID:           id,
+		LastUpdateAt: time.Now(),
+		ConnTCP:      connTCP,
+		ConnUDP:      connUDP,
+	}
+	return player
 }
 
 func (player *Player) SetIdx(idx int) {
@@ -68,12 +78,12 @@ func (player *Player) IsReady() bool {
 	return player.ready
 }
 
-func (player *Player) SetSelectedDivineSkill() {
-	player.selectedDivineSkill = false
+func (player *Player) FinishSelectedDivineSkill() {
+	player.selectDivineSkillFinished = false
 }
 
 func (player *Player) IsSelectedDivineSkill() bool {
-	return player.selectedDivineSkill
+	return player.selectDivineSkillFinished
 }
 
 // 將玩家連線斷掉
@@ -101,6 +111,16 @@ func (player *Player) GetPackDivineSkills() [setting.PLAYER_NUMBER]packet.PackDi
 	return packDivineSkills
 }
 
+// GetOpponent 取得對手Gamer
+func (player *Player) GetOpponent() Gamer {
+	if LeftGamer != nil && LeftGamer.GetID() == player.ID {
+		return RightGamer
+	} else if RightGamer != nil && RightGamer.GetID() == player.ID {
+		return LeftGamer
+	}
+	return nil
+}
+
 // GetPackPlayer 取得玩家封包
 func (player *Player) GetPackPlayer(myself bool) packet.PackPlayer {
 	packPlayer := packet.PackPlayer{
@@ -110,13 +130,13 @@ func (player *Player) GetPackPlayer(myself bool) packet.PackPlayer {
 	return packPlayer
 }
 
-// GetOpponent 取得對手Gamer
-func (player *Player) GetOpponent() Gamer {
-	if LeftGamer.GetID() == player.ID {
-		return RightGamer
-	} else {
-		return LeftGamer
+// GetOpponentPackPlayer 取得對手封包
+func (player *Player) GetOpponentPackPlayer(myself bool) packet.PackPlayer {
+	opponent := player.GetOpponent()
+	if opponent != nil {
+		return opponent.GetPackPlayer(myself)
 	}
+	return packet.PackPlayer{}
 }
 
 // GetPackPlayerState 取得玩家的狀態封包
@@ -131,11 +151,11 @@ func (player *Player) GetPackPlayerState(myselfPack bool) packet.PackPlayerState
 
 // GetOpponentPackPlayerState 取得玩家對手的狀態封包
 func (player *Player) GetOpponentPackPlayerState() packet.PackPlayerState {
-	if LeftGamer.GetID() == player.ID {
-		return RightGamer.GetPackPlayerState(false)
-	} else {
-		return LeftGamer.GetPackPlayerState(false)
+	opponent := player.GetOpponent()
+	if opponent != nil {
+		return opponent.GetPackPlayerState(false)
 	}
+	return packet.PackPlayerState{}
 }
 
 // 送封包給玩家(TCP)

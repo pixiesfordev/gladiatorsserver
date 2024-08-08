@@ -31,7 +31,7 @@ const (
 	PingMiliSecs                           = 1000 // 每X毫秒送Ping封包給client(心跳檢測)
 	AGONES_HEALTH_PIN_INTERVAL_SEC         = 2    // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
 	TCP_CONN_TIMEOUT_SEC                   = 120  // TCP連線逾時時間X秒
-	TIMELOOP_MILISECS              int     = 50   // 遊戲每X毫秒循環
+	TIMELOOP_MILISECS              int     = 100  // 遊戲每X毫秒循環
 	KICK_PLAYER_SECS               float64 = 60   // 最長允許玩家無心跳X秒後踢出遊戲房
 	MarketDivineSkillCount                 = 4    // 有幾個神祉技能可以購買
 	DivineSkillCount                       = 2    // 玩家可以買幾個神祉技能
@@ -114,7 +114,15 @@ type ConnectionUDP struct {
 
 // StartFighting 開始戰鬥
 func StartFighting() {
+	ChangeGameState(GameState_Fighting)
 	GameTime = 0
+	pack := packet.Pack{
+		CMD:     packet.STARTFIGHTING_TOCLIENT,
+		PackID:  -1,
+		Content: &packet.StartFighting_ToClient{},
+	}
+	MyRoom.BroadCastPacket(-1, pack)
+	log.Infof("戰鬥開始")
 }
 
 // ResetGame 重置遊戲
@@ -127,6 +135,7 @@ func ResetGame() {
 // 改變遊戲階段
 func ChangeGameState(state GameState) {
 	MyGameState = state
+	log.Infof("改變遊戲狀態為: %v", MyGameState)
 }
 
 // 遊戲計時器
@@ -154,8 +163,8 @@ func RunGameTimer(stop chan struct{}) {
 
 func snedBattleStatePackToClient() {
 
-	leftPlayer := LeftGamer.(*Player)
-	if leftPlayer != nil {
+	leftPlayer, ok := LeftGamer.(*Player)
+	if ok {
 		leftPack := packet.Pack{
 			CMD:    packet.BATTLESTATE_TOCLIENT,
 			PackID: -1,
@@ -168,8 +177,8 @@ func snedBattleStatePackToClient() {
 		leftPlayer.SendPacketToPlayer(leftPack)
 	}
 
-	rightPlayer := RightGamer.(*Player)
-	if rightPlayer != nil {
+	rightPlayer, ok := RightGamer.(*Player)
+	if ok {
 		rightPack := packet.Pack{
 			CMD:    packet.BATTLESTATE_TOCLIENT,
 			PackID: -1,

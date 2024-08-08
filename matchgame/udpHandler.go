@@ -3,7 +3,6 @@ package main
 import (
 	// "gladiatorsGoModule/setting"
 	logger "matchgame/logger"
-	"sync"
 
 	"encoding/json"
 
@@ -12,7 +11,6 @@ import (
 	"matchgame/game"
 	"matchgame/packet"
 	"net"
-	"time"
 	// sdk "agones.dev/agones/sdks/go"
 )
 
@@ -88,39 +86,5 @@ func openConnectUDP(stop chan struct{}, src string) {
 				// player.LastUpdateAt = time.Now() // 更新心跳
 			}
 		}
-	}
-}
-
-// 定時更新遊戲狀態給Client
-func pingLoop(player *game.Player, stop chan struct{}) {
-	log.Infof("%s (UDP)開始updateGameLoop", logger.LOG_Main)
-	gameUpdateTimer := time.NewTicker(game.PingMiliSecs * time.Millisecond)
-
-	defer gameUpdateTimer.Stop()
-
-	loopChan := &game.LoopChan{
-		StopChan:      make(chan struct{}, 1),
-		ChanCloseOnce: sync.Once{},
-	}
-	player.ConnUDP.MyLoopChan = loopChan
-
-	for {
-		select {
-		case <-stop:
-			log.Infof("強制終止玩家updateGameLoop")
-			return
-		case <-loopChan.StopChan:
-			log.Infof("終止玩家updateGameLoop")
-			return
-		// ==========心跳==========
-		case <-gameUpdateTimer.C:
-			pack := packet.Pack{
-				CMD:     packet.PING_TOCLIENT,
-				PackID:  -1,
-				Content: &packet.Ping_ToClient{},
-			}
-			player.SendPacketToPlayer(pack)
-		}
-
 	}
 }

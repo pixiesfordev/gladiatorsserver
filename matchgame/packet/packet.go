@@ -16,10 +16,11 @@ const (
 	AUTH_TOCLIENT           = "AUTH_TOCLIENT"           // (TCP)身分驗證-送Client
 	SETPLAYER               = "SETPLAYER"               // (TCP)設定玩家資料
 	SETPLAYER_TOCLIENT      = "SETPLAYER_TOCLIENT"      // (TCP)設定玩家資料-送Client
-	READY                   = "READY"                   // (TCP)遊戲準備就緒
-	READY_TOCLIENT          = "READY_TOCLIENT"          // (TCP)遊戲準備就緒-送Client
+	SETREADY                = "SETREADY"                // (TCP)遊戲準備就緒
+	SETREADY_TOCLIENT       = "SETREADY_TOCLIENT"       // (TCP)遊戲準備就緒-送Client
 	SETDIVINESKILL          = "SETDIVINESKILL"          // (TCP)神祉選擇
 	SETDIVINESKILL_TOCLIENT = "SETDIVINESKILL_TOCLIENT" // (TCP)神祉選擇-送Client
+	STARTFIGHTING_TOCLIENT  = "STARTFIGHTING_TOCLIENT"  // (TCP)開始戰鬥-送Client
 	PLAYERACTION            = "PLAYERACTION"            // (TCP)玩家指令
 	PLAYERACTION_TOCLIENT   = "PLAYERACTION_TOCLIENT"   // (TCP)玩家指令-送Client
 	BATTLESTATE             = "BATTLESTATE"             // (TCP)狀態更新
