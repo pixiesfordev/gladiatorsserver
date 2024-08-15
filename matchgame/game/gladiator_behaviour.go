@@ -162,18 +162,17 @@ func (myself *Gladiator) Attack(target *Gladiator, dmg int, def int) {
 }
 
 func (g *Gladiator) Move() {
-
 	// 無法移動就return
 	if !g.CanMove() {
 		return
 	}
 
 	movePos := g.GetSpd() * g.GetDir() * TickTimePass
+	// log.Infof("g.CurPos1 %v g.GetSpd() %v g.GetDir() %v  TickTimePass %v movePos %v ", g.CurPos, g.GetSpd(), g.GetDir(), TickTimePass, movePos)
 	g.CurPos += movePos
-
 	if g.CurPos > WallPos {
 		g.CurPos = WallPos
-	} else if g.CurPos <= WallPos {
+	} else if g.CurPos <= -WallPos {
 		g.CurPos = -WallPos
 	}
 }

@@ -27,7 +27,7 @@ const (
 	WeakValue             float64 = -0.3 // 虛弱造成防禦減少百分比
 	FatigueValue          float64 = -0.3 // 疲勞造成體力回復減少
 	ProtectionValue       float64 = -0.3 // 加護減傷百分比
-	EffectTriggerInterval int     = 1    // 時間性觸發效果間格時間, 例如流血, 填1就是每秒觸發1次
+	EffectTriggerInterval float64 = 1    // 時間性觸發效果間格時間, 例如流血, 填1就是每秒觸發1次
 	BerserkValue          float64 = 0.5  // 狂暴增加力量百分比
 )
 
@@ -396,7 +396,7 @@ func (e *Effect) Trigger_Time() {
 	}
 	switch e.Type {
 	case gameJson.RegenHP: // 回復生命
-		e.NextTriggerAt += float64(EffectTriggerInterval) // 更新觸發時間
+		e.NextTriggerAt += EffectTriggerInterval // 更新觸發時間
 		value, err := GetEffectValue[int](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
@@ -405,7 +405,7 @@ func (e *Effect) Trigger_Time() {
 		e.AddDuration(-EffectTriggerInterval)
 		e.Target.AddHp(value)
 	case gameJson.RegenVigor: // 回復體力
-		e.NextTriggerAt += float64(EffectTriggerInterval) // 更新觸發時間
+		e.NextTriggerAt += EffectTriggerInterval // 更新觸發時間
 		value, err := GetEffectValue[float64](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
@@ -414,7 +414,7 @@ func (e *Effect) Trigger_Time() {
 		e.AddDuration(-EffectTriggerInterval)
 		e.Target.AddVigor(value)
 	case gameJson.Poison: // 中毒
-		e.NextTriggerAt += float64(EffectTriggerInterval) // 更新觸發時間
+		e.NextTriggerAt += EffectTriggerInterval // 更新觸發時間
 		value, err := GetEffectValue[int](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
@@ -423,7 +423,7 @@ func (e *Effect) Trigger_Time() {
 		e.AddDuration(-EffectTriggerInterval)
 		e.Target.AddHp(-value)
 	case gameJson.Burning: // 著火
-		e.NextTriggerAt += float64(EffectTriggerInterval) // 更新觸發時間
+		e.NextTriggerAt += EffectTriggerInterval // 更新觸發時間
 		value, err := GetEffectValue[int](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)

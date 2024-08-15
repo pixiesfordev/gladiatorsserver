@@ -12,6 +12,7 @@ import (
 type JsonSkill struct {
 	ID         int     `json:"ID"`
 	Activation string  `json:"Activation"`
+	Cost       int     `json:"Cost"`
 	Init       float64 `json:"Init"`
 	Vigor      int     `json:"Vigor"`
 	Knockback  float64 `json:"Knockback"`

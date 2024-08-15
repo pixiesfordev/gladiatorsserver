@@ -2,8 +2,10 @@ package game
 
 import (
 	"gladiatorsGoModule/gameJson"
+	"gladiatorsGoModule/utility"
 	"matchgame/packet"
 	"math"
+	// log "github.com/sirupsen/logrus"
 )
 
 func (gladiator *Gladiator) GetPackGladiator(myselfPack bool) packet.PackGladiator {
@@ -52,9 +54,9 @@ func (gladiator *Gladiator) GetPackGladiatorState(myselfPack bool) packet.PackGl
 	packGladiator := packet.PackGladiatorState{
 		HandSkillIDs:            handSkills,
 		CurHp:                   gladiator.CurHp,
-		CurVigor:                curVigor,
-		CurSpd:                  gladiator.Spd,
-		CurPos:                  gladiator.CurPos,
+		CurVigor:                utility.RoundToDecimal(curVigor, 3),
+		CurSpd:                  utility.RoundToDecimal(gladiator.Spd, 3),
+		CurPos:                  utility.RoundToDecimal(gladiator.CurPos, 3),
 		EffectTypes:             []string{},
 		ActivedMeleeJsonSkillID: activedMeleeJsonSkillID,
 	}

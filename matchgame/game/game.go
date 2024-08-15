@@ -31,7 +31,8 @@ const (
 	PingMiliSecs                           = 1000 // 每X毫秒送Ping封包給client(心跳檢測)
 	AGONES_HEALTH_PIN_INTERVAL_SEC         = 2    // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
 	TCP_CONN_TIMEOUT_SEC                   = 120  // TCP連線逾時時間X秒
-	TIMELOOP_MILISECS              int     = 100  // 遊戲每X毫秒循環
+	BattleLOOP_MILISECS            int     = 100  // 戰鬥每X毫秒循環
+	GameLOOP_MILISECS              int     = 1000 // 遊戲每X毫秒循環
 	KICK_PLAYER_SECS               float64 = 60   // 最長允許玩家無心跳X秒後踢出遊戲房
 	MarketDivineSkillCount                 = 4    // 有幾個神祉技能可以購買
 	DivineSkillCount                       = 2    // 玩家可以買幾個神祉技能
@@ -56,10 +57,8 @@ var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
 // non-agones: 個人測試模式(不使用Agones服務, non-agones的連線方式不會透過Matchmaker分配房間再把ip回傳給client, 而是直接讓client去連資料庫matchgame的ip)
 var Mode string
 var GameTime = float64(0)                                             // 遊戲開始X秒
-var TickTimePass = float64(TIMELOOP_MILISECS) / 1000.0                // 每幀時間流逝秒數
+var TickTimePass = float64(BattleLOOP_MILISECS) / 1000.0              // 每幀時間流逝秒數
 var MarketDivineJsonSkills [MarketDivineSkillCount]gameJson.JsonSkill // 本局遊戲可購買的神祉技能清單
-var LeftGamer Gamer                                                   // 左方玩家第1位玩家
-var RightGamer Gamer                                                  // 右方玩家第2位玩家
 var MyGameState = GameState_Initializing                              // 遊戲狀態
 
 func InitGame() {
@@ -142,19 +141,24 @@ func ChangeGameState(state GameState) {
 func RunGameTimer(stop chan struct{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("%s RoomTimer錯誤: %v", logger.LOG_Room, err)
+			log.Errorf("%s RunGameTimer錯誤: %v", logger.LOG_Room, err)
 			stop <- struct{}{}
 		}
 	}()
-	ticker := time.NewTicker(time.Duration(TIMELOOP_MILISECS) * time.Millisecond)
+	battleTicker := time.NewTicker(time.Duration(BattleLOOP_MILISECS) * time.Millisecond)
+	gameTicker := time.NewTicker(time.Duration(GameLOOP_MILISECS) * time.Millisecond)
+	defer battleTicker.Stop()
+	defer gameTicker.Stop()
+
 	for {
 		select {
-		case <-ticker.C:
-			MyRoom.KickTimeoutPlayer()
+		case <-battleTicker.C:
 			if MyGameState == GameState_Fighting {
 				timePass()
 				snedBattleStatePackToClient()
 			}
+		case <-gameTicker.C:
+			MyRoom.KickTimeoutPlayer()
 		case <-stop:
 			return
 		}
@@ -162,40 +166,26 @@ func RunGameTimer(stop chan struct{}) {
 }
 
 func snedBattleStatePackToClient() {
-
-	leftPlayer, ok := LeftGamer.(*Player)
-	if ok {
-		leftPack := packet.Pack{
-			CMD:    packet.BATTLESTATE_TOCLIENT,
-			PackID: -1,
-			Content: &packet.BattleState_ToClient{
-				MyPlayerState:       leftPlayer.GetPackPlayerState(true),
-				OpponentPlayerState: leftPlayer.GetOpponentPackPlayerState(),
-				GameTime:            GameTime,
-			},
+	for _, v := range MyRoom.Gamers {
+		if player, ok := v.(*Player); ok {
+			pack := packet.Pack{
+				CMD:    packet.BATTLESTATE_TOCLIENT,
+				PackID: -1,
+				Content: &packet.BattleState_ToClient{
+					MyPlayerState:       player.GetPackPlayerState(true),
+					OpponentPlayerState: player.GetOpponentPackPlayerState(),
+					GameTime:            utility.RoundToDecimal(GameTime, 3),
+				},
+			}
+			player.SendPacketToPlayer(pack)
 		}
-		leftPlayer.SendPacketToPlayer(leftPack)
 	}
-
-	rightPlayer, ok := RightGamer.(*Player)
-	if ok {
-		rightPack := packet.Pack{
-			CMD:    packet.BATTLESTATE_TOCLIENT,
-			PackID: -1,
-			Content: &packet.BattleState_ToClient{
-				MyPlayerState:       rightPlayer.GetPackPlayerState(true),
-				OpponentPlayerState: rightPlayer.GetOpponentPackPlayerState(),
-				GameTime:            GameTime,
-			},
-		}
-		rightPlayer.SendPacketToPlayer(rightPack)
-	}
-
 }
 
 func timePass() {
 	GameTime += TickTimePass
-
+	// 雙方觸發狀態效果
+	gladiatorsTriggerBuffers()
 	// 雙方移動
 	gladiatorsMove()
 	// 有碰撞就進行肉搏
@@ -204,24 +194,50 @@ func timePass() {
 	}
 }
 
+// gladiatorsTriggerBuffers 雙方觸發狀態效果
+func gladiatorsTriggerBuffers() {
+	for _, v := range MyRoom.Gamers {
+		if v == nil {
+			continue
+		}
+		g := v.GetGladiator()
+		if g != nil {
+			g.TriggerBuffer_Time()
+		}
+	}
+}
+
 // gladiatorsMove 雙方移動
 func gladiatorsMove() {
-	LeftGamer.GetGladiator().Move()
-	RightGamer.GetGladiator().Move()
+	for _, v := range MyRoom.Gamers {
+		if v == nil {
+			continue
+		}
+		g := v.GetGladiator()
+		if g != nil {
+			g.Move()
+		}
+	}
 }
 
 // checkCollision 碰撞檢測
 func checkCollision() bool {
-	dis := math.Abs(LeftGamer.GetGladiator().CurPos - RightGamer.GetGladiator().CurPos)
+	if MyRoom.Gamers[0] == nil && MyRoom.Gamers[0].GetGladiator() == nil && MyRoom.Gamers[1] == nil && MyRoom.Gamers[1].GetGladiator() == nil {
+		return false
+	}
+	dis := math.Abs(MyRoom.Gamers[0].GetGladiator().CurPos - MyRoom.Gamers[1].GetGladiator().CurPos)
+	// log.Infof("pos1: %v  pos2: %v dis: %v", MyRoom.Gamers[0].GetGladiator().CurPos, MyRoom.Gamers[1].GetGladiator().CurPos, dis)
 	return dis <= CollisionDis
 }
 
 // melee 雙方進行肉搏
 func melee() {
+	if MyRoom.Gamers[0] == nil && MyRoom.Gamers[0].GetGladiator() == nil && MyRoom.Gamers[1] == nil && MyRoom.Gamers[1].GetGladiator() == nil {
+		return
+	}
 	var err error
-	g1 := LeftGamer.GetGladiator()
-	g2 := RightGamer.GetGladiator()
-
+	g1 := MyRoom.Gamers[0].GetGladiator()
+	g2 := MyRoom.Gamers[1].GetGladiator()
 	// 初始化雙方肉搏技能
 	g1SpellInit := g1.GetInit()
 	var g1Skill *Skill
@@ -241,7 +257,6 @@ func melee() {
 		}
 		g2SpellInit += g2Skill.JsonSkill.Init
 	}
-
 	// 雙方技能施放
 	if g1SpellInit > g2SpellInit { // g1先攻
 		g1.Spell(g1Skill)
@@ -258,11 +273,33 @@ func melee() {
 			g1.Spell(g1Skill)
 		}
 	}
-
 	// 雙方擊退
-	g1Knockback := g1.GetKnockback() + g1Skill.JsonSkill.Knockback
-	g2Knockback := g2.GetKnockback() + g2Skill.JsonSkill.Knockback
-
+	g1SkillKnockback := 0.0
+	g2SkillKnockback := 0.0
+	if g1Skill != nil {
+		g1SkillKnockback += g1Skill.JsonSkill.Knockback
+	}
+	if g2Skill != nil {
+		g2SkillKnockback += g2Skill.JsonSkill.Knockback
+	}
+	g1Knockback := g1.GetKnockback() + g1SkillKnockback
+	g2Knockback := g2.GetKnockback() + g2SkillKnockback
 	g1.DoKnockback(g2Knockback)
 	g2.DoKnockback(g1Knockback)
+	// 雙方暈眩
+	dizzyTriggerAt := GameTime + 1
+	g1KnockDizzy := &Effect{
+		Type:          gameJson.Dizzy,
+		Duration:      1,
+		Target:        g1,
+		NextTriggerAt: dizzyTriggerAt,
+	}
+	g1.AddEffect(g1KnockDizzy)
+	g2KnockDizzy := &Effect{
+		Type:          gameJson.Dizzy,
+		Duration:      1,
+		Target:        g2,
+		NextTriggerAt: dizzyTriggerAt,
+	}
+	g2.AddEffect(g2KnockDizzy)
 }

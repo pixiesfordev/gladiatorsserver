@@ -7,6 +7,7 @@ import (
 	"gladiatorsGoModule/setting"
 	"matchgame/logger"
 	"matchgame/packet"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -37,6 +38,7 @@ type Player struct {
 	LastUpdateAt              time.Time                      // 上次收到玩家更新封包(心跳)
 	ConnTCP                   *ConnectionTCP                 // TCP連線
 	ConnUDP                   *ConnectionUDP                 // UDP連線
+	MutexLock                 sync.Mutex
 }
 
 func NewPlayer(id string, connTCP *ConnectionTCP, connUDP *ConnectionUDP) *Player {
@@ -92,6 +94,9 @@ func (player *Player) CloseConnection() {
 		log.Errorf("%s 關閉玩家連線時 player 為 nil", logger.LOG_Player)
 		return
 	}
+	player.MutexLock.Lock()
+	defer player.MutexLock.Unlock()
+
 	if player.ConnTCP.Conn != nil {
 		player.ConnTCP.MyLoopChan.ClosePackReadStopChan()
 		player.ConnTCP.Conn.Close()
@@ -113,10 +118,10 @@ func (player *Player) GetPackDivineSkills() [setting.PLAYER_NUMBER]packet.PackDi
 
 // GetOpponent 取得對手Gamer
 func (player *Player) GetOpponent() Gamer {
-	if LeftGamer != nil && LeftGamer.GetID() == player.ID {
-		return RightGamer
-	} else if RightGamer != nil && RightGamer.GetID() == player.ID {
-		return LeftGamer
+	for _, p := range MyRoom.Gamers {
+		if p != nil && player != nil && p.GetID() != player.GetID() {
+			return p
+		}
 	}
 	return nil
 }
@@ -163,6 +168,8 @@ func (p *Player) SendPacketToPlayer(pack packet.Pack) {
 	if p.ConnTCP.Conn == nil {
 		return
 	}
+	p.MutexLock.Lock()
+	defer p.MutexLock.Unlock()
 	err := packet.SendPack(p.ConnTCP.Encoder, pack)
 	if err != nil {
 		log.Errorf("%s SendPacketToPlayer error: %v", logger.LOG_Room, err)

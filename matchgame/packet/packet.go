@@ -2,6 +2,7 @@ package packet
 
 import (
 	"encoding/json"
+	// "gladiatorsGoModule/utility"
 	"io"
 	"strings"
 
@@ -109,6 +110,13 @@ func ReadPack(decoder *json.Decoder) (Pack, error) {
 }
 
 func SendPack(encoder *json.Encoder, packet Pack) error {
+
+	// pack, roundErr := roundDecimalCheck(&packet) // 對指定封包進行四捨五入
+	// if roundErr != nil {
+	// 	log.Errorf("%s 對指定封包進行四捨五入發生錯誤: %v", logger.LOG_Pack, roundErr)
+	// } else {
+	// 	packet = *pack
+	// }
 	err := encoder.Encode(packet)
 
 	// // 寫LOG
@@ -126,3 +134,37 @@ func SendPack(encoder *json.Encoder, packet Pack) error {
 	}
 	return err
 }
+
+// 對指定封包進行四捨五入
+// func roundDecimalCheck(pack *Pack) (*Pack, error) {
+// 	switch pack.CMD {
+// 	case BATTLESTATE_TOCLIENT:
+// 		if targetPack, ok := pack.Content.(*BattleState_ToClient); ok {
+// 			newContent, err := utility.RoundDecimalInStruct(targetPack.MyPlayerState, 3)
+// 			if err != nil {
+// 				log.Errorf("%s 送封包前將%s封包四捨五入錯誤: %v", logger.LOG_Pack, pack.CMD, err)
+// 				return pack, err
+// 			} else {
+// 				if roundContent, ok := newContent.(PackPlayerState); ok {
+// 					targetPack.MyPlayerState = roundContent
+// 				} else {
+// 					log.Errorf("%s %s utility.RoundDecimalInStruct錯誤: %v", logger.LOG_Pack, pack.CMD, pack.CMD)
+// 				}
+// 			}
+
+// 			newContent, err = utility.RoundDecimalInStruct(targetPack.OpponentPlayerState, 3)
+// 			if err != nil {
+// 				log.Errorf("%s 送封包前將%s封包四捨五入錯誤: %v", logger.LOG_Pack, pack.CMD, err)
+// 				return pack, err
+// 			} else {
+// 				if roundContent, ok := newContent.(PackPlayerState); ok {
+// 					targetPack.MyPlayerState = roundContent
+// 				} else {
+// 					log.Errorf("%s %s utility.RoundDecimalInStruct錯誤: %v", logger.LOG_Pack, pack.CMD, pack.CMD)
+// 				}
+// 			}
+// 		}
+
+// 	}
+// 	return pack, nil
+// }

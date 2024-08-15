@@ -21,7 +21,7 @@ type Room struct {
 	Gamers      [setting.PLAYER_NUMBER]Gamer // 玩家map
 	RoomName    string                       // 房間名稱(也是DB文件ID)(房主UID+時間轉 MD5)
 	DBMatchgame *mongo.DBMatchgame           // DB遊戲房資料
-	MutexLock   sync.RWMutex
+	MutexLock   sync.Mutex
 }
 
 var MyRoom *Room // 房間
@@ -61,7 +61,6 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 func (r *Room) KickTimeoutPlayer() {
 	for _, gamer := range r.Gamers {
 		if player, ok := gamer.(*Player); ok {
-
 			nowTime := time.Now()
 			// 玩家無心跳超過X秒就踢出遊戲房
 			// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
@@ -102,13 +101,12 @@ func (r *Room) GamerCount() int {
 
 // 把玩家加到房間中, 成功時回傳true
 func (r *Room) JoinGamer(gamer Gamer) error {
+	r.MutexLock.Lock()
+	defer r.MutexLock.Unlock()
 	if gamer == nil {
 		return fmt.Errorf("JoinGamer傳入nil Gamer")
 	}
 	log.Infof("%s 玩家(%s) 嘗試加入房間 DBMatchgame: %+v", logger.LOG_Room, gamer.GetID(), r.DBMatchgame)
-
-	r.MutexLock.Lock()
-	defer r.MutexLock.Unlock()
 
 	gamerExist := r.GamerExist(gamer.GetID())
 	if gamerExist { // 斷線重連
@@ -135,11 +133,6 @@ func (r *Room) JoinGamer(gamer Gamer) error {
 
 	r.UpdateMatchgameToDB() // 更新DB
 	r.OnRoomPlayerChange()
-	if r.GamerCount() == 1 {
-		LeftGamer = gamer
-	} else {
-		RightGamer = gamer
-	}
 	log.Infof("%s 玩家(%s) 已加入房間(%v/%v) 房間資訊: %+v", logger.LOG_Room, gamer.GetID(), r.GamerCount(), setting.PLAYER_NUMBER, r)
 	return nil
 }
@@ -157,18 +150,13 @@ func (r *Room) ResetRoom() {
 
 // 將玩家踢出房間
 func (r *Room) KickPlayer(player *Player, reason string) {
-
+	r.MutexLock.Lock()
+	defer r.MutexLock.Unlock()
 	log.Infof("%s 嘗試踢出玩家(%s) 原因: %s", logger.LOG_Room, player.GetID(), reason)
 	gamer := r.GetGamerByID(player.ID)
 	if gamer == nil {
 		log.Infof("%s 要踢掉的玩家已經不存在", logger.LOG_Room)
 		return
-	}
-
-	if LeftGamer == gamer {
-		LeftGamer = nil
-	} else if RightGamer == gamer {
-		RightGamer = nil
 	}
 
 	// 取mongoDB player doc
@@ -178,9 +166,6 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 		log.Errorf("%s 取mongoDB player doc資料發生錯誤: %v", logger.LOG_Room, getPlayerDocErr)
 		return
 	}
-
-	r.MutexLock.Lock()
-	defer r.MutexLock.Unlock()
 
 	// 更新玩家DB資料
 	updatePlayerBson := bson.D{
@@ -204,16 +189,14 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 
 // 將Bot踢出房間
 func (r *Room) KickBot(bot *Bot, reason string) {
-
+	r.MutexLock.Lock()
+	defer r.MutexLock.Unlock()
 	log.Infof("%s 嘗試踢出Bot(%s) 原因: %s", logger.LOG_Room, bot.GetID(), reason)
 	gamer := r.GetGamerByID(bot.ID)
 	if gamer == nil {
 		log.Infof("%s 要踢掉的Bot已經不存在", logger.LOG_Room)
 		return
 	}
-
-	r.MutexLock.Lock()
-	defer r.MutexLock.Unlock()
 
 	r.Gamers[bot.Idx] = nil
 	r.DBMatchgame.KickPlayer(bot.GetID())

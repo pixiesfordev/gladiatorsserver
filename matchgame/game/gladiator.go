@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"gladiatorsGoModule/gameJson"
 )
 
@@ -59,11 +60,10 @@ func NewGladiator(id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [G
 	jsonTraits []gameJson.TraitJson, jsonEquips []gameJson.JsonEquip) (Gladiator, error) {
 	pos := -InitGladiatorPos
 	leftSide := true
-	if len(MyRoom.Gamers) >= 1 {
+	if MyRoom.GamerCount() > 1 {
 		pos = InitGladiatorPos
 		leftSide = false
 	}
-
 	gladiator := Gladiator{
 		ID:            id,
 		JsonGladiator: jsonGladiator,
@@ -93,7 +93,6 @@ func NewGladiator(id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [G
 
 // AddEffect 賦予狀態效果
 func (g *Gladiator) AddEffect(effect *Effect) {
-
 	//對要被賦予的狀態免疫時就返回
 	immuneTypes := g.GetImmuneTypes()
 	for i, _ := range immuneTypes {
@@ -120,7 +119,6 @@ func (g *Gladiator) AddEffect(effect *Effect) {
 		}
 	}
 	g.RemoveEffects(removeEffectTypes)
-
 	g.Effects[effect.Type] = append(g.Effects[effect.Type], effect)
 }
 
@@ -169,7 +167,7 @@ func (g *Gladiator) RemoveSpecificEffect(targetEffect *Effect) {
 }
 
 // TriggerBuffer_Time 時間性觸發Buffer
-func (myself *Gladiator) TriggerBuffer_Time(value int) {
+func (myself *Gladiator) TriggerBuffer_Time() {
 	if !myself.IsAlive() {
 		return
 	}
@@ -241,5 +239,6 @@ func (g *Gladiator) GetSkill(skillID int) (gameJson.JsonSkill, error) {
 			return jsonSkill, nil
 		}
 	}
+	log.Errorf("玩家選擇的技能不存在手牌技能中")
 	return gameJson.JsonSkill{}, fmt.Errorf("玩家選擇的技能不存在手牌技能中")
 }

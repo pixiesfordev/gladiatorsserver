@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"gladiatorsGoModule/gameJson"
+	"gladiatorsGoModule/utility"
 
 	// mongo "gladiatorsGoModule/mongo"
 	logger "matchgame/logger"
@@ -151,21 +152,15 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			}
 			opponent.SendPacketToPlayer(opponentPack)
 		}
-		log.Infof("f")
 
 		// 如果對手也選好技能 且 還沒進入戰鬥開始倒數階段就進入戰鬥開始倒數階段
-		log.Infof("player.GetOpponent().IsSelectedDivineSkill(): %v", player.GetOpponent().IsSelectedDivineSkill())
-		log.Infof("MyGameState: %v", MyGameState)
 		if player.GetOpponent().IsSelectedDivineSkill() && MyGameState == GameState_SelectingDivineSkill {
-			log.Infof("g")
 			ChangeGameState(GameState_CountingDown)
 			go func() {
 				time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
 				StartFighting()
-				log.Infof("h")
 			}()
 		}
-		log.Infof("i")
 	// ==========施放技能==========
 	case packet.PLAYERACTION:
 		content := packet.PlayerAction{}
@@ -311,7 +306,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			Content: &packet.BattleState_ToClient{
 				MyPlayerState:       player.GetPackPlayerState(true),
 				OpponentPlayerState: player.GetOpponentPackPlayerState(),
-				GameTime:            GameTime,
+				GameTime:            utility.RoundToDecimal(GameTime, 3),
 			},
 		}
 		MyRoom.BroadCastPacket(-1, pack)

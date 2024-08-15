@@ -3,6 +3,7 @@ package gameJson
 import (
 	"encoding/json"
 	"fmt"
+	// log "github.com/sirupsen/logrus"
 )
 
 type JsonSkillEffect struct {
@@ -14,7 +15,7 @@ type JsonSkillEffect struct {
 
 type Effect struct {
 	Type  EffectType
-	Value int
+	Value string
 	Prob  float64
 }
 
@@ -40,7 +41,6 @@ func (jsonData JsonSkillEffect) UnmarshalJSONData(jsonName string, jsonBytes []b
 
 		// 處理Effect
 		json.Effects = parseEffects(rawEffect)
-
 		items[json.ID] = json
 		AddToSkillEffectDataDic(json)
 	}
@@ -60,7 +60,7 @@ func parseEffects(data map[string]interface{}) []Effect {
 			break
 		}
 
-		effectValue := int(data[valueKey].(float64))
+		effectValue := data[valueKey].(string)
 		effectProb := data[probKey].(float64)
 
 		sEffectType := effectType.(string)
