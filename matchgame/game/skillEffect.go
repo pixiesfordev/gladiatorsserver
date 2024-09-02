@@ -95,7 +95,6 @@ const (
 func (e *Effect) IsMobileRestriction() bool {
 	switch e.Type {
 	case gameJson.Fearing, gameJson.Dizzy, gameJson.Pull:
-		log.Infof("%v 狀態中無法移動", e.Type)
 		return true
 	}
 	return false

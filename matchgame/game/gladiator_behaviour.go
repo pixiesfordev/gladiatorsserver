@@ -45,6 +45,20 @@ func (myself *Gladiator) DoKnockback(knockbackValue float64) {
 	} else {
 		myself.CurPos += knockbackValue
 	}
+
+	// 檢查是否有撞牆
+	if myself.LeftSide && myself.CurPos <= -WallPos {
+		myself.CurPos = -WallPos
+		myself.knockWall()
+	} else if !myself.LeftSide && myself.CurPos >= WallPos {
+		myself.CurPos = WallPos
+		myself.knockWall()
+	}
+
+}
+
+// 撞牆
+func (myself *Gladiator) knockWall() {
 }
 
 // Spell 發動技能

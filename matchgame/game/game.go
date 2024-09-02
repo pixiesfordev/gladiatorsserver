@@ -33,7 +33,7 @@ const (
 	TCP_CONN_TIMEOUT_SEC                   = 120  // TCP連線逾時時間X秒
 	BattleLOOP_MILISECS            int     = 100  // 戰鬥每X毫秒循環
 	GameLOOP_MILISECS              int     = 1000 // 遊戲每X毫秒循環
-	KICK_PLAYER_SECS               float64 = 60   // 最長允許玩家無心跳X秒後踢出遊戲房
+	KICK_PLAYER_SECS               float64 = 10   // 最長允許玩家無心跳X秒後踢出遊戲房
 	MarketDivineSkillCount                 = 4    // 有幾個神祉技能可以購買
 	DivineSkillCount                       = 2    // 玩家可以買幾個神祉技能
 	GladiatorSkillCount                    = 6    // 玩家有幾個技能
@@ -273,6 +273,9 @@ func melee() {
 			g1.Spell(g1Skill)
 		}
 	}
+	// 紀錄擊退前的位置
+	g1AttackPos := g1.CurPos
+	g2AttackPos := g2.CurPos
 	// 雙方擊退
 	g1SkillKnockback := 0.0
 	g2SkillKnockback := 0.0
@@ -283,23 +286,74 @@ func melee() {
 		g2SkillKnockback += g2Skill.JsonSkill.Knockback
 	}
 	g1Knockback := g1.GetKnockback() + g1SkillKnockback
-	g2Knockback := g2.GetKnockback() + g2SkillKnockback
+	g2Knockback := g2.GetKnockback() + g2SkillKnockback + 5
 	g1.DoKnockback(g2Knockback)
 	g2.DoKnockback(g1Knockback)
 	// 雙方暈眩
 	dizzyTriggerAt := GameTime + 1
 	g1KnockDizzy := &Effect{
 		Type:          gameJson.Dizzy,
-		Duration:      1,
+		Duration:      2,
 		Target:        g1,
 		NextTriggerAt: dizzyTriggerAt,
 	}
 	g1.AddEffect(g1KnockDizzy)
 	g2KnockDizzy := &Effect{
 		Type:          gameJson.Dizzy,
-		Duration:      1,
+		Duration:      2,
 		Target:        g2,
 		NextTriggerAt: dizzyTriggerAt,
 	}
 	g2.AddEffect(g2KnockDizzy)
+
+	// 送Melee封包給Client
+	g1SkillID := 0
+	g2SkillID := 0
+	if g1Skill != nil {
+		g1SkillID = g1Skill.JsonSkill.ID
+	}
+	if g2Skill != nil {
+		g2SkillID = g2Skill.JsonSkill.ID
+	}
+	if player, ok := MyRoom.Gamers[0].(*Player); ok {
+		packMelee := packet.Pack{
+			CMD: packet.MELEE_TOCLIENT,
+			Content: &packet.Melee_ToClient{
+				MyPlayerState:       player.GetPackPlayerState(true),
+				OpponentPlayerState: player.GetOpponentPackPlayerState(),
+				GameTime:            utility.RoundToDecimal(GameTime, 3),
+				MyAttack: packet.PackAttack{
+					Knockback: g1Knockback,
+					SkillID:   g1SkillID,
+					AttackPos: g1AttackPos,
+				},
+				OpponentAttack: packet.PackAttack{
+					Knockback: g2Knockback,
+					SkillID:   g2SkillID,
+					AttackPos: g2AttackPos,
+				},
+			},
+		}
+		player.SendPacketToPlayer(packMelee)
+	}
+	if player, ok := MyRoom.Gamers[1].(*Player); ok {
+		packMelee := packet.Pack{
+			CMD: packet.MELEE_TOCLIENT,
+			Content: &packet.Melee_ToClient{
+				MyPlayerState:       player.GetPackPlayerState(true),
+				OpponentPlayerState: player.GetOpponentPackPlayerState(),
+				GameTime:            utility.RoundToDecimal(GameTime, 3),
+				MyAttack: packet.PackAttack{
+					Knockback: g2Knockback,
+					SkillID:   g2SkillID,
+				},
+				OpponentAttack: packet.PackAttack{
+					Knockback: g1Knockback,
+					SkillID:   g1SkillID,
+				},
+			},
+		}
+		player.SendPacketToPlayer(packMelee)
+	}
+
 }

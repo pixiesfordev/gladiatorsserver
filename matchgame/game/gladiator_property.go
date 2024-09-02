@@ -51,13 +51,18 @@ func (gladiator *Gladiator) GetPackGladiatorState(myselfPack bool) packet.PackGl
 		}
 	}
 
+	effectTypes := []string{}
+	for k := range gladiator.Effects {
+		effectTypes = append(effectTypes, string(k))
+	}
+
 	packGladiator := packet.PackGladiatorState{
 		HandSkillIDs:            handSkills,
 		CurHp:                   gladiator.CurHp,
 		CurVigor:                utility.RoundToDecimal(curVigor, 3),
 		CurSpd:                  utility.RoundToDecimal(gladiator.Spd, 3),
 		CurPos:                  utility.RoundToDecimal(gladiator.CurPos, 3),
-		EffectTypes:             []string{},
+		EffectTypes:             effectTypes,
 		ActivedMeleeJsonSkillID: activedMeleeJsonSkillID,
 	}
 	return packGladiator

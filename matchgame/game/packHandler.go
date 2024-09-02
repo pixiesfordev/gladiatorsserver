@@ -188,24 +188,31 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				return fmt.Errorf("%v 轉型錯誤", content.ActionType)
 			}
 		case packet.Action_Rush: // 衝刺
-			if action, ok := content.ActionContent.(packet.PackAction_Rush); ok {
-				player.GetGladiator().SetRush(action.On)
-				// 回送封包
-				pack := packet.Pack{
-					CMD:    packet.PLAYERACTION_TOCLIENT,
-					PackID: -1,
-					Content: &packet.PlayerAction_ToClient{
-						PlayerDBID: player.ID,
-						ActionType: packet.Action_Rush,
-						ActionContent: &packet.PackAction_Rush_ToClient{
-							On: action.On,
-						},
-					},
-				}
-				MyRoom.BroadCastPacket(-1, pack)
-			} else {
-				return fmt.Errorf("%v 轉型錯誤", content.ActionType)
+			log.Infof("%v", content.ActionContent)
+			jsonData, err := json.Marshal(content.ActionContent)
+			if err != nil {
+				log.Errorf("Failed to marshal ActionContent: %v", err)
+				return fmt.Errorf("%v  json.Marshal錯誤", content.ActionType)
 			}
+			var action packet.PackAction_Rush
+			err = json.Unmarshal(jsonData, &action)
+			if err != nil {
+				return fmt.Errorf("%v  json.Unmarshal錯誤", content.ActionType)
+			}
+			player.GetGladiator().SetRush(action.On)
+			// 回送封包
+			pack := packet.Pack{
+				CMD:    packet.PLAYERACTION_TOCLIENT,
+				PackID: -1,
+				Content: packet.PlayerAction_ToClient{
+					PlayerDBID: player.ID,
+					ActionType: packet.Action_Rush,
+					ActionContent: packet.PackAction_Rush_ToClient{
+						On: action.On,
+					},
+				},
+			}
+			MyRoom.BroadCastPacket(-1, pack)
 		case packet.Action_Skill: // 技能施放
 			if action, ok := content.ActionContent.(packet.PackAction_Skill); ok {
 				targetSkill, err := player.GetGladiator().GetSkill(action.SkillID)
