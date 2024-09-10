@@ -114,6 +114,7 @@ func GetRandomNumberOfTFromMap[K comparable, V any](m map[K]V, count int) ([]V, 
 
 	return selected, nil
 }
+
 // 傳入機率回傳結果 EX. 傳入0.3就是有30%機率返回true
 func GetProbResult(prob float64) bool {
 	return rnd.Float64() < prob
@@ -138,6 +139,13 @@ func GetRndIntFromRangeStr(input string, delimiter string) (int, error) {
 		return 0, err
 	}
 	return rndInt, nil
+}
+
+func Shuffle[T any](slice []T) []T {
+	rand.Shuffle(len(slice), func(i, j int) {
+		slice[i], slice[j] = slice[j], slice[i]
+	})
+	return slice
 }
 
 // 範例: 傳入"100,200,300" 回傳隨機一個值, 例如200

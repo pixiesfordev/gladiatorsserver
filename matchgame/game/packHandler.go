@@ -43,7 +43,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		// 	return fmt.Errorf("%s 取mongoDB gladiator doc資料發生錯誤: %v", logger.LOG_Action, getDocErr)
 		// }
 		// 設定玩家使用的角鬥士
-		gladiator, err := NewTestGladiator() // 測試用角鬥士
+		gladiator, err := NewTestGladiator(player.ID) // 測試用角鬥士
 		if err != nil {
 			log.Errorf("初始化測試用角鬥士錯誤: %v", err)
 		}
@@ -135,6 +135,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			PackID: -1,
 			Content: &packet.SetDivineSkill_ToClient{
 				MyPlayerState:       player.GetPackPlayerState(true),
+				MyCardState:         player.MyGladiator.GetPackCardState(),
 				OpponentPlayerState: player.GetOpponentPackPlayerState(),
 			},
 		}
@@ -147,6 +148,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				PackID: -1,
 				Content: &packet.SetDivineSkill_ToClient{
 					MyPlayerState:       opponent.GetPackPlayerState(true),
+					MyCardState:         opponent.MyGladiator.GetPackCardState(),
 					OpponentPlayerState: player.GetPackPlayerState(false),
 				},
 			}
@@ -161,7 +163,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				StartFighting()
 			}()
 		}
-	// ==========施放技能==========
+	// ==========玩家行為==========
 	case packet.PLAYERACTION:
 		content := packet.PlayerAction{}
 		err := json.Unmarshal([]byte(pack.GetContentStr()), &content)
@@ -200,28 +202,43 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				return fmt.Errorf("%v  json.Unmarshal錯誤", content.ActionType)
 			}
 			player.GetGladiator().SetRush(action.On)
+		case packet.Action_Skill: // 技能施放
+			log.Infof("%v", content.ActionContent)
+			jsonData, err := json.Marshal(content.ActionContent)
+			if err != nil {
+				log.Errorf("Failed to marshal ActionContent: %v", err)
+				return fmt.Errorf("%v  json.Marshal錯誤", content.ActionType)
+			}
+			var action packet.PackAction_Skill
+			err = json.Unmarshal(jsonData, &action)
+			if err != nil {
+				return fmt.Errorf("%v  json.Unmarshal錯誤", content.ActionType)
+			}
+
+			targetSkill, _, err := player.GetGladiator().GetSkill(action.SkillID)
+			if err != nil {
+				return fmt.Errorf("PackAction_Skill錯誤: %v", err)
+			}
+			player.GetGladiator().ActiveSkill(targetSkill, action.On)
 			// 回送封包
-			pack := packet.Pack{
+			myPack := packet.Pack{
 				CMD:    packet.PLAYERACTION_TOCLIENT,
 				PackID: -1,
-				Content: packet.PlayerAction_ToClient{
+				Content: &packet.PlayerAction_ToClient{
 					PlayerDBID: player.ID,
-					ActionType: packet.Action_Rush,
-					ActionContent: packet.PackAction_Rush_ToClient{
-						On: action.On,
+					ActionType: packet.Action_Skill,
+					ActionContent: &packet.PackAction_Skill_ToClient{
+						On:      action.On,
+						SkillID: targetSkill.ID,
 					},
 				},
 			}
-			MyRoom.BroadCastPacket(-1, pack)
-		case packet.Action_Skill: // 技能施放
-			if action, ok := content.ActionContent.(packet.PackAction_Skill); ok {
-				targetSkill, err := player.GetGladiator().GetSkill(action.SkillID)
-				if err != nil {
-					return fmt.Errorf("PackAction_Skill錯誤: %v", err)
-				}
-				player.GetGladiator().ActiveSkill(targetSkill, action.On)
-				// 回送封包
-				myPack := packet.Pack{
+			player.SendPacketToPlayer(myPack)
+
+			// 如果是立即技能就送對手封包
+			opponent, ok := player.GetOpponent().(*Player)
+			if ok && targetSkill.Type == "Instant" {
+				opponentPack := packet.Pack{
 					CMD:    packet.PLAYERACTION_TOCLIENT,
 					PackID: -1,
 					Content: &packet.PlayerAction_ToClient{
@@ -233,70 +250,11 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 						},
 					},
 				}
-				player.SendPacketToPlayer(myPack)
-
-				// 如果是立即技能就送對手封包
-				opponent, ok := player.GetOpponent().(*Player)
-				if ok && targetSkill.Type == "Instant" {
-					opponentPack := packet.Pack{
-						CMD:    packet.PLAYERACTION_TOCLIENT,
-						PackID: -1,
-						Content: &packet.PlayerAction_ToClient{
-							PlayerDBID: player.ID,
-							ActionType: packet.Action_Skill,
-							ActionContent: &packet.PackAction_Skill_ToClient{
-								On:      action.On,
-								SkillID: targetSkill.ID,
-							},
-						},
-					}
-					opponent.SendPacketToPlayer(opponentPack)
-				}
-			} else {
-				return fmt.Errorf("%v 轉型錯誤", content.ActionType)
+				opponent.SendPacketToPlayer(opponentPack)
 			}
+			player.GetGladiator().SetRush(action.On)
+
 		case packet.Action_DivineSkill: // 神祉技能施放
-			if action, ok := content.ActionContent.(packet.PackAction_DivineSkill); ok {
-				targetSkill, err := player.GetGladiator().GetSkill(action.SkillID)
-				if err != nil {
-					return fmt.Errorf("PackAction_Skill錯誤: %v", err)
-				}
-				player.GetGladiator().ActiveSkill(targetSkill, action.On)
-				// 回送封包
-				myPack := packet.Pack{
-					CMD:    packet.PLAYERACTION_TOCLIENT,
-					PackID: -1,
-					Content: &packet.PlayerAction_ToClient{
-						PlayerDBID: player.ID,
-						ActionType: packet.Action_Skill,
-						ActionContent: &packet.PackAction_DivineSkill_ToClient{
-							On:      action.On,
-							SkillID: targetSkill.ID,
-						},
-					},
-				}
-				player.SendPacketToPlayer(myPack)
-
-				// 如果是立即技能就送對手封包
-				opponent, ok := player.GetOpponent().(*Player)
-				if ok && targetSkill.Type == "Instant" {
-					opponentPack := packet.Pack{
-						CMD:    packet.PLAYERACTION_TOCLIENT,
-						PackID: -1,
-						Content: &packet.PlayerAction_ToClient{
-							PlayerDBID: player.ID,
-							ActionType: packet.Action_Skill,
-							ActionContent: &packet.PackAction_DivineSkill_ToClient{
-								On:      action.On,
-								SkillID: targetSkill.ID,
-							},
-						},
-					}
-					opponent.SendPacketToPlayer(opponentPack)
-				}
-			} else {
-				return fmt.Errorf("%v 轉型錯誤", content.ActionType)
-			}
 		default:
 			return fmt.Errorf("未定義的ActionType : %s", content.ActionType)
 		}

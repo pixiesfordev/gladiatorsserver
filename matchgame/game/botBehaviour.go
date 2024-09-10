@@ -14,7 +14,7 @@ func AddBot() {
 	if err != nil {
 		log.Errorf("%s 加入Bot失敗: %v", logger.LOG_BotBehaviour, err)
 	}
-	err = bot.SetBot()
+	err = bot.SetBot(bot.ID)
 	if err != nil {
 		log := fmt.Sprintf("%s SetBot失敗: %v", logger.LOG_BotBehaviour, err)
 		MyRoom.KickBot(bot, log)

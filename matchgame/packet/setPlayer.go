@@ -18,6 +18,7 @@ type PackGladiator struct {
 	JsonID       int      // Gladitaor的Json id
 	SkillIDs     [6]int   // (玩家自己才會收到)
 	HandSkillIDs [4]int   // (玩家自己才會收到)
+	MaxHP        int      // 最大生命
 	CurHp        int      // 目前生命
 	CurVigor     float64  // 目前體力
 	CurSpd       float64  // 目前速度

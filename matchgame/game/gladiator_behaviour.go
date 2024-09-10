@@ -3,13 +3,46 @@ package game
 import (
 	"gladiatorsGoModule/gameJson"
 	"gladiatorsGoModule/utility"
+	"matchgame/packet"
 	"math"
 
 	log "github.com/sirupsen/logrus"
 )
 
+// 使用牌後更新手牌，使用的牌放回牌庫最後一張
+func (g *Gladiator) UseSkill(skillID int) bool {
+	_, useSkillIdx, err := g.GetSkill(skillID)
+	if err != nil {
+		return false
+	}
+	// 將使用的牌放到牌庫最底下
+	g.Deck = append(g.Deck, g.HandSkills[useSkillIdx])
+
+	// 將手牌第4張牌(下一張牌)補到使用的牌位置
+	g.HandSkills[useSkillIdx] = g.HandSkills[3]
+
+	// 從牌庫中按順序抽出一張作為新的第4張牌
+	g.HandSkills[3] = g.Deck[0] // 將牌庫頂部的牌補到第4張手牌中(下一張牌)
+	g.Deck = g.Deck[1:]         // 從剛抽出的牌移除
+
+	return true
+}
+
 func (g *Gladiator) SetRush(on bool) {
 	g.IsRush = on
+	// 衝刺狀態更改要送封包回Client
+	pack := packet.Pack{
+		CMD:    packet.PLAYERACTION_TOCLIENT,
+		PackID: -1,
+		Content: packet.PlayerAction_ToClient{
+			PlayerDBID: g.OwnerID,
+			ActionType: packet.Action_Rush,
+			ActionContent: packet.PackAction_Rush_ToClient{
+				On: on,
+			},
+		},
+	}
+	MyRoom.BroadCastPacket(-1, pack)
 }
 
 // ActiveSkill 啟用技能

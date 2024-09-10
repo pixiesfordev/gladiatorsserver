@@ -29,6 +29,7 @@ func (gladiator *Gladiator) GetPackGladiator(myselfPack bool) packet.PackGladiat
 		JsonID:       gladiator.JsonGladiator.ID,
 		SkillIDs:     jsonSkillIDs,
 		HandSkillIDs: handSkills,
+		MaxHP:        gladiator.Hp,
 		CurHp:        gladiator.CurHp,
 		CurVigor:     curVigor,
 		CurSpd:       gladiator.Spd,
@@ -40,7 +41,6 @@ func (gladiator *Gladiator) GetPackGladiator(myselfPack bool) packet.PackGladiat
 
 func (gladiator *Gladiator) GetPackGladiatorState(myselfPack bool) packet.PackGladiatorState {
 	var handSkills [HandSkillCount]int
-	curVigor := 0.0
 	activedMeleeJsonSkillID := 0
 	if myselfPack {
 		for i, _ := range handSkills {
@@ -59,7 +59,7 @@ func (gladiator *Gladiator) GetPackGladiatorState(myselfPack bool) packet.PackGl
 	packGladiator := packet.PackGladiatorState{
 		HandSkillIDs:            handSkills,
 		CurHp:                   gladiator.CurHp,
-		CurVigor:                utility.RoundToDecimal(curVigor, 3),
+		CurVigor:                utility.RoundToDecimal(gladiator.CurVigor, 3),
 		CurSpd:                  utility.RoundToDecimal(gladiator.Spd, 3),
 		CurPos:                  utility.RoundToDecimal(gladiator.CurPos, 3),
 		EffectTypes:             effectTypes,

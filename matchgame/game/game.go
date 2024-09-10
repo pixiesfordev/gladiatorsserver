@@ -40,7 +40,8 @@ const (
 	HandSkillCount                         = 4    // 玩家手牌技能, 索引0的技能是下一張牌
 	WAIT_BATTLE_START                      = 2    // (測試用)BattleStart等待時間
 	CollisionDis                           = 4    // 相距X單位就算碰撞
-	MaxVigor                       float64 = 20   // 最大體力
+	MaxVigor                       float64 = 10   // 最大體力
+	DefaultVigor                   float64 = 5    // 初始體力
 	SelectDivineCountDownSecs      int     = 15   // 選神祉技能倒數秒數
 	FightingCountDownSecs          int     = 4    // 戰鬥倒數秒數
 )
@@ -185,7 +186,7 @@ func snedBattleStatePackToClient() {
 func timePass() {
 	GameTime += TickTimePass
 	// 雙方觸發狀態效果
-	gladiatorsTriggerBuffers()
+	gladiatorsTimePass()
 	// 雙方移動
 	gladiatorsMove()
 	// 有碰撞就進行肉搏
@@ -194,16 +195,28 @@ func timePass() {
 	}
 }
 
-// gladiatorsTriggerBuffers 雙方觸發狀態效果
-func gladiatorsTriggerBuffers() {
+// gladiatorsTimePass 雙方觸發時間流逝效果
+func gladiatorsTimePass() {
 	for _, v := range MyRoom.Gamers {
 		if v == nil {
 			continue
 		}
 		g := v.GetGladiator()
-		if g != nil {
-			g.TriggerBuffer_Time()
+		if g == nil {
+			continue
 		}
+		// 體力恢復
+		g.AddVigor(TickTimePass)
+		// 衝刺消耗體力
+		if g.IsRush {
+			if g.CurVigor >= TickTimePass {
+				g.AddVigor(-TickTimePass)
+			} else {
+				g.SetRush(false)
+			}
+		}
+		// 觸發狀態
+		g.TriggerBuffer_Time()
 	}
 }
 

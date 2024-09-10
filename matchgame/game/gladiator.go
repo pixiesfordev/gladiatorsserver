@@ -2,18 +2,23 @@ package game
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"gladiatorsGoModule/gameJson"
+	"gladiatorsGoModule/utility"
+	"matchgame/packet"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Gladiator struct {
+	OwnerID               string // 擁有者DBPlayer的_id
 	ID                    string // DBGladiator的_id
 	LeftSide              bool   // 是否是左方玩家
 	JsonGladiator         gameJson.JsonGladiator
-	JsonSkills            [GladiatorSkillCount]gameJson.JsonSkill
+	JsonSkills            [GladiatorSkillCount]gameJson.JsonSkill // 起始打亂的技能牌
 	JsonTraits            []gameJson.TraitJson
 	JsonEquips            []gameJson.JsonEquip
-	HandSkills            [HandSkillCount]gameJson.JsonSkill
+	HandSkills            [HandSkillCount]gameJson.JsonSkill // 手牌
+	Deck                  []gameJson.JsonSkill               // 牌庫的牌
 	Hp                    int
 	CurHp                 int
 	CurVigor              float64
@@ -34,7 +39,7 @@ type Gladiator struct {
 
 }
 
-func NewTestGladiator() (Gladiator, error) {
+func NewTestGladiator(playerID string) (Gladiator, error) {
 	testGladiatorIdx := IDAccumulator.GetNextIdx("TestGladiatorID")
 	testGladiatorID := fmt.Sprintf("gladiator%v", testGladiatorIdx)
 
@@ -53,10 +58,10 @@ func NewTestGladiator() (Gladiator, error) {
 	jsonSkills[4] = jsonSkill5
 	jsonSkills[5] = jsonSkill6
 
-	return NewGladiator(testGladiatorID, gJson, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
+	return NewGladiator(playerID, testGladiatorID, gJson, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 }
 
-func NewGladiator(id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [GladiatorSkillCount]gameJson.JsonSkill,
+func NewGladiator(ownerIDstring, id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [GladiatorSkillCount]gameJson.JsonSkill,
 	jsonTraits []gameJson.TraitJson, jsonEquips []gameJson.JsonEquip) (Gladiator, error) {
 	pos := -InitGladiatorPos
 	leftSide := true
@@ -64,16 +69,29 @@ func NewGladiator(id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [G
 		pos = InitGladiatorPos
 		leftSide = false
 	}
+
+	// 亂洗技能順序
+	shuffledSkills := utility.Shuffle(jsonSkills[:])
+	var handSkills [HandSkillCount]gameJson.JsonSkill
+	for i := 0; i < GladiatorSkillCount; i++ {
+		if i < HandSkillCount {
+			handSkills[i] = shuffledSkills[i]
+		}
+	}
+	deck := shuffledSkills[GladiatorSkillCount:] // 牌庫的牌
+	log.Infof("handSkills: %v", len(handSkills))
 	gladiator := Gladiator{
 		ID:            id,
 		JsonGladiator: jsonGladiator,
 		JsonSkills:    jsonSkills,
 		JsonTraits:    jsonTraits,
 		JsonEquips:    jsonEquips,
+		HandSkills:    handSkills,
+		Deck:          deck,
 		LeftSide:      leftSide,
 		Hp:            jsonGladiator.Hp,
 		CurHp:         jsonGladiator.Hp,
-		CurVigor:      MaxVigor,
+		CurVigor:      DefaultVigor,
 		Str:           jsonGladiator.Str,
 		PDef:          jsonGladiator.PDef,
 		MDef:          jsonGladiator.MDef,
@@ -232,13 +250,35 @@ func (myself *Gladiator) OnDeath() {
 
 }
 
-// GetSkill 傳入skillID取得目標JsonSkill
-func (g *Gladiator) GetSkill(skillID int) (gameJson.JsonSkill, error) {
-	for _, jsonSkill := range g.HandSkills {
-		if jsonSkill.ID == skillID {
-			return jsonSkill, nil
+// GetSkill 傳入skillID取得目標JsonSkill與索引
+func (g *Gladiator) GetSkill(skillID int) (gameJson.JsonSkill, int, error) {
+	for i, v := range g.HandSkills {
+		if i < 3 {
+			if skillID == v.ID {
+				return v, i, nil
+			}
 		}
 	}
-	log.Errorf("玩家選擇的技能不存在手牌技能中")
-	return gameJson.JsonSkill{}, fmt.Errorf("玩家選擇的技能不存在手牌技能中")
+	log.Errorf("玩家選擇的技能不存在手牌技能中: %v", skillID)
+	return gameJson.JsonSkill{}, -1, fmt.Errorf("玩家選擇的技能不存在手牌技能中: %v", skillID)
+}
+
+func (g *Gladiator) GetPackCardState() packet.PackCardState {
+	var handSkillIDs [4]int
+	var divineSkillIDs [2]int
+	handOnID := 0
+	if g.ActivedMeleeJsonSkill != nil {
+		handOnID = g.ActivedMeleeJsonSkill.ID
+	}
+	for i, v := range g.HandSkills {
+		handSkillIDs[i] = v.ID
+	}
+	divineSkillOnID := 0
+	pack := packet.PackCardState{
+		HandSkillIDs:    handSkillIDs,
+		HandOnID:        handOnID,
+		DivineSkillIDs:  divineSkillIDs,
+		DivineSkillOnID: divineSkillOnID,
+	}
+	return pack
 }

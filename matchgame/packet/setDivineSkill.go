@@ -11,5 +11,6 @@ type SetDivineSkill struct {
 type SetDivineSkill_ToClient struct {
 	CMDContent
 	MyPlayerState       PackPlayerState
+	MyCardState         PackCardState
 	OpponentPlayerState PackPlayerState
 }

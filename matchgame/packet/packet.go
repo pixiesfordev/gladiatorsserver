@@ -27,6 +27,7 @@ const (
 	BATTLESTATE             = "BATTLESTATE"             // (TCP)狀態更新
 	BATTLESTATE_TOCLIENT    = "BATTLESTATE_TOCLIENT"    // (TCP)狀態更新-送Client
 	MELEE_TOCLIENT          = "MELEE_TOCLIENT"          // (TCP)肉搏-送Client
+	CARDSTATE_TOCLIENT      = "CARDSTATE_TOCLIENT"      // (TCP)手牌更新-送Client
 	ENDGAME_TOCLIENT        = "ENDGAME_TOCLIENT"        // (TCP)遊戲結算-送Client
 	PING                    = "PING"                    // (TCP)心跳(太久沒收到回傳會視玩家斷線)
 	PING_TOCLIENT           = "PING_TOCLIENT"           // (TCP)心跳-送Client(太久沒收到回傳會視玩家斷線)

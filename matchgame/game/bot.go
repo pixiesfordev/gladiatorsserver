@@ -25,7 +25,7 @@ func NewBot() *Bot {
 	return bot
 }
 
-func (bot *Bot) SetBot() error {
+func (bot *Bot) SetBot(botID string) error {
 
 	// 取得隨機角鬥士
 	rndJsonGladiator, err := gameJson.GetRndJsonGladiator()
@@ -52,7 +52,7 @@ func (bot *Bot) SetBot() error {
 	}
 	jsonSkills[5] = talentSkillJson
 	// 設定角鬥士
-	gladiator, err := NewGladiator("botGladiator", rndJsonGladiator, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
+	gladiator, err := NewGladiator(botID, "botGladiator", rndJsonGladiator, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 	if err != nil {
 		return err
 	}
