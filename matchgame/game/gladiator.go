@@ -61,7 +61,7 @@ func NewTestGladiator(playerID string) (Gladiator, error) {
 	return NewGladiator(playerID, testGladiatorID, gJson, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 }
 
-func NewGladiator(ownerIDstring, id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [GladiatorSkillCount]gameJson.JsonSkill,
+func NewGladiator(ownerID, id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [GladiatorSkillCount]gameJson.JsonSkill,
 	jsonTraits []gameJson.TraitJson, jsonEquips []gameJson.JsonEquip) (Gladiator, error) {
 	pos := -InitGladiatorPos
 	leftSide := true
@@ -82,6 +82,7 @@ func NewGladiator(ownerIDstring, id string, jsonGladiator gameJson.JsonGladiator
 	log.Infof("handSkills: %v", len(handSkills))
 	gladiator := Gladiator{
 		ID:            id,
+		OwnerID:       ownerID,
 		JsonGladiator: jsonGladiator,
 		JsonSkills:    jsonSkills,
 		JsonTraits:    jsonTraits,
