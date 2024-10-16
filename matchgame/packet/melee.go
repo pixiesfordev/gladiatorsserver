@@ -1,21 +1,19 @@
 package packet
 
-import (
 // logger "matchgame/logger"
 // log "github.com/sirupsen/logrus"
-)
 
 type Melee_ToClient struct {
 	CMDContent
-	MyPlayerState       PackPlayerState
-	OpponentPlayerState PackPlayerState
-	MyAttack            PackAttack
-	OpponentAttack      PackAttack
-	GameTime            float64
+	MyAttack       PackMelee
+	OpponentAttack PackMelee
+	MyHandSkillIDs [4]int
 }
 
-type PackAttack struct {
-	AttackPos float64
-	Knockback float64
-	SkillID   int
+type PackMelee struct {
+	SkillID     int      // 使用技能ID
+	MeleePos    float64  // 肉搏位置
+	Knockback   float64  // 擊飛強度
+	CurPos      float64  // 被擊飛後的位置
+	EffectTypes []string // 狀態清單
 }

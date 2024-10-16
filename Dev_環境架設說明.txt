@@ -16,6 +16,12 @@ gcloud config set project mygladiators-dev
 gcloud auth application-default revoke
 gcloud auth application-default login
 gcloud auth application-default set-quota-project mygladiators-dev
+# 可以檢查目前使用的k8s context是否正確 如果使用錯誤的context就要切到正確的context
+kubectl config current-context
+# 列出k8s context清單
+kubectl config get-contexts
+# 指定使用某個context
+kubectl config use-context gke_mygladiators-dev_us-central1-a_cluster-dev
 
 
 # 在開始建環境先確保登入的GCP帳戶擁有Project IAM Admin權限(在專案持有帳戶加), 如果是使用帳戶擁有者就可以不用執行此步驟

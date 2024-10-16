@@ -10,9 +10,10 @@ import (
 )
 
 type Gladiator struct {
-	OwnerID               string // 擁有者DBPlayer的_id
-	ID                    string // DBGladiator的_id
-	LeftSide              bool   // 是否是左方玩家
+	Owner                 Gamer      // 擁有Gamer
+	ID                    string     // DBGladiator的_id
+	LeftSide              bool       // 是否是左方玩家
+	Opponent              *Gladiator // 對手
 	JsonGladiator         gameJson.JsonGladiator
 	JsonSkills            [GladiatorSkillCount]gameJson.JsonSkill // 起始打亂的技能牌
 	JsonTraits            []gameJson.TraitJson
@@ -39,18 +40,18 @@ type Gladiator struct {
 
 }
 
-func NewTestGladiator(playerID string) (Gladiator, error) {
-	testGladiatorIdx := IDAccumulator.GetNextIdx("TestGladiatorID")
+func NewTestGladiator(owner Gamer) (Gladiator, error) {
+	testGladiatorIdx := IDAccumulator.GetNextIdx()
 	testGladiatorID := fmt.Sprintf("gladiator%v", testGladiatorIdx)
 
-	gJson, _ := gameJson.GetJsonGladiator(3)
+	gJson, _ := gameJson.GetJsonGladiator(1)
 	var jsonSkills [GladiatorSkillCount]gameJson.JsonSkill
-	jsonSkill1, _ := gameJson.GetJsonSkill(3)
+	jsonSkill1, _ := gameJson.GetJsonSkill(1)
 	jsonSkill2, _ := gameJson.GetJsonSkill(1001)
-	jsonSkill3, _ := gameJson.GetJsonSkill(1003)
-	jsonSkill4, _ := gameJson.GetJsonSkill(1006)
-	jsonSkill5, _ := gameJson.GetJsonSkill(1008)
-	jsonSkill6, _ := gameJson.GetJsonSkill(1010)
+	jsonSkill3, _ := gameJson.GetJsonSkill(1002)
+	jsonSkill4, _ := gameJson.GetJsonSkill(1003)
+	jsonSkill5, _ := gameJson.GetJsonSkill(1004)
+	jsonSkill6, _ := gameJson.GetJsonSkill(1005)
 	jsonSkills[0] = jsonSkill1
 	jsonSkills[1] = jsonSkill2
 	jsonSkills[2] = jsonSkill3
@@ -58,10 +59,10 @@ func NewTestGladiator(playerID string) (Gladiator, error) {
 	jsonSkills[4] = jsonSkill5
 	jsonSkills[5] = jsonSkill6
 
-	return NewGladiator(playerID, testGladiatorID, gJson, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
+	return NewGladiator(owner, testGladiatorID, gJson, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 }
 
-func NewGladiator(ownerID, id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [GladiatorSkillCount]gameJson.JsonSkill,
+func NewGladiator(owner Gamer, id string, jsonGladiator gameJson.JsonGladiator, jsonSkills [GladiatorSkillCount]gameJson.JsonSkill,
 	jsonTraits []gameJson.TraitJson, jsonEquips []gameJson.JsonEquip) (Gladiator, error) {
 	pos := -InitGladiatorPos
 	leftSide := true
@@ -70,19 +71,11 @@ func NewGladiator(ownerID, id string, jsonGladiator gameJson.JsonGladiator, json
 		leftSide = false
 	}
 
-	// 亂洗技能順序
-	shuffledSkills := utility.Shuffle(jsonSkills[:])
-	var handSkills [HandSkillCount]gameJson.JsonSkill
-	for i := 0; i < GladiatorSkillCount; i++ {
-		if i < HandSkillCount {
-			handSkills[i] = shuffledSkills[i]
-		}
-	}
-	deck := shuffledSkills[GladiatorSkillCount:] // 牌庫的牌
-	log.Infof("handSkills: %v", len(handSkills))
+	// 取得亂洗後的手牌與牌庫
+	handSkills, deck := GetHandsAndDeck(jsonSkills, true)
 	gladiator := Gladiator{
 		ID:            id,
-		OwnerID:       ownerID,
+		Owner:         owner,
 		JsonGladiator: jsonGladiator,
 		JsonSkills:    jsonSkills,
 		JsonTraits:    jsonTraits,
@@ -110,63 +103,55 @@ func NewGladiator(ownerID, id string, jsonGladiator gameJson.JsonGladiator, json
 	return gladiator, nil
 }
 
+// AddPassiveEffect  賦予被動效果
+func (g *Gladiator) AddPassiveEffect(effect *Effect) {
+}
+
 // AddEffect 賦予狀態效果
 func (g *Gladiator) AddEffect(effect *Effect) {
+	// 不是狀態就返回
+	if effect.BelongTo(NOTBUFFER) {
+		return
+	}
 	//對要被賦予的狀態免疫時就返回
-	immuneTypes := g.GetImmuneTypes()
-	for i, _ := range immuneTypes {
-		switch i {
-		case Immune_MobileRestriction:
-			if effect.IsImmuneToKnockback() {
-				return
-			}
+	for tag, _ := range effect.Tags {
+		if g.ImmuneTo(tag) {
+			return
 		}
 	}
 
 	//當賦予的狀態會免疫某些類型狀態時, 要移除被免疫的狀態
 	removeEffectTypes := make([]gameJson.EffectType, 0)
-	switch effect.Type {
-	case gameJson.Indomitable: // 免疫行動控制類的負面效果
-		// 移除所有行動限制類負面效果
-		for _, effects := range g.Effects {
-			for _, v := range effects {
-				if v.IsMobileRestriction() {
-					removeEffectTypes = append(removeEffectTypes, v.Type)
-					break
-				}
+	for immueTag, _ := range effect.ImmueTags {
+		for _, v := range g.Effects {
+			if len(v) != 0 && v[0].BelongTo(immueTag) {
+				removeEffectTypes = append(removeEffectTypes, v[0].Type)
 			}
 		}
 	}
-	g.RemoveEffects(removeEffectTypes)
+	g.RemoveEffects(removeEffectTypes...)
 	g.Effects[effect.Type] = append(g.Effects[effect.Type], effect)
 }
 
-// RemoveEffectsByBufferType 移除狀態
-func (g *Gladiator) RemoveEffectsByBufferType(bufferType BufferType) {
-	effectTypes := make([]gameJson.EffectType, 0)
-	for effectType, v := range g.Effects {
-		if len(v) != 0 && bufferType == v[0].GetBufferType() {
-			effectTypes = append(effectTypes, effectType)
+// RemoveEffectsByTag 根據標籤移除Effect
+func (g *Gladiator) RemoveEffectsByTag(tag Tag) {
+	removeEffectTypes := make([]gameJson.EffectType, 0)
+	for _, v := range g.Effects {
+		if len(v) != 0 && v[0].BelongTo(tag) {
+			removeEffectTypes = append(removeEffectTypes, v[0].Type)
 		}
 	}
-	if len(effectTypes) > 0 {
-		g.RemoveEffects(effectTypes)
-	}
+	g.RemoveEffects(removeEffectTypes...)
 }
 
 // RemoveEffects 移除多個狀態效果
-func (g *Gladiator) RemoveEffects(types []gameJson.EffectType) {
+func (g *Gladiator) RemoveEffects(types ...gameJson.EffectType) {
 	if len(types) == 0 {
 		return
 	}
 	for _, t := range types {
 		delete(g.Effects, t)
 	}
-}
-
-// RemoveEffects 移除一個或多個狀態效果
-func (g *Gladiator) RemoveEffect(effectType gameJson.EffectType) {
-	delete(g.Effects, effectType)
 }
 
 // RemoveSpecificEffect 移除指定的狀態效果
@@ -180,7 +165,7 @@ func (g *Gladiator) RemoveSpecificEffect(targetEffect *Effect) {
 		}
 		// 如果某個效果類型下沒有剩餘的效果，則從map中移除該類型
 		if len(g.Effects[effectType]) == 0 {
-			g.RemoveEffect(effectType)
+			g.RemoveEffects(effectType)
 		}
 	}
 }
@@ -222,7 +207,7 @@ func (myself *Gladiator) TriggerBuffer_AfterAttack(dmg int) {
 }
 
 // AddHp 增加生命
-func (myself *Gladiator) AddHp(value int) {
+func (myself *Gladiator) AddHp(value int, sendPack bool) {
 	if !myself.IsAlive() {
 		return
 	}
@@ -231,6 +216,21 @@ func (myself *Gladiator) AddHp(value int) {
 		myself.CurHp = 0
 		myself.OnDeath()
 	}
+
+	// 送client封包
+	if sendPack {
+		packState := packet.Pack{
+			CMD: packet.HP_TOCLIENT,
+			Content: packet.Hp_ToClient{
+				PlayerID: myself.Owner.GetID(),
+				HPChange: value,
+				CurHp:    myself.CurHp,
+				MaxHp:    myself.Hp,
+			},
+		}
+		MyRoom.BroadCastPacket(-1, packState)
+	}
+
 }
 
 // AddVigor 增加體力
@@ -253,6 +253,7 @@ func (myself *Gladiator) OnDeath() {
 
 // GetSkill 傳入skillID取得目標JsonSkill與索引
 func (g *Gladiator) GetSkill(skillID int) (gameJson.JsonSkill, int, error) {
+
 	for i, v := range g.HandSkills {
 		if i < 3 {
 			if skillID == v.ID {
@@ -260,26 +261,113 @@ func (g *Gladiator) GetSkill(skillID int) (gameJson.JsonSkill, int, error) {
 			}
 		}
 	}
+	log.Errorf("使用技能%v 手牌%v", skillID, g.HandSkills)
 	log.Errorf("玩家選擇的技能不存在手牌技能中: %v", skillID)
 	return gameJson.JsonSkill{}, -1, fmt.Errorf("玩家選擇的技能不存在手牌技能中: %v", skillID)
 }
 
-func (g *Gladiator) GetPackCardState() packet.PackCardState {
-	var handSkillIDs [4]int
-	var divineSkillIDs [2]int
-	handOnID := 0
+// GetPackPlayerState 取得玩家的狀態封包
+func (g *Gladiator) GetPackHp(myselfPack bool) packet.Hp_ToClient {
+	packPlayerState := packet.Hp_ToClient{
+		PlayerID: g.Owner.GetID(),
+		HPChange: 0,
+		CurHp:    g.CurHp,
+		MaxHp:    g.Hp,
+	}
+	return packPlayerState
+}
+
+func (g *Gladiator) GetEffectStrs() []string {
+	effectTypes := []string{}
+	for k := range g.Effects {
+		effectTypes = append(effectTypes, string(k))
+	}
+	return effectTypes
+}
+
+// GetActiveSkill 取得啟用中的肉搏技能
+func (g *Gladiator) GetActiveSkill() *Skill {
 	if g.ActivedMeleeJsonSkill != nil {
-		handOnID = g.ActivedMeleeJsonSkill.ID
+		skill, err := NewSkill(g, g.Opponent, *g.ActivedMeleeJsonSkill)
+		if err != nil {
+			log.Errorf("NewSkill錯誤")
+		}
+		return skill
 	}
+	return nil
+}
+
+// GetHandSkills 取得手牌技能IDs
+func (g *Gladiator) GetHandSkills() [4]int {
+	var handSkills [4]int
 	for i, v := range g.HandSkills {
-		handSkillIDs[i] = v.ID
+		if i < 4 {
+			handSkills[i] = v.ID
+		} else {
+			break
+		}
 	}
-	divineSkillOnID := 0
-	pack := packet.PackCardState{
-		HandSkillIDs:    handSkillIDs,
-		HandOnID:        handOnID,
-		DivineSkillIDs:  divineSkillIDs,
-		DivineSkillOnID: divineSkillOnID,
+	return handSkills
+}
+
+func (g *Gladiator) createSkill(jsonSKill gameJson.JsonSkill) (float64, *Skill, error) {
+	spellInit := g.GetInit()
+	var skill *Skill
+	err := g.UseSkill(jsonSKill.ID)
+	if err != nil {
+		log.Errorf("%s.UseSkill錯誤", g.ID)
+		return spellInit, nil, err
 	}
-	return pack
+	skill, err = NewSkill(g, g.Opponent, jsonSKill)
+	if err != nil {
+		log.Errorf("NewSkill錯誤")
+		return spellInit, nil, err
+	}
+	spellInit += skill.JsonSkill.Init
+	return spellInit, skill, nil
+}
+
+// SetSkills 根據技能ID設定角鬥士技能
+func (g *Gladiator) SetSkillByIDs(skillIDs [6]int) error {
+	var jsonSkills [GladiatorSkillCount]gameJson.JsonSkill
+	skillSlice, err := gameJson.GetJsonSkillsByIDs(skillIDs[:])
+	if err != nil {
+		return fmt.Errorf("獲取技能失敗: %v", err)
+	}
+
+	if len(skillSlice) != GladiatorSkillCount {
+		return fmt.Errorf("技能數量不正確，期望 %d，實際 %d", GladiatorSkillCount, len(skillSlice))
+	}
+
+	for i, skill := range skillSlice {
+		jsonSkills[i] = skill
+	}
+
+	handSkills, deck := GetHandsAndDeck(jsonSkills, false)
+	g.HandSkills = handSkills
+	g.Deck = deck
+
+	return nil
+}
+
+// 傳入角鬥士技能, 取得手牌與牌庫
+func GetHandsAndDeck(jsonSkills [GladiatorSkillCount]gameJson.JsonSkill, shuffle bool) ([HandSkillCount]gameJson.JsonSkill, []gameJson.JsonSkill) {
+	var shuffledSkills []gameJson.JsonSkill
+	if shuffle {
+		// 亂洗技能順序
+		shuffledSkills = utility.Shuffle(jsonSkills[:])
+	} else {
+		shuffledSkills = jsonSkills[:]
+	}
+
+	var handSkills [HandSkillCount]gameJson.JsonSkill // 手牌
+	var deck []gameJson.JsonSkill                     // 牌庫的牌
+	for i := 0; i < GladiatorSkillCount; i++ {
+		if i < HandSkillCount {
+			handSkills[i] = shuffledSkills[i]
+		} else {
+			deck = append(deck, shuffledSkills[i])
+		}
+	}
+	return handSkills, deck
 }

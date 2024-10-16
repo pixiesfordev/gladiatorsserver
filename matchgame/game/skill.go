@@ -7,7 +7,7 @@ import (
 type Skill struct {
 	JsonSkill gameJson.JsonSkill
 	Speller   *Gladiator
-	Effects   []Effect
+	Effects   []*Effect
 }
 
 func NewSkill(speller *Gladiator, opponent *Gladiator, jsonSkill gameJson.JsonSkill) (*Skill, error) {
@@ -17,7 +17,7 @@ func NewSkill(speller *Gladiator, opponent *Gladiator, jsonSkill gameJson.JsonSk
 		Speller:   speller,
 	}
 
-	effects := make([]Effect, 0)
+	effects := make([]*Effect, 0)
 
 	if jsonSkillEffects, ok := gameJson.SkillEffectDataDic[jsonSkill.ID]; ok {
 		for _, jsonSkillEffect := range jsonSkillEffects {
@@ -28,12 +28,9 @@ func NewSkill(speller *Gladiator, opponent *Gladiator, jsonSkill gameJson.JsonSk
 				skillEffectTarget = opponent
 			}
 			for _, v := range jsonSkillEffect.Effects {
-				effect := Effect{
-					Type:    v.Type,
-					Value:   v.Value,
-					Speller: speller,
-					Target:  skillEffectTarget,
-					Prob:    v.Prob,
+				effect, err := NewEffect(v.Type, v.Value, speller, skillEffectTarget, v.Prob, false)
+				if err != nil {
+					return nil, err
 				}
 				effects = append(effects, effect)
 			}

@@ -5,6 +5,7 @@ type SetPlayer struct {
 }
 
 type SetPlayer_ToClient struct {
+	Time               int64
 	MyPackPlayer       PackPlayer
 	OpponentPackPlayer PackPlayer
 }

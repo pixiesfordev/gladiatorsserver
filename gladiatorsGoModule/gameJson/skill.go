@@ -76,6 +76,30 @@ func GetJsonSkill(id int) (JsonSkill, error) {
 	}
 }
 
+func GetJsonSkillsByIDs(ids []int) ([]JsonSkill, error) {
+	jsonName := JsonName.Skill
+	var skills []JsonSkill
+
+	for _, id := range ids {
+		jsonData, err := getJson(jsonName, id)
+		if err != nil {
+			log.Errorf("%s 取Json錯誤, JsonName: %s ID: %v", logger.LOG_GameJson, jsonName, id)
+			return nil, err
+		}
+		
+		data, ok := jsonData.(JsonSkill)
+		if !ok {
+			return nil, fmt.Errorf("%s 取Json時斷言失敗, JsonName: %s ID: %v", logger.LOG_GameJson, jsonName, id)
+		}
+		
+		skills = append(skills, data)
+	}
+
+	return skills, nil
+}
+
+
+
 // 取得隨機技能(傳入技能類型)
 func GetRndJsonSkill(skillType string) (JsonSkill, error) {
 	normalSkills, err := GetJsonSkills(skillType)

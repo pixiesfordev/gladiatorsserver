@@ -13,36 +13,39 @@ import (
 
 // 封包命令列表
 const (
-	AUTH                    = "AUTH"                    // (TCP)身分驗證
-	AUTH_TOCLIENT           = "AUTH_TOCLIENT"           // (TCP)身分驗證-送Client
-	SETPLAYER               = "SETPLAYER"               // (TCP)設定玩家資料
-	SETPLAYER_TOCLIENT      = "SETPLAYER_TOCLIENT"      // (TCP)設定玩家資料-送Client
-	SETREADY                = "SETREADY"                // (TCP)遊戲準備就緒
-	SETREADY_TOCLIENT       = "SETREADY_TOCLIENT"       // (TCP)遊戲準備就緒-送Client
-	SETDIVINESKILL          = "SETDIVINESKILL"          // (TCP)神祉選擇
-	SETDIVINESKILL_TOCLIENT = "SETDIVINESKILL_TOCLIENT" // (TCP)神祉選擇-送Client
-	STARTFIGHTING_TOCLIENT  = "STARTFIGHTING_TOCLIENT"  // (TCP)開始戰鬥-送Client
-	PLAYERACTION            = "PLAYERACTION"            // (TCP)玩家指令
-	PLAYERACTION_TOCLIENT   = "PLAYERACTION_TOCLIENT"   // (TCP)玩家指令-送Client
-	BATTLESTATE             = "BATTLESTATE"             // (TCP)狀態更新
-	BATTLESTATE_TOCLIENT    = "BATTLESTATE_TOCLIENT"    // (TCP)狀態更新-送Client
-	MELEE_TOCLIENT          = "MELEE_TOCLIENT"          // (TCP)肉搏-送Client
-	CARDSTATE_TOCLIENT      = "CARDSTATE_TOCLIENT"      // (TCP)手牌更新-送Client
-	ENDGAME_TOCLIENT        = "ENDGAME_TOCLIENT"        // (TCP)遊戲結算-送Client
-	PING                    = "PING"                    // (TCP)心跳(太久沒收到回傳會視玩家斷線)
-	PING_TOCLIENT           = "PING_TOCLIENT"           // (TCP)心跳-送Client(太久沒收到回傳會視玩家斷線)
-	UDPAUTH                 = "UDPAUTH"                 // (UDP)身分驗證
+	AUTH                     = "AUTH"                     // (TCP)身分驗證
+	AUTH_TOCLIENT            = "AUTH_TOCLIENT"            // (TCP)身分驗證-送Client
+	SETPLAYER                = "SETPLAYER"                // (TCP)設定玩家資料
+	SETPLAYER_TOCLIENT       = "SETPLAYER_TOCLIENT"       // (TCP)設定玩家資料-送Client
+	SETREADY                 = "SETREADY"                 // (TCP)遊戲準備就緒
+	SETREADY_TOCLIENT        = "SETREADY_TOCLIENT"        // (TCP)遊戲準備就緒-送Client
+	SETDIVINESKILL           = "SETDIVINESKILL"           // (TCP)神祉選擇
+	SETDIVINESKILL_TOCLIENT  = "SETDIVINESKILL_TOCLIENT"  // (TCP)神祉選擇-送Client
+	PLAYERACTION             = "PLAYERACTION"             // (TCP)玩家指令
+	PLAYERACTION_TOCLIENT    = "PLAYERACTION_TOCLIENT"    // (TCP)玩家指令-送Client
+	GMACTION                 = "GMACTION"                 // (TCP)GM指令
+	GMACTION_TOCLIENT        = "GMACTION_TOCLIENT"        // (TCP)GM指令-送Client
+	CARDSTATE_TOCLIENT       = "CARDSTATE_TOCLIENT"       // (TCP)手牌更新-送Client
+	ENDGAME_TOCLIENT         = "ENDGAME_TOCLIENT"         // (TCP)遊戲結算-送Client
+	PING                     = "PING"                     // (TCP)心跳(太久沒收到回傳會視玩家斷線)
+	PING_TOCLIENT            = "PING_TOCLIENT"            // (TCP)心跳-送Client(太久沒收到回傳會視玩家斷線)
+	GAMESTATE_TOCLIENT       = "GAMESTATE_TOCLIENT"       // (TCP)遊戲狀態-送Client
+	MELEE_TOCLIENT           = "MELEE_TOCLIENT"           // (TCP)肉搏-送Client
+	HP_TOCLIENT              = "HP_TOCLIENT"              // (TCP)角鬥士生命-送Client
+	GLADIATORSTATES_TOCLIENT = "GLADIATORSTATES_TOCLIENT" // (TCP)角鬥士狀態-送Client
+
+	UDPAUTH = "UDPAUTH" // (UDP)身分驗證
 )
 
 type Pack struct {
 	CMD     string
-	PackID  int
+	PackID  int64
 	ErrMsg  string
 	Content CMDContent
 }
 type UDPReceivePack struct {
 	CMD       string
-	PackID    int
+	PackID    int64
 	ErrMsg    string
 	ConnToken string // 收到的UPD CMD除了UDPAUTH以外都會包含ConnToken
 	Content   CMDContent

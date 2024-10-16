@@ -6,31 +6,25 @@ import (
 )
 
 type accumulator struct {
-	keyValueMap map[string]int
-	mutex       sync.Mutex
+	value int64
+	mutex sync.Mutex
 }
 
-// 產生一個新的累加器
 func NewAccumulator() *accumulator {
 	return &accumulator{
-		keyValueMap: make(map[string]int),
+		value: 0,
 	}
 }
 
-// 傳入key取得下一個索引編號
-func (a *accumulator) GetNextIdx(key string) int {
+func (a *accumulator) GetNextIdx() int64 {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	if _, exists := a.keyValueMap[key]; !exists {
-		a.keyValueMap[key] = 0
+	if (a.value + 1) <= math.MaxInt64 {
+		a.value += 1
 	} else {
-		if (a.keyValueMap[key] + 1) <= math.MaxInt {
-			a.keyValueMap[key] += 1
-		} else {
-			a.keyValueMap[key] = 0
-		}
+		a.value = 0
 	}
 
-	return a.keyValueMap[key]
+	return a.value
 }

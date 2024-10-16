@@ -3,7 +3,7 @@ package game
 import (
 	"fmt"
 	"gladiatorsGoModule/gameJson"
-	"gladiatorsGoModule/setting"
+	// "gladiatorsGoModule/setting"
 	"gladiatorsGoModule/utility"
 	"matchgame/packet"
 )
@@ -12,12 +12,13 @@ import (
 type Bot struct {
 	ID          string                         // DBot的ID
 	Idx         int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
+	opponent    Gamer                          // 對手
 	MyGladiator *Gladiator                     // 使用中的鬥士
 	BribeSkills [DivineSkillCount]*DivineSkill // 神祉技能
 }
 
 func NewBot() *Bot {
-	botIdx := IDAccumulator.GetNextIdx("BotIdx") // 取下一個BotIdx
+	botIdx := IDAccumulator.GetNextIdx() // 取下一個BotIdx
 	botID := fmt.Sprintf("bot%v", botIdx)
 	bot := &Bot{
 		ID: botID,
@@ -52,7 +53,7 @@ func (bot *Bot) SetBot(botID string) error {
 	}
 	jsonSkills[5] = talentSkillJson
 	// 設定角鬥士
-	gladiator, err := NewGladiator(botID, "botGladiator", rndJsonGladiator, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
+	gladiator, err := NewGladiator(bot, "botGladiator", rndJsonGladiator, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 	if err != nil {
 		return err
 	}
@@ -87,6 +88,16 @@ func (bot *Bot) GetID() string {
 	return bot.ID
 }
 
+// GetOpponent 取得對手Gamer
+func (bot *Bot) GetOpponent() Gamer {
+	return bot.opponent
+}
+
+// SetOpponent 設定對手Gamer
+func (bot *Bot) SetOpponent(gamer Gamer) {
+	bot.opponent = gamer
+}
+
 func (bot *Bot) GetGold() int64 {
 	return 0
 }
@@ -107,20 +118,6 @@ func (bot *Bot) Surrender() {
 func (bot *Bot) IsSelectedDivineSkill() bool {
 	return true
 }
-func (bot *Bot) GetPackPlayerBribes() [setting.PLAYER_NUMBER]packet.PackDivineSkill {
-	var botBribes [2]packet.PackDivineSkill
-
-	botBribes[0] = packet.PackDivineSkill{
-		JsonID: bot.BribeSkills[0].MyJson.ID,
-		Used:   bot.BribeSkills[0].Used,
-	}
-	botBribes[1] = packet.PackDivineSkill{
-		JsonID: bot.BribeSkills[1].MyJson.ID,
-		Used:   bot.BribeSkills[1].Used,
-	}
-
-	return botBribes
-}
 
 // GetPackPlayer 取得玩家封包
 func (bot *Bot) GetPackPlayer(myself bool) packet.PackPlayer {
@@ -129,18 +126,4 @@ func (bot *Bot) GetPackPlayer(myself bool) packet.PackPlayer {
 		MyPackGladiator: bot.MyGladiator.GetPackGladiator(myself),
 	}
 	return packPlayer
-}
-
-func (bot *Bot) GetPackPlayerState(myselfPack bool) packet.PackPlayerState {
-	packBotState := packet.PackPlayerState{
-		DBID:           bot.GetID(),
-		DivineSkills:   bot.GetPackPlayerBribes(),
-		GladiatorState: bot.GetGladiator().GetPackGladiatorState(myselfPack),
-	}
-	return packBotState
-}
-
-func (bot *Bot) GetPackDivineSkills() [setting.PLAYER_NUMBER]packet.PackDivineSkill {
-	var packDivineSkills [2]packet.PackDivineSkill
-	return packDivineSkills
 }

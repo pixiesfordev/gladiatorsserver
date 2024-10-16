@@ -2,7 +2,7 @@ package game
 
 import (
 	"gladiatorsGoModule/gameJson"
-	"gladiatorsGoModule/utility"
+	// "gladiatorsGoModule/utility"
 	"matchgame/packet"
 	"math"
 	// log "github.com/sirupsen/logrus"
@@ -39,35 +39,6 @@ func (gladiator *Gladiator) GetPackGladiator(myselfPack bool) packet.PackGladiat
 	return packGladiator
 }
 
-func (gladiator *Gladiator) GetPackGladiatorState(myselfPack bool) packet.PackGladiatorState {
-	var handSkills [HandSkillCount]int
-	activedMeleeJsonSkillID := 0
-	if myselfPack {
-		for i, _ := range handSkills {
-			handSkills[i] = gladiator.HandSkills[i].ID
-		}
-		if gladiator.ActivedMeleeJsonSkill != nil {
-			activedMeleeJsonSkillID = gladiator.ActivedMeleeJsonSkill.ID
-		}
-	}
-
-	effectTypes := []string{}
-	for k := range gladiator.Effects {
-		effectTypes = append(effectTypes, string(k))
-	}
-
-	packGladiator := packet.PackGladiatorState{
-		HandSkillIDs:            handSkills,
-		CurHp:                   gladiator.CurHp,
-		CurVigor:                utility.RoundToDecimal(gladiator.CurVigor, 3),
-		CurSpd:                  utility.RoundToDecimal(gladiator.Spd, 3),
-		CurPos:                  utility.RoundToDecimal(gladiator.CurPos, 3),
-		EffectTypes:             effectTypes,
-		ActivedMeleeJsonSkillID: activedMeleeJsonSkillID,
-	}
-	return packGladiator
-}
-
 // IsAlive 是否死亡
 func (g *Gladiator) IsAlive() bool {
 	return (g.CurHp > 0)
@@ -79,26 +50,6 @@ func (g *Gladiator) GetDir() float64 {
 	} else {
 		return -1
 	}
-}
-
-// CanMove 是否能移動
-func (g *Gladiator) CanMove() bool {
-	for _, effects := range g.Effects {
-		if len(effects) != 0 && effects[0].IsMobileRestriction() {
-			return false
-		}
-	}
-	return true
-}
-
-// Knockbackable 是否能被擊退
-func (g *Gladiator) Knockbackable() bool {
-	for _, effects := range g.Effects {
-		if len(effects) != 0 && effects[0].IsImmuneToKnockback() {
-			return false
-		}
-	}
-	return true
 }
 
 // GetStr 取得力量
@@ -113,6 +64,30 @@ func (g *Gladiator) GetStr() int {
 	}
 	str += addStr
 	return str
+}
+
+// GetPDmgMultiplier 取得物理傷害加成
+func (g *Gladiator) GetPDmgMultiplier() float64 {
+	multiplier := 1.0
+	multiplier += float64(g.GetStr()) / 100.0
+	for _, effects := range g.Effects {
+		for _, e := range effects {
+			multiplier += e.GetPDmgMultiple()
+		}
+	}
+	return multiplier
+}
+
+// GetPDmgMultiplier 取得魔法傷害加成
+func (g *Gladiator) GetMDmgMultiplier() float64 {
+	multiplier := 1.0
+	multiplier += float64(g.GetStr()) / 100.0
+	for _, effects := range g.Effects {
+		for _, e := range effects {
+			multiplier += e.GetMDmgMultiple()
+		}
+	}
+	return multiplier
 }
 
 // GetCrtit 取得爆擊率
@@ -194,7 +169,7 @@ func (g *Gladiator) GetVigorRegen() float64 {
 	vigorRegen := g.VigorRegen
 	multipleVigorRegen := 0.0
 	if _, ok := g.Effects[gameJson.Fatigue]; ok {
-		multipleVigorRegen += FatigueValue
+		multipleVigorRegen += VALUE_FATIGUE
 	}
 	vigorRegen = float64(vigorRegen) * (1 + multipleVigorRegen)
 	return vigorRegen
@@ -209,22 +184,14 @@ func (g *Gladiator) GetSpd() float64 {
 	return spd
 }
 
-// GetImmuneTypes 取得體力回復
-func (g *Gladiator) GetImmuneTypes() map[ImmuneType]struct{} {
-
-	immuneTypes := make(map[ImmuneType]struct{})
-
+// ImmueTo 此角鬥士是否免疫某Tag類型
+func (g *Gladiator) ImmuneTo(tags ...Tag) bool {
 	for _, effects := range g.Effects {
-		for _, v := range effects {
-			if v.IsImmuneToKnockback() {
-				immuneTypes[Immune_Knockback] = struct{}{}
-				break
-			}
-			if v.IsImmuneToMobileRestriction() {
-				immuneTypes[Immune_MobileRestriction] = struct{}{}
-				break
+		if len(effects) > 0 && effects[0] != nil {
+			if effects[0].ImmuneTo(tags...) {
+				return true
 			}
 		}
 	}
-	return immuneTypes
+	return false
 }

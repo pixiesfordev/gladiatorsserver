@@ -6,10 +6,11 @@ package packet
 type ActionType string
 
 const (
-	Action_Skill       ActionType = "Action_Skill"       // 啟用技能
-	Action_Rush                   = "Action_Rush"        // 衝刺
-	Action_DivineSkill            = "Action_DivineSkill" // 啟用神祉技能
-	Action_Surrender              = "Action_Surrender"   // 投降
+	ACTION_SKILL         ActionType = "ACTION_SKILL"         // 啟用技能
+	ACTION_OPPONENTSKILL            = "ACTION_OPPONENTSKILL" // 衝刺
+	ACTION_RUSH                     = "ACTION_RUSH"          // 衝刺
+	ACTION_DIVINESKILL              = "ACTION_DIVINESKILL"   // 啟用神祉技能
+	ACTION_SURRENDER                = "ACTION_SURRENDER"     // 投降
 )
 
 // 玩家動作
@@ -31,7 +32,10 @@ type PackAction_Skill struct {
 	SkillID int
 }
 type PackAction_Skill_ToClient struct {
-	On      bool
+	SkillOnID    int
+	HandSkillIDs [4]int
+}
+type PackAction_OpponentSkill_ToClient struct {
 	SkillID int
 }
 
@@ -48,11 +52,6 @@ type PackAction_DivineSkill_ToClient struct {
 
 // 衝刺
 type PackAction_Rush struct {
-	On bool
-}
-
-// 衝刺ToClient
-type PackAction_Rush_ToClient struct {
 	On bool
 }
 

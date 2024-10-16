@@ -18,13 +18,13 @@ import (
 
 type GameState string // 目前遊戲狀態列舉
 const (
-	GameState_Initializing         GameState = "GameState_Initializing"
-	GameState_Inited                         = "GameState_Inited"
-	GameState_WaitingPlayers                 = "GameState_WaitingPlayers"       // 等待雙方玩家入場
-	GameState_SelectingDivineSkill           = "GameState_SelectingDivineSkill" // 選擇神祉技能
-	GameState_CountingDown                   = "GameState_CountingDown"         // 戰鬥倒數開始中
-	GameState_Fighting                       = "GameState_Fighting"             // 戰鬥中
-	GameState_End                            = "GameState_End"                  // 結束戰鬥
+	GAMESTATE_INITIALIZING         GameState = "GAMESTATE_INITIALIZING"
+	GAMESTATE_INITED                         = "GAMESTATE_INITED"
+	GAMESTATE_WAITINGPLAYERS                 = "GAMESTATE_WAITINGPLAYERS"       // 等待雙方玩家入場
+	GAMESTATE_SELECTINGDIVINESKILL           = "GAMESTATE_SELECTINGDIVINESKILL" // 選擇神祉技能
+	GAMESTATE_COUNTINGDOWN                   = "GAMESTATE_COUNTINGDOWN"         // 戰鬥倒數開始中
+	GAMESTATE_FIGHTING                       = "GAMESTATE_FIGHTING"             // 戰鬥中
+	GAMESTATE_END                            = "GAMESTATE_END"                  // 結束戰鬥
 )
 
 const (
@@ -40,10 +40,36 @@ const (
 	HandSkillCount                         = 4    // 玩家手牌技能, 索引0的技能是下一張牌
 	WAIT_BATTLE_START                      = 2    // (測試用)BattleStart等待時間
 	CollisionDis                           = 4    // 相距X單位就算碰撞
-	MaxVigor                       float64 = 10   // 最大體力
+	MaxVigor                       float64 = 20   // 最大體力
 	DefaultVigor                   float64 = 5    // 初始體力
 	SelectDivineCountDownSecs      int     = 15   // 選神祉技能倒數秒數
 	FightingCountDownSecs          int     = 4    // 戰鬥倒數秒數
+	Knockwall_Dmg                  int     = 15   // 撞牆傷害
+	Knockwall_DmgDelayMiliSecs     int     = 400  // Melee執行後幾毫秒才觸發撞牆傷害
+)
+
+// Tag 標籤
+type Tag string
+
+const (
+	// 行為類
+	SKILL_MELEE   Tag = "MELEE"         // 肉搏技能
+	SKILL_INSTANT     = "SKILL_INSTANT" //  立即技能
+	SKILL_DIVINE      = "SKILL_DIVINE"  // 神祉技能
+	KNOCKBACK         = "KNOCKBACK"     // 擊退
+	MOVE              = "MOVE"          // 移動
+	//  效果類
+	PDMG          = "PDMG"
+	MDMG          = "MDMG"
+	RESTORE_HP    = "RESTORE_HP"    // 生命回復
+	RESTORE_VIGOR = "RESTORE_VIGOR" // 體力回復
+	//  Buffer類
+	BUFF      = "BUFF"      // 正面效果
+	DEBUFF    = "DEBUFF"    // 負面效果
+	NEUTRAL   = "NEUTRAL"   // 中性效果
+	NOTBUFFER = "NOTBUFFER" // 非Buffer
+	PASSIVE   = "PASSIVE"   // 永久性Buffer
+
 )
 
 // 戰鬥
@@ -60,7 +86,7 @@ var Mode string
 var GameTime = float64(0)                                             // 遊戲開始X秒
 var TickTimePass = float64(BattleLOOP_MILISECS) / 1000.0              // 每幀時間流逝秒數
 var MarketDivineJsonSkills [MarketDivineSkillCount]gameJson.JsonSkill // 本局遊戲可購買的神祉技能清單
-var MyGameState = GameState_Initializing                              // 遊戲狀態
+var MyGameState = GAMESTATE_INITIALIZING                              // 遊戲狀態
 
 func InitGame() {
 	var err error
@@ -69,6 +95,7 @@ func InitGame() {
 		log.Errorf("%s InitGame: %v", logger.LOG_Game, err)
 		return
 	}
+	ChangeGameState(GAMESTATE_INITED)
 }
 func GetRndBribeSkills() ([MarketDivineSkillCount]gameJson.JsonSkill, error) {
 	allJsonSkills, err := gameJson.GetJsonSkills("Divine")
@@ -114,27 +141,34 @@ type ConnectionUDP struct {
 
 // StartFighting 開始戰鬥
 func StartFighting() {
-	ChangeGameState(GameState_Fighting)
 	GameTime = 0
-	pack := packet.Pack{
-		CMD:     packet.STARTFIGHTING_TOCLIENT,
-		PackID:  -1,
-		Content: &packet.StartFighting_ToClient{},
-	}
-	MyRoom.BroadCastPacket(-1, pack)
+	ChangeGameState(GAMESTATE_FIGHTING)
 	log.Infof("戰鬥開始")
 }
 
 // ResetGame 重置遊戲
 func ResetGame() {
-	ChangeGameState(GameState_Inited)
-	GameTime = 0
 	MyRoom.ResetRoom()
 }
 
 // 改變遊戲階段
 func ChangeGameState(state GameState) {
+	if MyGameState == state {
+		return
+	}
 	MyGameState = state
+	log.Infof("MyRoom: %v", MyRoom)
+	if MyRoom != nil {
+		// 回送封包
+		myPack := packet.Pack{
+			CMD:    packet.GAMESTATE_TOCLIENT,
+			PackID: -1,
+			Content: &packet.GameState_ToClient{
+				State: string(MyGameState),
+			},
+		}
+		MyRoom.BroadCastPacket(-1, myPack)
+	}
 	log.Infof("改變遊戲狀態為: %v", MyGameState)
 }
 
@@ -150,13 +184,14 @@ func RunGameTimer(stop chan struct{}) {
 	gameTicker := time.NewTicker(time.Duration(GameLOOP_MILISECS) * time.Millisecond)
 	defer battleTicker.Stop()
 	defer gameTicker.Stop()
-
+	battleStateAccumulator := utility.NewAccumulator()
 	for {
 		select {
 		case <-battleTicker.C:
-			if MyGameState == GameState_Fighting {
+			if MyGameState == GAMESTATE_FIGHTING {
 				timePass()
-				snedBattleStatePackToClient()
+				battleStatePackID := battleStateAccumulator.GetNextIdx()
+				snedGladiatorStatePackToClient(battleStatePackID)
 			}
 		case <-gameTicker.C:
 			MyRoom.KickTimeoutPlayer()
@@ -166,16 +201,47 @@ func RunGameTimer(stop chan struct{}) {
 	}
 }
 
-func snedBattleStatePackToClient() {
+func snedGladiatorStatePackToClient(packID int64) {
 	for _, v := range MyRoom.Gamers {
 		if player, ok := v.(*Player); ok {
+			myGladiator := player.GetGladiator()
+			if myGladiator == nil {
+				continue
+			}
+			// 設定自己的PackGladiatorState
+			myGState := packet.PackGladiatorState{
+				CurPos:      utility.RoundToDecimal(myGladiator.CurPos, 3),
+				CurSpd:      myGladiator.GetSpd(),
+				CurVigor:    myGladiator.CurVigor,
+				Rush:        myGladiator.IsRush,
+				EffectTypes: myGladiator.GetEffectStrs(),
+			}
+			// 設定對手的PackGladiatorState
+			opponentGamer := player.GetOpponent()
+			if opponentGamer == nil {
+				log.Errorf("對手Gamer為nil")
+				return
+			}
+			opponentGladiator := opponentGamer.GetGladiator()
+			if opponentGladiator == nil {
+				log.Errorf("對手opponentGladiator為nil")
+				return
+			}
+			opponentGState := packet.PackGladiatorState{
+				CurPos:      utility.RoundToDecimal(opponentGladiator.CurPos, 3),
+				CurSpd:      opponentGladiator.GetSpd(),
+				CurVigor:    0, // 對手的體力是隱藏資訊
+				Rush:        opponentGladiator.IsRush,
+				EffectTypes: opponentGladiator.GetEffectStrs(),
+			}
+
 			pack := packet.Pack{
-				CMD:    packet.BATTLESTATE_TOCLIENT,
-				PackID: -1,
-				Content: &packet.BattleState_ToClient{
-					MyPlayerState:       player.GetPackPlayerState(true),
-					OpponentPlayerState: player.GetOpponentPackPlayerState(),
-					GameTime:            utility.RoundToDecimal(GameTime, 3),
+				CMD:    packet.GLADIATORSTATES_TOCLIENT,
+				PackID: packID,
+				Content: &packet.GladiatorStates_ToClient{
+					Time:          time.Now().UnixMilli(),
+					MyState:       myGState,
+					OpponentState: opponentGState,
 				},
 			}
 			player.SendPacketToPlayer(pack)
@@ -243,130 +309,12 @@ func checkCollision() bool {
 	return dis <= CollisionDis
 }
 
-// melee 雙方進行肉搏
-func melee() {
-	if MyRoom.Gamers[0] == nil && MyRoom.Gamers[0].GetGladiator() == nil && MyRoom.Gamers[1] == nil && MyRoom.Gamers[1].GetGladiator() == nil {
-		return
+// getDistBetweenGladiators 取得角鬥士之間的距離
+func getDistBetweenGladiators() float64 {
+	if MyRoom.Gamers[0] == nil || MyRoom.Gamers[0].GetGladiator() != nil ||
+		MyRoom.Gamers[1] == nil || MyRoom.Gamers[1].GetGladiator() != nil {
+		log.Error("getDistBetweenGladiators有玩家或角鬥士為nil")
+		return 0
 	}
-	var err error
-	g1 := MyRoom.Gamers[0].GetGladiator()
-	g2 := MyRoom.Gamers[1].GetGladiator()
-	// 初始化雙方肉搏技能
-	g1SpellInit := g1.GetInit()
-	var g1Skill *Skill
-	if g1.ActivedMeleeJsonSkill != nil {
-		g1Skill, err = NewSkill(g1, g2, *g1.ActivedMeleeJsonSkill)
-		if err != nil {
-			log.Errorf("NewSkill錯誤")
-		}
-		g1SpellInit += g1Skill.JsonSkill.Init
-	}
-	g2SpellInit := g2.GetInit()
-	var g2Skill *Skill
-	if g2.ActivedMeleeJsonSkill != nil {
-		g2Skill, err = NewSkill(g2, g1, *g2.ActivedMeleeJsonSkill)
-		if err != nil {
-			log.Errorf("NewSkill錯誤")
-		}
-		g2SpellInit += g2Skill.JsonSkill.Init
-	}
-	// 雙方技能施放
-	if g1SpellInit > g2SpellInit { // g1先攻
-		g1.Spell(g1Skill)
-		g2.Spell(g2Skill)
-	} else if g1SpellInit < g2SpellInit { // g2先攻
-		g2.Spell(g2Skill)
-		g1.Spell(g1Skill)
-	} else { // 先攻值一樣的話就隨機一方先攻
-		if utility.GetProbResult(0.5) {
-			g1.Spell(g1Skill)
-			g2.Spell(g2Skill)
-		} else {
-			g2.Spell(g2Skill)
-			g1.Spell(g1Skill)
-		}
-	}
-	// 紀錄擊退前的位置
-	g1AttackPos := g1.CurPos
-	g2AttackPos := g2.CurPos
-	// 雙方擊退
-	g1SkillKnockback := 0.0
-	g2SkillKnockback := 0.0
-	if g1Skill != nil {
-		g1SkillKnockback += g1Skill.JsonSkill.Knockback
-	}
-	if g2Skill != nil {
-		g2SkillKnockback += g2Skill.JsonSkill.Knockback
-	}
-	g1Knockback := g1.GetKnockback() + g1SkillKnockback
-	g2Knockback := g2.GetKnockback() + g2SkillKnockback + 5
-	g1.DoKnockback(g2Knockback)
-	g2.DoKnockback(g1Knockback)
-	// 雙方暈眩
-	dizzyTriggerAt := GameTime + 1
-	g1KnockDizzy := &Effect{
-		Type:          gameJson.Dizzy,
-		Duration:      2,
-		Target:        g1,
-		NextTriggerAt: dizzyTriggerAt,
-	}
-	g1.AddEffect(g1KnockDizzy)
-	g2KnockDizzy := &Effect{
-		Type:          gameJson.Dizzy,
-		Duration:      2,
-		Target:        g2,
-		NextTriggerAt: dizzyTriggerAt,
-	}
-	g2.AddEffect(g2KnockDizzy)
-
-	// 送Melee封包給Client
-	g1SkillID := 0
-	g2SkillID := 0
-	if g1Skill != nil {
-		g1SkillID = g1Skill.JsonSkill.ID
-	}
-	if g2Skill != nil {
-		g2SkillID = g2Skill.JsonSkill.ID
-	}
-	if player, ok := MyRoom.Gamers[0].(*Player); ok {
-		packMelee := packet.Pack{
-			CMD: packet.MELEE_TOCLIENT,
-			Content: &packet.Melee_ToClient{
-				MyPlayerState:       player.GetPackPlayerState(true),
-				OpponentPlayerState: player.GetOpponentPackPlayerState(),
-				GameTime:            utility.RoundToDecimal(GameTime, 3),
-				MyAttack: packet.PackAttack{
-					Knockback: g1Knockback,
-					SkillID:   g1SkillID,
-					AttackPos: g1AttackPos,
-				},
-				OpponentAttack: packet.PackAttack{
-					Knockback: g2Knockback,
-					SkillID:   g2SkillID,
-					AttackPos: g2AttackPos,
-				},
-			},
-		}
-		player.SendPacketToPlayer(packMelee)
-	}
-	if player, ok := MyRoom.Gamers[1].(*Player); ok {
-		packMelee := packet.Pack{
-			CMD: packet.MELEE_TOCLIENT,
-			Content: &packet.Melee_ToClient{
-				MyPlayerState:       player.GetPackPlayerState(true),
-				OpponentPlayerState: player.GetOpponentPackPlayerState(),
-				GameTime:            utility.RoundToDecimal(GameTime, 3),
-				MyAttack: packet.PackAttack{
-					Knockback: g2Knockback,
-					SkillID:   g2SkillID,
-				},
-				OpponentAttack: packet.PackAttack{
-					Knockback: g1Knockback,
-					SkillID:   g1SkillID,
-				},
-			},
-		}
-		player.SendPacketToPlayer(packMelee)
-	}
-
+	return math.Abs(MyRoom.Gamers[0].GetGladiator().CurPos - MyRoom.Gamers[1].GetGladiator().CurPos)
 }

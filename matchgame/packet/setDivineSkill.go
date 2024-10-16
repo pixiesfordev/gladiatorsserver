@@ -10,7 +10,5 @@ type SetDivineSkill struct {
 
 type SetDivineSkill_ToClient struct {
 	CMDContent
-	MyPlayerState       PackPlayerState
-	MyCardState         PackCardState
-	OpponentPlayerState PackPlayerState
+	DivineSkillIDs [2]int // 神祉技能
 }

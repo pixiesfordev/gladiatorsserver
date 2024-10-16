@@ -4,7 +4,7 @@ import (
 	// "fmt"
 	// "gladiatorsGoModule/gameJson"
 	// "gladiatorsGoModule/utility"
-	"gladiatorsGoModule/setting"
+	// "gladiatorsGoModule/setting`"
 	"matchgame/logger"
 	"matchgame/packet"
 	"sync"
@@ -23,13 +23,15 @@ type Gamer interface {
 	IsSelectedDivineSkill() bool
 	Surrender()
 	GetPackPlayer(myself bool) packet.PackPlayer
-	GetPackPlayerState(myselfPack bool) packet.PackPlayerState
+	GetOpponent() Gamer
+	SetOpponent(gamer Gamer)
 }
 
 // 玩家
 type Player struct {
 	ID                        string                         // DBPlayer的_id
 	Idx                       int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
+	opponent                  Gamer                          // 對手
 	MyGladiator               *Gladiator                     // 使用中的鬥士
 	gold                      int64                          // 玩家金幣
 	ready                     bool                           // 是否準備好了(進遊戲且收到雙方玩家資料後, client會送準備封包設定ready為true)
@@ -111,19 +113,14 @@ func (player *Player) CloseConnection() {
 	log.Infof("%s 關閉玩家(%s)連線", logger.LOG_Player, player.GetID())
 }
 
-func (player *Player) GetPackDivineSkills() [setting.PLAYER_NUMBER]packet.PackDivineSkill {
-	var packDivineSkills [2]packet.PackDivineSkill
-	return packDivineSkills
-}
-
 // GetOpponent 取得對手Gamer
 func (player *Player) GetOpponent() Gamer {
-	for _, p := range MyRoom.Gamers {
-		if p != nil && player != nil && p.GetID() != player.GetID() {
-			return p
-		}
-	}
-	return nil
+	return player.opponent
+}
+
+// SetOpponent 設定對手Gamer
+func (player *Player) SetOpponent(gamer Gamer) {
+	player.opponent = gamer
 }
 
 // GetPackPlayer 取得玩家封包
@@ -142,25 +139,6 @@ func (player *Player) GetOpponentPackPlayer(myself bool) packet.PackPlayer {
 		return opponent.GetPackPlayer(myself)
 	}
 	return packet.PackPlayer{}
-}
-
-// GetPackPlayerState 取得玩家的狀態封包
-func (player *Player) GetPackPlayerState(myselfPack bool) packet.PackPlayerState {
-	packPlayerState := packet.PackPlayerState{
-		DBID:           player.GetID(),
-		DivineSkills:   player.GetPackDivineSkills(),
-		GladiatorState: player.GetGladiator().GetPackGladiatorState(myselfPack),
-	}
-	return packPlayerState
-}
-
-// GetOpponentPackPlayerState 取得玩家對手的狀態封包
-func (player *Player) GetOpponentPackPlayerState() packet.PackPlayerState {
-	opponent := player.GetOpponent()
-	if opponent != nil {
-		return opponent.GetPackPlayerState(false)
-	}
-	return packet.PackPlayerState{}
 }
 
 // 送封包給玩家(TCP)

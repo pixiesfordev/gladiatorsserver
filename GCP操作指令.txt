@@ -12,6 +12,10 @@ gcloud projects list
 gcloud config set project 專案ID
 # 顯示目前使用中的專案
 gcloud config get-value project
+# 取得目前使用的context
+kubectl config current-context
+# 列出k8s context清單
+kubectl config get-contexts
 # 初始化k8s
 gcloud container clusters get-credentials <cluster-name> --zone <zone-name> --project <project-name>
 # 修改節點數量

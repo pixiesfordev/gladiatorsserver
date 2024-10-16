@@ -162,6 +162,12 @@ deleteMatchgameOldPods:
 	@echo "==============Matchgame Delete Finished=============="
 
 
+clientTest:
+	@echo "==============Running Client Test=============="
+	go run matchgame_test/main.go matchgame_test/receiver.go matchgame_test/sender.go matchgame_test/game.go
+	@echo "==============Client Test Finished=============="
+
+
 # 建構+部屬matchgame
 matchgame: vetMatchgame autoVersioning-Matchgame buildMatchgame deployMatchgame deleteMatchgameOldPods
 # 建構+部屬matchgame-testver

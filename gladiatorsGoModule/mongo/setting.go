@@ -166,7 +166,7 @@ type DBGameState struct {
 	MinimumGameVersion       string    `bson:"minimumGameVersion"`
 	MatchgameTestverRoomName string    `bson:"matchgame-testver-roomName"`
 	MatchgameTestverMapID    string    `bson:"matchgame-testver-mapID"`
-	MatchgameTestverIP       string    `bson:"matchgame-testver-ip"`
+	MatchgameTestverIP       string    `bson:"matchgame-testver-tcp-ip"`
 	MatchgameTestverPort     int       `bson:"matchgame-testver-port"`
 }
 

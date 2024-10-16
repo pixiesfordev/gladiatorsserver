@@ -3,46 +3,31 @@ package game
 import (
 	"gladiatorsGoModule/gameJson"
 	"gladiatorsGoModule/utility"
-	"matchgame/packet"
 	"math"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 // 使用牌後更新手牌，使用的牌放回牌庫最後一張
-func (g *Gladiator) UseSkill(skillID int) bool {
+func (g *Gladiator) UseSkill(skillID int) error {
 	_, useSkillIdx, err := g.GetSkill(skillID)
 	if err != nil {
-		return false
+		return err
 	}
 	// 將使用的牌放到牌庫最底下
 	g.Deck = append(g.Deck, g.HandSkills[useSkillIdx])
-
 	// 將手牌第4張牌(下一張牌)補到使用的牌位置
 	g.HandSkills[useSkillIdx] = g.HandSkills[3]
-
 	// 從牌庫中按順序抽出一張作為新的第4張牌
 	g.HandSkills[3] = g.Deck[0] // 將牌庫頂部的牌補到第4張手牌中(下一張牌)
 	g.Deck = g.Deck[1:]         // 從剛抽出的牌移除
 
-	return true
+	return nil
 }
 
 func (g *Gladiator) SetRush(on bool) {
 	g.IsRush = on
-	// 衝刺狀態更改要送封包回Client
-	pack := packet.Pack{
-		CMD:    packet.PLAYERACTION_TOCLIENT,
-		PackID: -1,
-		Content: packet.PlayerAction_ToClient{
-			PlayerDBID: g.OwnerID,
-			ActionType: packet.Action_Rush,
-			ActionContent: packet.PackAction_Rush_ToClient{
-				On: on,
-			},
-		},
-	}
-	MyRoom.BroadCastPacket(-1, pack)
 }
 
 // ActiveSkill 啟用技能
@@ -57,6 +42,11 @@ func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) {
 	case "Instant": // 即時技能
 		if on {
 			// 發動即時技能
+			_, skill, err := g.createSkill(jsonSkill)
+			if err != nil {
+				return
+			}
+			g.SpellConstSkill(skill)
 		}
 	default:
 		log.Errorf("未定義的技能啟用類型: %v", jsonSkill.Activation)
@@ -66,9 +56,7 @@ func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) {
 // 執行擊退
 func (myself *Gladiator) DoKnockback(knockbackValue float64) {
 
-	//對擊退免疫就返回
-	immuneTypes := myself.GetImmuneTypes()
-	if _, ok := immuneTypes[Immune_Knockback]; ok {
+	if knockbackValue <= 0 {
 		return
 	}
 
@@ -92,55 +80,70 @@ func (myself *Gladiator) DoKnockback(knockbackValue float64) {
 
 // 撞牆
 func (myself *Gladiator) knockWall() {
+	time.AfterFunc(time.Duration(Knockwall_DmgDelayMiliSecs)*time.Millisecond, func() {
+		myself.AddHp(-Knockwall_Dmg, true)
+	})
 }
 
-// Spell 發動技能
-func (myself *Gladiator) Spell(skill *Skill) {
-	if myself == nil || skill == nil {
+// SpellConstSkill 施放立即技能
+func (myself *Gladiator) SpellConstSkill(skill *Skill) {
+	if skill.JsonSkill.Activation != "Instant" {
 		return
 	}
+	// 計算命中技能花費的時間
+	hitMiliSecs := 0
+	if skill.JsonSkill.Init != 0 {
+		dist := getDistBetweenGladiators()
+		hitMiliSecs = int(math.Round((dist / skill.JsonSkill.Init) * 1000))
+	}
+	// 延遲時間後命中目標
+	time.AfterFunc(time.Duration(hitMiliSecs)*time.Millisecond, func() {
+		myself.SkillHit(skill)
+	})
+}
 
-	// 檢查是否通過技能施法條件
-	if !myself.IsPassingSpellCondition(skill) {
+// SkillHit 技能命中目標
+func (myself *Gladiator) SkillHit(skill *Skill) {
+	if skill == nil {
 		return
 	}
-
 	// 執行技能效果
 	for _, effect := range skill.Effects {
-
 		// 如果施法者或目標死亡就跳過
-		if effect.Target.IsAlive() || !effect.Speller.IsAlive() {
+		if !effect.Target.IsAlive() || !effect.Speller.IsAlive() {
 			continue
 		}
-
 		// 如果沒觸發成功就跳過
 		if !utility.GetProbResult(effect.Prob) {
 			continue
 		}
-
 		switch effect.Type {
 		case gameJson.PDmg: // 物理攻擊
-			multiple := (1 + effect.GetPDmgMultiple())
-			effectDmg := float64(effect.GetPDmgValue())
-			str := float64(myself.GetStr())
-			dmg := int(math.Round(str * effectDmg * multiple))
-			myself.Attack(effect.Target, dmg, effect.Target.GetPDef())
+			dmg := 0.0
+			if !myself.ImmuneTo(PDMG) {
+				multiple := myself.GetPDmgMultiplier()
+				dmg, _ := GetEffectValue[float64](effect, 0)
+				dmg = math.Round(dmg * multiple)
+				dmg -= float64(effect.Target.GetPDef())
+			}
+			myself.Attack(effect.Target, int(dmg))
 		case gameJson.MDmg: // 魔法攻擊
-			multiple := (1 + effect.GetMDmgMultiple())
-			effectDmg := float64(effect.GetMDmgValue())
-			str := float64(myself.GetStr())
-			dmg := int(math.Round(str * effectDmg * multiple))
-			myself.Attack(effect.Target, dmg, effect.Target.GetMDef())
+			dmg := 0.0
+			if !myself.ImmuneTo(MDMG) {
+				multiple := myself.GetMDmgMultiplier()
+				dmg, _ := GetEffectValue[float64](effect, 0)
+				dmg = math.Round(dmg * multiple)
+				dmg -= float64(effect.Target.GetMDef())
+			}
+			myself.Attack(effect.Target, int(dmg))
 		case gameJson.RestoreHP: // 回復生命
-			effect.Target.AddHp(effect.GetRestoreHPValue())
+			effect.Target.AddHp(effect.GetRestoreHPValue(), true)
 		case gameJson.RestoreVigor: // 回復體力
 			effect.Target.AddVigor(effect.GetRestoreVigorValue())
 		case gameJson.Purge: // 移除負面狀態
-			effect.Target.RemoveEffectsByBufferType(Debuff)
+			effect.Target.RemoveEffectsByTag(DEBUFF)
 		default:
-			if effect.IsBuffer() { // 賦予狀態
-				myself.AddEffect(&effect)
-			}
+			myself.AddEffect(effect)
 		}
 	}
 
@@ -150,67 +153,47 @@ func (myself *Gladiator) Spell(skill *Skill) {
 	if effects, ok := myself.Effects[gameJson.ComboAttack]; ok {
 		if len(effects) != 0 {
 			effects[0].AddDuration(-1)
-			myself.Spell(skill)
+			myself.SkillHit(skill)
 		}
 	}
 
-}
-
-// IsPassingSpellCondition 施法條件檢查, 全部偷過才返回true(代表可以觸發)
-func (myself *Gladiator) IsPassingSpellCondition(skill *Skill) bool {
-	if !myself.IsAlive() {
-		return false
-	}
-	for _, effects := range myself.Effects {
-		for _, v := range effects {
-			switch v.Type {
-			case gameJson.Condition_SkillVigorBelow:
-				value, err := GetEffectValue[int](v, 0)
-				if err != nil {
-					log.Errorf("%v錯誤: %v", v.Type, err)
-					return false
-				}
-				if skill.JsonSkill.Vigor > value {
-					return false
-				}
-			}
-		}
-	}
-	return true
 }
 
 // Attack 造成傷害
-func (myself *Gladiator) Attack(target *Gladiator, dmg int, def int) {
-	dealDmg := dmg - def
-
-	// 計算目標狀態減傷
-	multiple := 0.0
-	for _, effects := range target.Effects {
-		for _, v := range effects {
-			multiple += v.GetTakeDmgMultiple()
+func (myself *Gladiator) Attack(target *Gladiator, dmg int) {
+	// 傷害不會小於0
+	if dmg <= 0 {
+		dmg = 0
+	} else {
+		// 計算爆擊
+		crit := myself.GetCrit()
+		extraCritDmg := 0.0
+		if crit > 1 { // 溢出的爆擊率要加到爆擊傷害上
+			extraCritDmg = 1 - crit
 		}
+		if utility.GetProbResult(myself.GetCrit()) {
+			dmg = int(math.Round(float64(dmg) * (myself.CritDmg + extraCritDmg)))
+		}
+		// 計算目標傷害調整百分比
+		dmgMltiple := 0.0
+		for _, effects := range target.Effects {
+			for _, v := range effects {
+				dmgMltiple += v.GetTakeDmgMultiple()
+			}
+		}
+		dmg = int(math.Round(float64(dmg) * (1 + dmgMltiple)))
 	}
-	dealDmg = int(math.Round(float64(dealDmg) * (1 + multiple)))
+	// 造成傷害
+	target.AddHp(-dmg, true)
+	// 觸發攻擊後效果
+	target.TriggerBuffer_AfterBeAttack(dmg)
+	myself.TriggerBuffer_AfterAttack(dmg)
 
-	// 計算爆擊
-	crit := myself.GetCrit()
-	extraCritDmg := 0.0
-	if crit > 1 { // 溢出的爆擊率要加到爆擊傷害上
-		extraCritDmg = 1 - crit
-	}
-	if utility.GetProbResult(myself.GetCrit()) {
-		dealDmg = int(math.Round(float64(dealDmg) * (myself.CritDmg + extraCritDmg)))
-	}
-
-	target.TriggerBuffer_AfterBeAttack(dealDmg)
-	myself.TriggerBuffer_AfterAttack(dealDmg)
-
-	target.AddHp(dealDmg)
 }
 
 func (g *Gladiator) Move() {
 	// 無法移動就return
-	if !g.CanMove() {
+	if g.ImmuneTo(MOVE) {
 		return
 	}
 
