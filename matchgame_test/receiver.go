@@ -56,6 +56,13 @@ func processData(data string) {
 			CMD:     packet.SETREADY,
 			Content: packet.SetReady{},
 		}
+		var content packet.SetPlayer_ToClient
+		err = mapstructure.Decode(pack.Content, &content)
+		if err != nil {
+			log.Infof("%v封包的Content轉換錯誤: %v", pack.CMD, err)
+			return
+		}
+		sm.updateSkills(content.MyPackPlayer.MyPackGladiator.HandSkillIDs[:], 0)
 		sendPacket(toServerPack)
 	case packet.SETREADY_TOCLIENT:
 		log.Infof(">>>>>>>SETREADY_TOCLIENT")
@@ -69,18 +76,35 @@ func processData(data string) {
 		sendPacket(toServerPack)
 		send_SetSkills()
 	case packet.SETDIVINESKILL_TOCLIENT:
-		log.Infof(">>>>>>>SETDIVINESKILL_TOCLIENT")
+		// log.Infof(">>>>>>>SETDIVINESKILL_TOCLIENT")
+	case packet.PLAYERACTION_TOCLIENT:
+		// log.Infof(">>>>>>>PLAYERACTION 回應: %v", pack.Content)
+		var content packet.PlayerAction_ToClient
+		err = mapstructure.Decode(pack.Content, &content)
+		if err != nil {
+			log.Infof("%v封包的Content轉換錯誤: %v", pack.CMD, err)
+			return
+		}
+		var aContent packet.PackAction_Skill_ToClient
+		err = mapstructure.Decode(content.ActionContent, &aContent)
+		if err != nil {
+			log.Infof("%v封包的Content轉換錯誤: %v", content.ActionContent, err)
+			return
+		}
+		sm.updateSkills(aContent.HandSkillIDs[:], aContent.SkillOnID)
+		log.Infof("手牌: %v 啟用技能: %v", aContent.HandSkillIDs, aContent.SkillOnID)
 	case packet.MELEE_TOCLIENT:
-		log.Infof(">>>>>>>MELEE_TOCLIENT")
+		// log.Infof(">>>>>>>MELEE_TOCLIENT")
 		var content packet.Melee_ToClient
 		err = mapstructure.Decode(pack.Content, &content)
 		if err != nil {
 			log.Infof("%v封包的Content轉換錯誤: %v", pack.CMD, err)
 			return
 		}
-		log.Infof("HandSkills: %v", content.MyHandSkillIDs)
+		sm.updateSkills(content.MyHandSkillIDs[:], content.MyAttack.SkillID)
+		// log.Infof("手牌: %v 啟用技能: %v", content.MyHandSkillIDs, content.MyAttack.SkillID)
 	case packet.HP_TOCLIENT:
-		log.Infof(">>>>>>>HP_TOCLIENT 回應: %v", pack.Content)
+		// log.Infof(">>>>>>>HP_TOCLIENT 回應: %v", pack.Content)
 		var content packet.Hp_ToClient
 		err = mapstructure.Decode(pack.Content, &content)
 		if err != nil {

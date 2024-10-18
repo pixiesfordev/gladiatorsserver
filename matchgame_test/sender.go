@@ -19,25 +19,39 @@ func sendPacket(pack packet.Pack) {
 }
 
 func send_Auth() {
-	auth := packet.Pack{
+	pack := packet.Pack{
 		CMD: packet.AUTH,
 		Content: packet.Auth{
 			Token: "",
 		},
 	}
-	sendPacket(auth)
+	sendPacket(pack)
 }
 
 func send_Ping() {
-	auth := packet.Pack{
+	pack := packet.Pack{
 		CMD:     packet.PING,
 		Content: packet.Ping{},
 	}
-	sendPacket(auth)
+	sendPacket(pack)
+}
+
+func send_UseSkill(skillID int) {
+	pack := packet.Pack{
+		CMD: packet.PLAYERACTION,
+		Content: packet.PlayerAction{
+			ActionType: packet.ACTION_SKILL,
+			ActionContent: packet.PackAction_Skill{
+				On:      true,
+				SkillID: skillID,
+			},
+		},
+	}
+	sendPacket(pack)
 }
 
 func send_SetSkills() {
-	auth := packet.Pack{
+	pack := packet.Pack{
 		CMD: packet.GMACTION,
 		Content: packet.GMAction{
 			ActionType: packet.GMACTION_SETSKILLS,
@@ -46,5 +60,5 @@ func send_SetSkills() {
 			},
 		},
 	}
-	sendPacket(auth)
+	sendPacket(pack)
 }

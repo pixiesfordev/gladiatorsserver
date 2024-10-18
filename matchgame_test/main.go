@@ -37,6 +37,8 @@ func main() {
 
 	log.Infof("已連線到Server")
 
+	initKeyboard()
+
 	// 送出AUTH封包
 	send_Auth()
 

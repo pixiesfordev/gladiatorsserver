@@ -146,6 +146,7 @@ func (r *Room) ResetRoom() {
 			r.KickBot(bot, "重置房間")
 		}
 	}
+	log.Infof("重置房間完成")
 }
 
 // 將玩家踢出房間
