@@ -2,6 +2,8 @@ package game
 
 import (
 	"gladiatorsGoModule/gameJson"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Skill struct {
@@ -22,10 +24,13 @@ func NewSkill(speller *Gladiator, opponent *Gladiator, jsonSkill gameJson.JsonSk
 	if jsonSkillEffects, ok := gameJson.SkillEffectDataDic[jsonSkill.ID]; ok {
 		for _, jsonSkillEffect := range jsonSkillEffects {
 			var skillEffectTarget *Gladiator
-			if jsonSkillEffect.Target == "Myslef" {
+			if jsonSkillEffect.Target == "Myself" {
 				skillEffectTarget = speller
 			} else if jsonSkillEffect.Target == "Enemy" {
 				skillEffectTarget = opponent
+			} else {
+				log.Infof("jsonSkillEffect.Target錯誤: %v", jsonSkillEffect.Target)
+				continue
 			}
 			for _, v := range jsonSkillEffect.Effects {
 				effect, err := NewEffect(v.Type, v.Value, speller, skillEffectTarget, v.Prob, false)

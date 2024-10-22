@@ -117,11 +117,9 @@ func (sm *skillManager) clickSkill(idx int) {
 	if sm.skillOnID != skillID {
 		// 啟用新的技能
 		sm.skillOnID = skillID
-		log.Infof("啟用技能%d", skillID)
 	} else {
 		// 關閉當前技能
 		sm.skillOnID = 0
-		log.Infof("關閉技能%d", skillID)
 	}
 	send_UseSkill(skillID)
 }

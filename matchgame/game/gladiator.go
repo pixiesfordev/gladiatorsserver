@@ -109,6 +109,7 @@ func (g *Gladiator) AddPassiveEffect(effect *Effect) {
 
 // AddEffect 賦予狀態效果
 func (g *Gladiator) AddEffect(effect *Effect) {
+	log.Infof("AddEffect1 %v To %v", effect.Type, g.ID)
 	// 不是狀態就返回
 	if effect.BelongTo(NOTBUFFER) {
 		return
@@ -130,7 +131,26 @@ func (g *Gladiator) AddEffect(effect *Effect) {
 		}
 	}
 	g.RemoveEffects(removeEffectTypes...)
-	g.Effects[effect.Type] = append(g.Effects[effect.Type], effect)
+	log.Infof("AddEffect2 %v To %v", effect.Type, g.ID)
+	switch effect.MyStackType {
+	case STACKABLE:
+		if len(g.Effects[effect.Type]) > 0 {
+			g.Effects[effect.Type][0].Duration += effect.Duration
+		} else {
+			g.Effects[effect.Type] = append(g.Effects[effect.Type], effect)
+		}
+	case OVERRIDING:
+		if len(g.Effects[effect.Type]) > 0 {
+			g.Effects[effect.Type][0] = effect
+		} else {
+			g.Effects[effect.Type] = append(g.Effects[effect.Type], effect)
+		}
+	case ADDITIVE:
+		g.Effects[effect.Type] = append(g.Effects[effect.Type], effect)
+	default:
+		log.Errorf("尚未定義的StackType %v", effect.MyStackType)
+	}
+
 }
 
 // RemoveEffectsByTag 根據標籤移除Effect
@@ -150,6 +170,7 @@ func (g *Gladiator) RemoveEffects(types ...gameJson.EffectType) {
 		return
 	}
 	for _, t := range types {
+		log.Infof("Remove Effect: %v", t)
 		delete(g.Effects, t)
 	}
 }
@@ -184,6 +205,7 @@ func (myself *Gladiator) TriggerBuffer_Time() {
 
 // TriggerBuffer_AfterBeAttack 受擊後觸發Buffer
 func (myself *Gladiator) TriggerBuffer_AfterBeAttack(dmg int) {
+	log.Infof("TriggerBuffer_AfterBeAttack")
 	if !myself.IsAlive() {
 		return
 	}

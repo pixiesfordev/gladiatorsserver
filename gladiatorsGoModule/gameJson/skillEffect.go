@@ -41,6 +41,11 @@ func (jsonData JsonSkillEffect) UnmarshalJSONData(jsonName string, jsonBytes []b
 
 		// 處理Effect
 		json.Effects = parseEffects(rawEffect)
+		// if json.SkillID == 1011 {
+		// 	for _, v := range json.Effects {
+		// 		log.Infof("1011 type: %v", v.Type)
+		// 	}
+		// }
 		items[json.ID] = json
 		AddToSkillEffectDataDic(json)
 	}

@@ -46,7 +46,7 @@ spec:
       serviceAccountName: default # 指定使用default serviceAccount
       containers:
       - name: gladiators-matchgame-testver
-        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-matchgame:0.1.204
+        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-matchgame:0.1.259
         resources:
           requests:
             memory: "32Mi"
@@ -56,7 +56,7 @@ spec:
             cpu: "20m"
         env:
         - name: "ImgVer"
-          value: "0.1.204"
+          value: "0.1.259"
         - name: NodeName
           valueFrom:
             fieldRef:

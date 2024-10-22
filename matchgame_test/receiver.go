@@ -85,14 +85,17 @@ func processData(data string) {
 			log.Infof("%v封包的Content轉換錯誤: %v", pack.CMD, err)
 			return
 		}
-		var aContent packet.PackAction_Skill_ToClient
-		err = mapstructure.Decode(content.ActionContent, &aContent)
-		if err != nil {
-			log.Infof("%v封包的Content轉換錯誤: %v", content.ActionContent, err)
-			return
+		switch content.ActionType {
+		case packet.ACTION_SKILL:
+			var aContent packet.PackAction_Skill_ToClient
+			err = mapstructure.Decode(content.ActionContent, &aContent)
+			if err != nil {
+				log.Infof("%v封包的Content轉換錯誤: %v", content.ActionContent, err)
+				return
+			}
+			sm.updateSkills(aContent.HandSkillIDs[:], aContent.SkillOnID)
 		}
-		sm.updateSkills(aContent.HandSkillIDs[:], aContent.SkillOnID)
-		log.Infof("手牌: %v 啟用技能: %v", aContent.HandSkillIDs, aContent.SkillOnID)
+
 	case packet.MELEE_TOCLIENT:
 		// log.Infof(">>>>>>>MELEE_TOCLIENT")
 		var content packet.Melee_ToClient
@@ -101,7 +104,11 @@ func processData(data string) {
 			log.Infof("%v封包的Content轉換錯誤: %v", pack.CMD, err)
 			return
 		}
-		sm.updateSkills(content.MyHandSkillIDs[:], content.MyAttack.SkillID)
+		if content.MyAttack.SkillID != 0 {
+			log.Infof("發動肉搏技能: %v", content.MyAttack.SkillID)
+		}
+		sm.updateSkills(content.MyHandSkillIDs[:], 0)
+
 		// log.Infof("手牌: %v 啟用技能: %v", content.MyHandSkillIDs, content.MyAttack.SkillID)
 	case packet.HP_TOCLIENT:
 		// log.Infof(">>>>>>>HP_TOCLIENT 回應: %v", pack.Content)

@@ -5,17 +5,21 @@ import (
 	"gladiatorsGoModule/utility"
 
 	"matchgame/packet"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // melee 雙方進行肉搏
 func melee() {
 	if MyRoom.Gamers[0] == nil && MyRoom.Gamers[0].GetGladiator() == nil && MyRoom.Gamers[1] == nil && MyRoom.Gamers[1].GetGladiator() == nil {
+		log.Errorf("melee錯誤")
 		return
 	}
 	g1 := MyRoom.Gamers[0].GetGladiator()
 	g2 := MyRoom.Gamers[1].GetGladiator()
 
 	if !g1.IsAlive() || !g2.IsAlive() {
+		log.Infof("取消melee，一方角鬥已死亡 g1: %v   g2: %v", g1.IsAlive(), g2.IsAlive())
 		return
 	}
 
@@ -32,7 +36,6 @@ func melee() {
 		g2SpellInit, g2Skill, _ = g2.createSkill(*g2.ActivedMeleeJsonSkill)
 		g2.ActivedMeleeJsonSkill = nil
 	}
-
 	if g1SpellInit > g2SpellInit {
 		bothCastSpell(g1, g2, g1Skill, g2Skill) // g1先攻
 	} else if g1SpellInit < g2SpellInit {
@@ -137,9 +140,9 @@ func melee() {
 // 雙方執行技能
 func bothCastSpell(first, second *Gladiator, firstSkill, secondSkill *Skill) {
 	if firstSkill != nil {
-		second.SkillHit(firstSkill)
+		first.Spell(firstSkill)
 	}
 	if secondSkill != nil {
-		first.SkillHit(secondSkill)
+		second.Spell(secondSkill)
 	}
 }

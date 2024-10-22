@@ -46,7 +46,7 @@ func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) {
 			if err != nil {
 				return
 			}
-			g.SpellConstSkill(skill)
+			g.SpellInstantSkill(skill)
 		}
 	default:
 		log.Errorf("未定義的技能啟用類型: %v", jsonSkill.Activation)
@@ -85,8 +85,8 @@ func (myself *Gladiator) knockWall() {
 	})
 }
 
-// SpellConstSkill 施放立即技能
-func (myself *Gladiator) SpellConstSkill(skill *Skill) {
+// SpellInstantSkill 施放立即技能
+func (myself *Gladiator) SpellInstantSkill(skill *Skill) {
 	if skill.JsonSkill.Activation != "Instant" {
 		return
 	}
@@ -98,18 +98,26 @@ func (myself *Gladiator) SpellConstSkill(skill *Skill) {
 	}
 	// 延遲時間後命中目標
 	time.AfterFunc(time.Duration(hitMiliSecs)*time.Millisecond, func() {
-		myself.SkillHit(skill)
+		myself.Spell(skill)
 	})
 }
 
-// SkillHit 技能命中目標
-func (myself *Gladiator) SkillHit(skill *Skill) {
+// Spell 施放技能
+func (myself *Gladiator) Spell(skill *Skill) {
 	if skill == nil {
 		return
 	}
 	// 執行技能效果
 	for _, effect := range skill.Effects {
+		if effect == nil {
+			log.Errorf("effect為nil")
+			continue
+		}
 		// 如果施法者或目標死亡就跳過
+		if effect.Target == nil || effect.Speller == nil {
+			log.Errorf("target 或 speller 為nil, target: %v speller: %v", effect.Target, effect.Speller)
+			continue
+		}
 		if !effect.Target.IsAlive() || !effect.Speller.IsAlive() {
 			continue
 		}
@@ -120,18 +128,18 @@ func (myself *Gladiator) SkillHit(skill *Skill) {
 		switch effect.Type {
 		case gameJson.PDmg: // 物理攻擊
 			dmg := 0.0
-			if !myself.ImmuneTo(PDMG) {
+			if !effect.Target.ImmuneTo(PDMG) {
 				multiple := myself.GetPDmgMultiplier()
-				dmg, _ := GetEffectValue[float64](effect, 0)
+				dmg, _ = GetEffectValue[float64](effect, 0)
 				dmg = math.Round(dmg * multiple)
 				dmg -= float64(effect.Target.GetPDef())
 			}
 			myself.Attack(effect.Target, int(dmg))
 		case gameJson.MDmg: // 魔法攻擊
 			dmg := 0.0
-			if !myself.ImmuneTo(MDMG) {
+			if !effect.Target.ImmuneTo(MDMG) {
 				multiple := myself.GetMDmgMultiplier()
-				dmg, _ := GetEffectValue[float64](effect, 0)
+				dmg, _ = GetEffectValue[float64](effect, 0)
 				dmg = math.Round(dmg * multiple)
 				dmg -= float64(effect.Target.GetMDef())
 			}
@@ -143,20 +151,18 @@ func (myself *Gladiator) SkillHit(skill *Skill) {
 		case gameJson.Purge: // 移除負面狀態
 			effect.Target.RemoveEffectsByTag(DEBUFF)
 		default:
-			myself.AddEffect(effect)
+			effect.Target.AddEffect(effect)
 		}
 	}
-
 	log.Infof("勇士 %s 發動技能: %v", myself.ID, skill.JsonSkill.ID)
 
 	// 如果有ComboAttack就重複觸發技能
 	if effects, ok := myself.Effects[gameJson.ComboAttack]; ok {
 		if len(effects) != 0 {
 			effects[0].AddDuration(-1)
-			myself.SkillHit(skill)
+			myself.Spell(skill)
 		}
 	}
-
 }
 
 // Attack 造成傷害
@@ -183,6 +189,7 @@ func (myself *Gladiator) Attack(target *Gladiator, dmg int) {
 		}
 		dmg = int(math.Round(float64(dmg) * (1 + dmgMltiple)))
 	}
+
 	// 造成傷害
 	target.AddHp(-dmg, true)
 	// 觸發攻擊後效果

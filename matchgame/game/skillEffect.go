@@ -21,12 +21,11 @@ type Effect struct {
 
 // 效果數值設定
 const (
-	VALUE_VULNERABLE             float64 = -0.3 // 無力造成傷害減少百分比
-	VALUE_WEAK                   float64 = -0.3 // 虛弱造成防禦減少百分比
-	VALUE_FATIGUE                float64 = -0.3 // 疲勞造成體力回復減少
-	VALUE_PROTECTION             float64 = -0.3 // 加護減傷百分比
-	INTERVAL_EFFECT_TRIGGER_SECS float64 = 1    // 時間性觸發效果間格時間, 例如流血, 填1就是每秒觸發1次
-	VALUE_BERSERK                float64 = 0.5  // 狂暴增加力量百分比
+	VALUE_VULNERABLE float64 = -0.3 // 無力造成傷害減少百分比
+	VALUE_WEAK       float64 = -0.3 // 虛弱造成防禦減少百分比
+	VALUE_FATIGUE    float64 = -0.3 // 疲勞造成體力回復減少
+	VALUE_PROTECTION float64 = -0.3 // 加護減傷百分比
+	VALUE_BERSERK    float64 = 0.5  // 狂暴增加力量百分比
 )
 
 // StackType Buffer堆疊類型
@@ -139,17 +138,21 @@ func NewEffect(effectType gameJson.EffectType, valueStr string, speller *Gladiat
 		if len(values) != 1 {
 			return nil, fmt.Errorf("effectype %v 參數填入錯誤", effectType)
 		}
+		duration = values[0]
 		tags[DEBUFF] = true
 		stackType = STACKABLE
 	case gameJson.Bleeding:
 		if len(values) != 1 {
 			return nil, fmt.Errorf("effectype %v 參數填入錯誤", effectType)
 		}
+		duration = values[0]
+		tags[DEBUFF] = true
 		stackType = ADDITIVE
 	case gameJson.Burning:
 		if len(values) != 1 {
 			return nil, fmt.Errorf("effectype %v 參數填入錯誤", effectType)
 		}
+		duration = values[0]
 		tags[DEBUFF] = true
 		stackType = ADDITIVE
 	case gameJson.Fearing:
@@ -362,7 +365,7 @@ func (e *Effect) BelongTo(tag Tag) bool {
 // ImmuneTo 此Buffer是否免疫某Tag類型
 func (e *Effect) ImmuneTo(tags ...Tag) bool {
 	for _, tag := range tags {
-		if e.Tags[tag] {
+		if e.ImmueTags[tag] {
 			return true
 		}
 	}
