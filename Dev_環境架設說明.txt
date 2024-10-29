@@ -72,7 +72,7 @@ gcloud container clusters create cluster-gladiators --zone=asia-east1-c --releas
 # 官方建議新建一個Agones專用的node pool, 避免跟遊戲server的機器共用, 但是Dev環境可以不用這麼做，所以註解掉，如果有需要可以使用註解的內容
 # gcloud container node-pools create agones-system --cluster=cluster-gladiators --zone=asia-east1-c --node-taints agones.dev/agones-system=true:NoExecute --node-labels agones.dev/agones-system=true --num-nodes=1 --machine-type=e2-standard-4
 # gcloud container clusters update cluster-gladiators --zone=asia-east1-c --workload-pool=mygladiators-dev.svc.id.goog
-# 新增命名空間matchmaker(配房伺服器) 與 matchgame(遊戲伺服器)
+# 新增命名空間lobby(大廳) 與 matchgame(遊戲伺服器)
 kubectl create namespace gladiators-service
 kubectl create namespace gladiators-gameserver
 
@@ -127,7 +127,7 @@ kubectl annotate serviceaccount agones-sdk -n gladiators-gameserver iam.gke.io/g
 gcloud container clusters describe cluster-gladiators --zone=asia-east1-c --project mygladiators-dev
 
 # 建立防火牆(這個沒設定會沒辦法透過UDP連線到server)
-  gcloud compute firewall-rules create gladiators-matchmaker-firewall-tcp --allow tcp:32680 --target-tags gladiators --description "Firewall to allow Gladiators matchmaker TCP traffic"
+  gcloud compute firewall-rules create gladiators-lobby-firewall-tcp --allow tcp:443 --target-tags gladiators --description "Firewall to allow Gladiators lobby TCP traffic"
   gcloud compute firewall-rules create gladiators-matchgame-firewall-tcp --allow tcp:7000-8000 --target-tags gladiators --description "Gladiators firewall to allow game server tcp traffic"
   gcloud compute firewall-rules create gladiators-matchgame-firewall-udp --allow udp:7000-8000 --target-tags gladiators --description "Gladiators firewall to allow game server udp traffic"
 # 這是lobby如果有開發tcp連線需要的防火牆設定
@@ -152,8 +152,8 @@ gcloud auth configure-docker asia-east1-docker.pkg.dev
 # 使用k8s secret建立mongo需要的敏感資料並在建置yaml檔案中取
 # 建立secret指令為kubectl create secret generic secretName --from-literal=key1=value1 --from-literal=key2=value2
 # 以下為範例 gladiators-service跟gladiators-gameserver都要建立
-kubectl create secret generic mongodb-secret -n gladiators-service --from-literal=MongoAPIPublicKey=faakhiny --from-literal=MongoAPIPrivateKey=f751e44f-d215-49ac-9883-a30f0f1db397 --from-literal=MongoUser=pixiesfordev --from-literal=MongoPW=qbTDhfmeItCF82Gr
-kubectl create secret generic mongodb-secret -n gladiators-gameserver --from-literal=MongoAPIPublicKey=faakhiny --from-literal=MongoAPIPrivateKey=f751e44f-d215-49ac-9883-a30f0f1db397 --from-literal=MongoUser=pixiesfordev --from-literal=MongoPW=qbTDhfmeItCF82Gr
+kubectl create secret generic mongodb-secret -n gladiators-service --from-literal=MongoAPIPublicKey=faakhiny --from-literal=MongoAPIPrivateKey=f751e44f-d215-49ac-9883-a30f0f1db397 --from-literal=MongoUser=pixiesfordev --from-literal=MongoPW=mjYfHrZIyLaMNGCD
+kubectl create secret generic mongodb-secret -n gladiators-gameserver --from-literal=MongoAPIPublicKey=faakhiny --from-literal=MongoAPIPrivateKey=f751e44f-d215-49ac-9883-a30f0f1db397 --from-literal=MongoUser=pixiesfordev --from-literal=MongoPW=mjYfHrZIyLaMNGCD
 # 查看secret方法
 kubectl get secrets -n gladiators-service
 # 刪除secret方法
@@ -174,7 +174,9 @@ helm install cert-manager jetstack/cert-manager --namespace cert-manager --creat
 # 在k8s安裝ingress-nginx
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
-helm install nginx-ingress ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
+使用以下來安裝nginx-ingress
+# helm install nginx-ingress ingress-nginx/ingress-nginx ` --namespace ingress-nginx ` --create-namespace ` -f .\CICD_Common_Dev\Nginx-Ingress-Values.yaml
+# helm upgrade nginx-ingress ingress-nginx/ingress-nginx --namespace ingress-nginx -f .\CICD_Common_Dev\Nginx-Ingress-Values.yaml
 # 如果要刪除可以用helm delete gladiators-ingress -n ingress-nginx
 kubectl apply -f .\CICD_Common_Dev\cert-manager.yaml
 # 在DNS那邊要設定ingress對應的外部ip

@@ -25,8 +25,11 @@ func (g *Gladiator) UseSkill(skillID int) error {
 
 	return nil
 }
-
 func (g *Gladiator) SetRush(on bool) {
+	if _, ok := g.Effects[gameJson.Enraged]; ok && !on {
+		// 激怒中無法設定回非衝刺狀態
+		return
+	}
 	g.IsRush = on
 }
 
@@ -127,21 +130,15 @@ func (myself *Gladiator) Spell(skill *Skill) {
 		}
 		switch effect.Type {
 		case gameJson.PDmg: // 物理攻擊
-			dmg := 0.0
-			if !effect.Target.ImmuneTo(PDMG) {
-				multiple := myself.GetPDmgMultiplier()
-				dmg, _ = GetEffectValue[float64](effect, 0)
-				dmg = math.Round(dmg * multiple)
-				dmg -= float64(effect.Target.GetPDef())
-			}
-			myself.Attack(effect.Target, int(dmg))
+			dmg := AttackDmgModify(myself, effect.Target, effect)
+			myself.Attack(effect.Target, dmg)
 		case gameJson.MDmg: // 魔法攻擊
+			dmg := AttackDmgModify(myself, effect.Target, effect)
+			myself.Attack(effect.Target, dmg)
+		case gameJson.TrueDmg: // 真實傷害攻擊
 			dmg := 0.0
-			if !effect.Target.ImmuneTo(MDMG) {
-				multiple := myself.GetMDmgMultiplier()
+			if !effect.Target.ImmuneTo(TDMG) {
 				dmg, _ = GetEffectValue[float64](effect, 0)
-				dmg = math.Round(dmg * multiple)
-				dmg -= float64(effect.Target.GetMDef())
 			}
 			myself.Attack(effect.Target, int(dmg))
 		case gameJson.RestoreHP: // 回復生命
@@ -165,8 +162,20 @@ func (myself *Gladiator) Spell(skill *Skill) {
 	}
 }
 
-// Attack 造成傷害
-func (myself *Gladiator) Attack(target *Gladiator, dmg int) {
+func AttackDmgModify(myself, target *Gladiator, effect *Effect) int {
+	dmg := 0.0
+	if effect.Type == gameJson.PDmg && !effect.Target.ImmuneTo(PDMG) {
+		multiple := myself.GetPDmgMultiplier()
+		dmg, _ = GetEffectValue[float64](effect, 0)
+		dmg = math.Round(dmg * multiple)
+		dmg -= float64(effect.Target.GetPDef())
+	} else if effect.Type == gameJson.MDmg && !effect.Target.ImmuneTo(MDMG) {
+		multiple := myself.GetMDmgMultiplier()
+		dmg, _ = GetEffectValue[float64](effect, 0)
+		dmg = math.Round(dmg * multiple)
+		dmg -= float64(effect.Target.GetMDef())
+	}
+
 	// 傷害不會小於0
 	if dmg <= 0 {
 		dmg = 0
@@ -178,18 +187,22 @@ func (myself *Gladiator) Attack(target *Gladiator, dmg int) {
 			extraCritDmg = 1 - crit
 		}
 		if utility.GetProbResult(myself.GetCrit()) {
-			dmg = int(math.Round(float64(dmg) * (myself.CritDmg + extraCritDmg)))
+			dmg = math.Round(float64(dmg) * (myself.CritDmg + extraCritDmg))
 		}
 		// 計算目標傷害調整百分比
-		dmgMltiple := 0.0
+		dmgMultiplier := 0.0
 		for _, effects := range target.Effects {
 			for _, v := range effects {
-				dmgMltiple += v.GetTakeDmgMultiple()
+				dmgMultiplier += v.GetTakeDmgMultiple()
 			}
 		}
-		dmg = int(math.Round(float64(dmg) * (1 + dmgMltiple)))
+		dmg = float64(dmg) * (1 + dmgMultiplier)
 	}
+	return int(math.Round(dmg))
+}
 
+// Attack 造成傷害
+func (myself *Gladiator) Attack(target *Gladiator, dmg int) {
 	// 造成傷害
 	target.AddHp(-dmg, true)
 	// 觸發攻擊後效果

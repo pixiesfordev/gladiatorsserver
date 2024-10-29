@@ -35,13 +35,7 @@ func (e *Effect) Trigger_Time() {
 		e.Target.AddVigor(value)
 	case gameJson.Poison: // 中毒
 		e.NextTriggerAt += 3 // 3秒觸發1次
-		value, err := GetEffectValue[int](e, 0)
-		if err != nil {
-			log.Errorf("%v錯誤: %v", e.Type, err)
-			return
-		}
-		e.AddDuration(-passTime)
-		e.Target.AddHp(-value, true)
+		e.Target.AddHp(-int(e.Duration), true)
 	case gameJson.Burning: // 著火
 		e.NextTriggerAt += 3 // 3秒觸發1次
 		value := int(e.Duration)
@@ -51,9 +45,15 @@ func (e *Effect) Trigger_Time() {
 		}
 		e.AddDuration(-reduce)
 		e.Target.AddHp(-value, true)
+	case gameJson.Enraged: // 激怒
+		e.NextTriggerAt += TickTimePass // 每幀觸發
+		e.AddDuration(-passTime)
+		if e.Target != nil && !e.Target.IsRush {
+			e.Target.SetRush(true)
+		}
 
 		// 隨時間消逝但沒有要執行特別效果的Buffer放這裡
-	case gameJson.Dizzy, gameJson.Enraged, gameJson.Fearing, gameJson.Vulnerable, gameJson.Weak,
+	case gameJson.Dizzy, gameJson.Fearing, gameJson.Vulnerable, gameJson.Weak,
 		gameJson.Fatigue, gameJson.Protection, gameJson.Indomitable, gameJson.Berserk, gameJson.Chaos, gameJson.PDefUp,
 		gameJson.MDefUp, gameJson.StrUp, gameJson.KnockbackUp, gameJson.Barrier, gameJson.Poisoning, gameJson.CriticalUp,
 		gameJson.InitUp:

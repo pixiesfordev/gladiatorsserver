@@ -11,5 +11,9 @@ REM 取得遊戲server的ip與port kubectl get services -n gladiators-service
 @REM gcloud container clusters get-credentials YOUR_CLUSTER_NAME --zone YOUR_ZONE
 @echo on
 call Dev_SwitchProject.bat
+kubectl apply -f .\CICD_Lobby_Dev\Role.yaml
+@if ERRORLEVEL 1 exit /b 1
+kubectl apply -f .\CICD_Lobby_Dev\RoleBinding.yaml
+@if ERRORLEVEL 1 exit /b 1
 kubectl apply -f .\CICD_Lobby_Dev\Dev_Lobby.yaml
 @if ERRORLEVEL 1 exit /b 1

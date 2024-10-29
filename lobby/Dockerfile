@@ -2,7 +2,7 @@
 FROM golang:alpine as builder
 
 # 設置工作目錄
-WORKDIR /home/lobby
+WORKDIR /lobby
 
 # 複製 lobby 的內容
 COPY lobby/ .
@@ -21,7 +21,7 @@ RUN GOOS=linux GOARCH=amd64 go build -o lobby .
 # 複製執行檔
 FROM alpine
 WORKDIR /app
-COPY --from=builder /home/lobby/lobby /app/
+COPY --from=builder /lobby/lobby /app/
 
 # 執行
 CMD ["/app/lobby"]

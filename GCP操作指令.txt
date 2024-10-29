@@ -16,6 +16,8 @@ gcloud config get-value project
 kubectl config current-context
 # 列出k8s context清單
 kubectl config get-contexts
+# 指定使用某個context
+kubectl config use-context gke_mygladiators-dev_us-central1-a_cluster-dev
 # 初始化k8s
 gcloud container clusters get-credentials <cluster-name> --zone <zone-name> --project <project-name>
 # 修改節點數量
@@ -50,5 +52,5 @@ gcloud compute instances remove-tags gke-cluster-gladiators-default-pool-fbb1525
 gsutil ls
 gsutil ls gs://gladiators_gamejson_dev/
 # 查看pod使用的serviceAccount
-kubectl get pod gladiators-matchmaker-5b6dc6776b-dgvxb -n gladiators-service -o=jsonpath='{.spec.serviceAccount}'
+kubectl get pod gladiators-lobby-5b6dc6776b-dgvxb -n gladiators-service -o=jsonpath='{.spec.serviceAccount}'
 kubectl get pod gladiators-matchgame-qbqzp-59glj -n gladiators-gameserver -o=jsonpath='{.spec.serviceAccount}'

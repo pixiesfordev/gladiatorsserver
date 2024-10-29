@@ -100,6 +100,7 @@ type EffectType string
 const (
 	PDmg                                      EffectType = "PDmg"                                      // 造成物理傷害,數值是造成多少傷害
 	MDmg                                                 = "MDmg"                                      // 造成魔法傷害,數值是造成多少傷害
+	TrueDmg                                              = "TrueDmg"                                   // 真實傷害(不受任何增/減傷影響的直接傷害), 數值是傷害值
 	RestoreHP                                            = "RestoreHP"                                 // 恢復生命,數值是恢復多少生命
 	RestoreVigor                                         = "RestoreVigor"                              // 恢復體力,數值是恢復多少體力
 	Rush                                                 = "Rush"                                      // 突擊,快速衝刺進行肉搏

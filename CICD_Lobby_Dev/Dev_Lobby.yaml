@@ -1,17 +1,3 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: gladiators-lobby-service
-  namespace: gladiators-service
-spec:
-  type: LoadBalancer
-  selector:
-    app: gladiators-lobby
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8080
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,18 +13,18 @@ spec:
       labels:
         app: gladiators-lobby
         type: gladiators-lobby  # 標示為gladiators-service, 方便之後對版本做刪除等管理
-        imgVersion: "0.1.1"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
+        imgVersion: "0.1.30"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
     spec:
       containers:
       - name: gladiators-lobby
-        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-lobby:0.1.1
+        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-lobby:0.1.30
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "50m"
+            memory: "128Mi"
+            cpu: "20m"
           limits:
-            memory: "2048Mi"
-            cpu: "200m"
+            memory: "256Mi"
+            cpu: "50m"
         # 環境變數設定
         env:
         - name: "Env"
@@ -46,7 +32,11 @@ spec:
         - name: MY_POD_NAME
           valueFrom:
             fieldRef:
-              fieldPath: metadata.name              
+              fieldPath: metadata.name
+        - name: "PORT_HTTPS"
+          value: "8080"
+        - name: "PORT_TCP"
+          value: "9090"    
         # mongodb相關
         - name: MongoAPIPublicKey
           valueFrom:
@@ -80,7 +70,7 @@ spec:
     kind: Deployment
     name: gladiators-lobby
   minReplicas: 1
-  maxReplicas: 5
+  maxReplicas: 1
   metrics:
   - type: Resource
     resource:
@@ -88,42 +78,3 @@ spec:
       target:
         type: Utilization
         averageUtilization: 50
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: gladiators-certification
-  namespace: gladiators-service
-spec:
-  secretName: gladiators-service-tls
-  issuerRef:
-    name: gladiators-cert-issuer
-    kind: ClusterIssuer
-  commonName: 'aurafordev.com'
-  dnsNames:
-  - 'aurafordev.com'
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: gladiators-ingress
-  namespace: gladiators-service
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    cert-manager.io/cluster-issuer: "gladiators-cert-issuer"
-spec:
-  tls:
-  - hosts:
-    - aurafordev.com
-    secretName: gladiators-service-tls
-  rules:
-  - host: aurafordev.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: gladiators-lobby-service
-            port:
-              number: 80

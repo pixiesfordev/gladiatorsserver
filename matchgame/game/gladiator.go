@@ -136,6 +136,7 @@ func (g *Gladiator) AddEffect(effect *Effect) {
 	case STACKABLE:
 		if len(g.Effects[effect.Type]) > 0 {
 			g.Effects[effect.Type][0].Duration += effect.Duration
+			g.Effects[effect.Type][0].NextTriggerAt = GameTime
 		} else {
 			g.Effects[effect.Type] = append(g.Effects[effect.Type], effect)
 		}

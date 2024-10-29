@@ -207,7 +207,7 @@ func main() {
 			// 依據DBGameSetting中取GameState設定
 			log.Infof("%s 取DBGameState資料", logger.LOG_Main)
 			var dbGameState mongo.DBGameState
-			dbGameStateErr := mongo.GetDocByID(mongo.ColName.GameSetting, "GameState", &dbGameState)
+			dbGameStateErr := mongo.GetDocByID(mongo.Col.GameSetting, "GameState", &dbGameState)
 			if dbGameStateErr != nil {
 				log.Errorf("%s InitGameRoom時取DBGameState資料發生錯誤: %v", logger.LOG_Main, dbGameStateErr)
 			}
@@ -295,7 +295,7 @@ func setExternalIPandPort(tcpIP string, udpIP string, port int) {
 		{Key: "matchgame-testver-port", Value: port},
 	}
 	// 更新資料
-	_, err := mongo.UpdateDocByBsonD(mongo.ColName.GameSetting, "GameState", data)
+	_, err := mongo.UpdateDocByBsonD(mongo.Col.GameSetting, "GameState", data)
 	if err != nil {
 		log.Errorf("%s SetExternalID失敗: %v", logger.LOG_Main, err)
 		return

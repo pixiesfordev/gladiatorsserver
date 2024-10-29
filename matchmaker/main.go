@@ -116,15 +116,8 @@ func main() {
 	Receptionist.Init()
 	log.Infof("%s 初始化配房者完成.\n", logger.LOG_Main)
 
-	// tcp連線
 	log.Infof("%s ==============MATCHMAKER啟動完成============== .\n", logger.LOG_Main)
-	for {
-		conn, err := tcpListener.Accept()
-		if err != nil {
-			log.Errorf("%s Connection error %s.\n", logger.LOG_Main, err)
-		}
-		go handleConnectionTCP(conn)
-	}
+
 }
 
 // 初始化遊戲Json資料
@@ -233,7 +226,7 @@ func packHandle_Auth(pack packet.Pack, player *roomPlayer) {
 	}
 
 	// 像mongodb atlas驗證token並取得playerID
-	playerID, authErr := mongo.PlayerVerify(authContent.Token)
+	playerID, authErr := mongo.VerifyPlayerID(authContent.Token)
 	// 驗證失敗
 	if authErr != nil || playerID == "" {
 		log.Errorf("%s Player verify failed: %v", logger.LOG_Main, authErr)

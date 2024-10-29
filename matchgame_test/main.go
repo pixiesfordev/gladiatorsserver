@@ -21,7 +21,7 @@ func main() {
 	}, "pixiesfordev", "qbTDhfmeItCF82Gr")
 	// 建立連線
 	var gameState mongo.DBGameState
-	err := mongo.GetDocByID(mongo.ColName.GameSetting, "GameState", &gameState)
+	err := mongo.GetDocByID(mongo.Col.GameSetting, "GameState", &gameState)
 	if err != nil {
 		log.Errorf("取gameState失敗: %v", err)
 		return

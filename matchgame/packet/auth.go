@@ -9,7 +9,9 @@ import (
 // 帳號登入
 type Auth struct {
 	CMDContent
-	Token string
+	PlayerID string `json:"playerID"`
+	AuthType string `json:"authType"`
+	AuthData string `json:"authData"`
 }
 
 // 帳號登入回傳client

@@ -97,7 +97,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					continue
 				}
 				// 像mongodb atlas驗證token並取得playerID 有通過驗證後才處理後續
-				playerID, authErr := mongo.PlayerVerify(authContent.Token)
+				playerID, authErr := mongo.VerifyPlayerID(authContent.Token)
 				if authErr != nil {
 					playerID = "6607f78e328b32b9c2b18728" // 測試用帳戶
 				}
@@ -135,7 +135,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				if !reConnection { // 不是斷線重連就建立玩家資料
 
 					var dbPlayer mongo.DBPlayer
-					getPlayerDocErr := mongo.GetDocByID(mongo.ColName.Player, playerID, &dbPlayer)
+					getPlayerDocErr := mongo.GetDocByID(mongo.Col.Player, playerID, &dbPlayer)
 					if getPlayerDocErr != nil {
 						log.Errorf("%s DBPlayer資料錯誤: %v", logger.LOG_Main, getPlayerDocErr)
 						_ = packet.SendPack(encoder, packet.Pack{

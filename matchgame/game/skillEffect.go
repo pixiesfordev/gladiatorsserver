@@ -59,6 +59,11 @@ func NewEffect(effectType gameJson.EffectType, valueStr string, speller *Gladiat
 			return nil, fmt.Errorf("effectype %v 參數填入錯誤", effectType)
 		}
 		tags[MDMG] = true
+	case gameJson.TrueDmg:
+		if len(values) != 1 {
+			return nil, fmt.Errorf("effectype %v 參數填入錯誤", effectType)
+		}
+		tags[TDMG] = true
 	case gameJson.RestoreHP:
 		if len(values) != 1 {
 			return nil, fmt.Errorf("effectype %v 參數填入錯誤", effectType)
@@ -103,7 +108,7 @@ func NewEffect(effectType gameJson.EffectType, valueStr string, speller *Gladiat
 			return nil, fmt.Errorf("effectype %v 參數填入錯誤", effectType)
 		}
 		duration = values[0]
-		tags[BUFF] = true
+		tags[DEBUFF] = true
 		stackType = STACKABLE
 	case gameJson.Dodge_RangeAttack:
 		if len(values) != 1 {

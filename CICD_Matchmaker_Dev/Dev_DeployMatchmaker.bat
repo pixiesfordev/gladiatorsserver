@@ -18,5 +18,5 @@ kubectl apply -f .\CICD_Matchmaker_Dev\RoleBinding.yaml
 kubectl apply -f .\CICD_Matchmaker_Dev\Dev_Matchmaker.yaml
 @if ERRORLEVEL 1 exit /b 1
 @REM 建立k8s cluster的防火牆 以下這行如果本來就有建立防火牆就不需要執行 可以註解掉否則會報錯誤
-@REM gcloud compute firewall-rules create gladiators-matchmaker-firewall-tcp --allow tcp:32680 --target-tags gladiators --description "Firewall to allow Gladiators matchmaker TCP traffic"
+@REM gcloud compute firewall-rules create gladiators-lobby-firewall-tcp --allow tcp:32680 --target-tags gladiators --description "Firewall to allow Gladiators matchmaker TCP traffic"
 

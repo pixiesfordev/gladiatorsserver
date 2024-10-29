@@ -162,7 +162,7 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 
 	// 取mongoDB player doc
 	var mongoPlayerDoc mongo.DBPlayer
-	getPlayerDocErr := mongo.GetDocByID(mongo.ColName.Player, player.GetID(), &mongoPlayerDoc)
+	getPlayerDocErr := mongo.GetDocByID(mongo.Col.Player, player.GetID(), &mongoPlayerDoc)
 	if getPlayerDocErr != nil {
 		log.Errorf("%s 取mongoDB player doc資料發生錯誤: %v", logger.LOG_Room, getPlayerDocErr)
 		return
@@ -173,7 +173,7 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 		{Key: "gold", Value: player.GetGold()}, // 玩家金幣
 		{Key: "inMatchgameID", Value: ""},      // 玩家不在遊戲房內了
 	}
-	_, updateErr := mongo.UpdateDocByBsonD(mongo.ColName.Player, player.GetID(), updatePlayerBson) // 更新DB DBPlayer
+	_, updateErr := mongo.UpdateDocByBsonD(mongo.Col.Player, player.GetID(), updatePlayerBson) // 更新DB DBPlayer
 	if updateErr != nil {
 		log.Errorf("%s 更新玩家 %s DB資料錯誤: %v", logger.LOG_Room, player.GetID(), updateErr)
 	} else {
@@ -356,13 +356,13 @@ func (r *Room) BroadCastPacket_UDP(exceptPlayerIdx int, sendData []byte) {
 }
 
 // 將房間資料更新上DB
-func (room *Room) UpdateMatchgameToDB() {
-	log.Infof("%s 開始更新Matchgame到DB: %v", logger.LOG_Room, room.DBMatchgame)
+func (r *Room) UpdateMatchgameToDB() {
+	log.Infof("%s 更新 Matchgame 到 DB 開始: %v", logger.LOG_Room, r.DBMatchgame)
 
-	_, err := mongo.AddOrUpdateDocByStruct(mongo.ColName.Matchgame, room.DBMatchgame.ID, room.DBMatchgame)
+	_, err := mongo.UpsertDocByStruct(mongo.Col.Matchgame, r.DBMatchgame.ID, r.DBMatchgame)
 	if err != nil {
-		log.Errorf("%s UpdateMatchgameToDB時mongo.UpdateDocByID(mongo.ColName.Matchgame, room.DBMatchgame.ID, updateData)發生錯誤 %v", logger.LOG_Room, err)
+		log.Errorf("%s 更新 Matchgame 到 DB 錯誤: %v", logger.LOG_Room, err)
 	}
 
-	log.Infof("%s 更新Matchgame到DB完成", logger.LOG_Room)
+	log.Infof("%s 更新 Matchgame 到 DB 完成", logger.LOG_Room)
 }

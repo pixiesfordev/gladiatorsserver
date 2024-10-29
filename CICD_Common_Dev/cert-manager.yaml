@@ -1,3 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gladiators-lobby
+  namespace: gladiators-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: gladiators-lobby  
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gladiators-ingress
+  namespace: gladiators-service
+  annotations:
+spec:
+  ingressClassName: nginx 
+  tls:
+  - hosts:
+    - pixies.dev
+    secretName: gladiators-service-tls
+  rules:
+  - host: pixies.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gladiators-lobby
+            port:
+              number: 80
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:

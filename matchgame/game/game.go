@@ -61,6 +61,7 @@ const (
 	//  效果類
 	PDMG          = "PDMG"
 	MDMG          = "MDMG"
+	TDMG          = "TDMG"
 	RESTORE_HP    = "RESTORE_HP"    // 生命回復
 	RESTORE_VIGOR = "RESTORE_VIGOR" // 體力回復
 	//  Buffer類
@@ -271,16 +272,12 @@ func gladiatorsTimePass() {
 		if g == nil {
 			continue
 		}
-		// 體力恢復
-		g.AddVigor(TickTimePass)
-		// 衝刺消耗體力
-		if g.IsRush {
-			if g.CurVigor >= TickTimePass {
-				g.AddVigor(-TickTimePass)
-			} else {
-				g.SetRush(false)
-			}
+
+		// 衝刺中不會恢復體力
+		if !g.IsRush {
+			g.AddVigor(TickTimePass)
 		}
+
 		// 觸發狀態
 		g.TriggerBuffer_Time()
 	}
@@ -311,8 +308,8 @@ func checkCollision() bool {
 
 // getDistBetweenGladiators 取得角鬥士之間的距離
 func getDistBetweenGladiators() float64 {
-	if MyRoom.Gamers[0] == nil || MyRoom.Gamers[0].GetGladiator() != nil ||
-		MyRoom.Gamers[1] == nil || MyRoom.Gamers[1].GetGladiator() != nil {
+	if MyRoom.Gamers[0] == nil || MyRoom.Gamers[0].GetGladiator() == nil ||
+		MyRoom.Gamers[1] == nil || MyRoom.Gamers[1].GetGladiator() == nil {
 		log.Error("getDistBetweenGladiators有玩家或角鬥士為nil")
 		return 0
 	}
