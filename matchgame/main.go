@@ -9,7 +9,6 @@ import (
 	// gSetting "matchgame/setting"
 
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson"
 
 	"flag"
 
@@ -169,10 +168,9 @@ func main() {
 			// 因為每個LoadBalancer Service似乎不支持
 			log.Infof("%s 取Loadbalancer分配給此pod的對外IP.\n", logger.LOG_Main)
 			tcpIP := ""
-			udpIP := ""
-			for tcpIP == "" && udpIP == "" {
+			for tcpIP == "" {
 				// 因為pod啟動後Loadbalancer並不會立刻就分配好ip(會有延遲) 所以每5秒取一次 直到取到ip才往下跑
-				time.Sleep(5 * time.Second) // 每5秒取一次ip
+				time.Sleep(1 * time.Second) // 每秒取一次ip
 				// 取TCP服務開放的對外IP
 				if tcpIP == "" {
 					getTcpIP, getTcpIPErr := getExternalIP(setting.MATCHGAME_TESTVER_TCP)
@@ -186,28 +184,14 @@ func main() {
 					}
 				}
 
-				// 取UDP服務開放的對外IP
-				if udpIP == "" {
-					getUdpIP, getUdpIPErr := getExternalIP(setting.MATCHGAME_TESTVER_UDP)
-					if getUdpIPErr != nil {
-						// 取得ip失敗
-						break
-					}
-					if getUdpIP != "" {
-						udpIP = getUdpIP
-						log.Infof("%s 取得對外UDP IP成功: %s .\n", logger.LOG_Main, udpIP)
-					}
-				}
-
 			}
-			setExternalIPandPort(tcpIP, udpIP, int(myPort))
+			setExternalIPandPort(tcpIP, int(myPort))
 			matchmakerPodName := ""
 			playerIDs := [setting.PLAYER_NUMBER]string{}
 
 			// 依據DBGameSetting中取GameState設定
 			log.Infof("%s 取DBGameState資料", logger.LOG_Main)
-			var dbGameState mongo.DBGameState
-			dbGameStateErr := mongo.GetDocByID(mongo.Col.GameSetting, "GameState", &dbGameState)
+			dbGameState, dbGameStateErr := mongo.GetDocByID[mongo.DBGameState](mongo.Col.GameSetting, "GameState")
 			if dbGameStateErr != nil {
 				log.Errorf("%s InitGameRoom時取DBGameState資料發生錯誤: %v", logger.LOG_Main, dbGameStateErr)
 			}
@@ -286,31 +270,24 @@ func getExternalIP(_serviceName string) (string, error) {
 }
 
 // 寫入對外ID到DB中
-func setExternalIPandPort(tcpIP string, udpIP string, port int) {
-	log.Infof("%s 開始寫入對外IP到DB tcpIP:%s udpIP:%s port:%v.\n", logger.LOG_Main, tcpIP, udpIP, port)
+func setExternalIPandPort(tcpIP string, port int) {
+	log.Infof("%s 開始寫入對外IP到DB tcpIP:%s port:%v.\n", logger.LOG_Main, tcpIP, port)
 	// 設定要更新的資料
-	data := bson.D{
-		{Key: "matchgame-testver-tcp-ip", Value: tcpIP},
-		{Key: "matchgame-testver-udp-ip", Value: udpIP},
-		{Key: "matchgame-testver-port", Value: port},
+	updateData := struct {
+		MatchgameTestverTcpIp string `bson:"matchgameTestverTcpIp"`
+		MatchgameTestverPort  int    `bson:"matchgameTestverPort"`
+	}{
+		MatchgameTestverTcpIp: tcpIP,
+		MatchgameTestverPort:  port,
 	}
+	log.Infof("更新數據內容: %+v", updateData)
 	// 更新資料
-	_, err := mongo.UpdateDocByBsonD(mongo.Col.GameSetting, "GameState", data)
+	result, err := mongo.UpdateDocByStruct(mongo.Col.GameSetting, "GameState", updateData)
 	if err != nil {
 		log.Errorf("%s SetExternalID失敗: %v", logger.LOG_Main, err)
 		return
 	}
-	log.Infof("%s 寫入對外IP完成.\n", logger.LOG_Main)
-}
-
-// 房間循環
-func TestLoop() {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-
-	}
+	log.Infof("%s 寫入對外IP完成 %+v \n", logger.LOG_Main, result)
 }
 
 // 初始化遊戲Json資料

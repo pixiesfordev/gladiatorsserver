@@ -69,10 +69,12 @@ func initMongo(mongoAPIPublicKey string, mongoAPIPrivateKey string, user string,
 // initRouter 建立路由
 func initRouter(port string) {
 	router := mux.NewRouter()
-	// 路由
+	// GET
 	router.HandleFunc("/game/servertime", restfulAPI.ServerTime).Methods("GET")
+	router.HandleFunc("/game/gamestate", restfulAPI.GameState).Methods("GET")
+	// POST
 	router.HandleFunc("/game/signup", restfulAPI.Signup).Methods("POST")
-	router.HandleFunc("/player/signin", restfulAPI.Signin).Methods("POST")
+	router.HandleFunc("/game/signin", restfulAPI.Signin).Methods("POST")
 
 	// 使用 Middlewares
 	router.Use(

@@ -160,20 +160,12 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 		return
 	}
 
-	// 取mongoDB player doc
-	var mongoPlayerDoc mongo.DBPlayer
-	getPlayerDocErr := mongo.GetDocByID(mongo.Col.Player, player.GetID(), &mongoPlayerDoc)
-	if getPlayerDocErr != nil {
-		log.Errorf("%s 取mongoDB player doc資料發生錯誤: %v", logger.LOG_Room, getPlayerDocErr)
-		return
-	}
-
 	// 更新玩家DB資料
 	updatePlayerBson := bson.D{
 		{Key: "gold", Value: player.GetGold()}, // 玩家金幣
 		{Key: "inMatchgameID", Value: ""},      // 玩家不在遊戲房內了
 	}
-	_, updateErr := mongo.UpdateDocByBsonD(mongo.Col.Player, player.GetID(), updatePlayerBson) // 更新DB DBPlayer
+	_, updateErr := mongo.UpdateDocByBson(mongo.Col.Player, player.GetID(), updatePlayerBson) // 更新DB DBPlayer
 	if updateErr != nil {
 		log.Errorf("%s 更新玩家 %s DB資料錯誤: %v", logger.LOG_Room, player.GetID(), updateErr)
 	} else {

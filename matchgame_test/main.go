@@ -20,13 +20,12 @@ func main() {
 		APIPrivateKey: "f751e44f-d215-49ac-9883-a30f0f1db397",
 	}, "pixiesfordev", "qbTDhfmeItCF82Gr")
 	// 建立連線
-	var gameState mongo.DBGameState
-	err := mongo.GetDocByID(mongo.Col.GameSetting, "GameState", &gameState)
+	gameState, err := mongo.GetDocByID[mongo.DBGameState](mongo.Col.GameSetting, "GameState")
 	if err != nil {
 		log.Errorf("取gameState失敗: %v", err)
 		return
 	}
-	address := fmt.Sprintf("%v:%v", gameState.MatchgameTestverIP, gameState.MatchgameTestverPort)
+	address := fmt.Sprintf("%v:%v", gameState.MatchgameTestverTcpIP, gameState.MatchgameTestverPort)
 	log.Infof(" Address: %v", address)
 	conn, err = net.Dial("tcp", address)
 	if err != nil {

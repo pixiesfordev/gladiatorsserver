@@ -19,25 +19,25 @@ var (
 	errColNotExist      = errors.New("collection does not exist")
 )
 
-// 使用 Collection 與 ID 來取文件
-func GetDocByID(col string, id string, result interface{}) error {
+// GetDocByID 使用 Collection 與 ID 來取文件
+func GetDocByID[T any](col, id string) (*T, error) {
 	if db == nil {
-		return errDBNotInitialized
+		return nil, errDBNotInitialized
 	}
 
 	collection := db.Collection(col)
 	if collection == nil {
-		return errColNotExist
+		return nil, errColNotExist
 	}
 
-	err := collection.FindOne(context.TODO(),
-		bson.D{{Key: "_id", Value: id}}, // filter
-	).Decode(result)
+	var result T
+	bson := bson.D{{Key: "_id", Value: id}}
+	err := collection.FindOne(context.TODO(), bson).Decode(&result)
 	if err != nil {
-		log.Infof("%s GetDocByID 錯誤: %v", logger.LOG_Mongo, err)
-		return err
+		log.Infof("%s  GetDocByID col: %v  bson: %v  錯誤: %v", logger.LOG_Mongo, col, bson, err)
+		return nil, err
 	}
-	return nil
+	return &result, nil
 }
 
 // 使用 Collection 與 Filter 來取第一個符合條件的文件
@@ -54,7 +54,7 @@ func GetDocByFilter[T any](col string, filter bson.M) (*T, error) {
 	var result bson.M
 	err := collection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil {
-		log.Infof("%s GetDocByFilter 錯誤: %v", logger.LOG_Mongo, err)
+		log.Infof("%s GetDocByFilter col: %v   filter: %v,   錯誤: %v", logger.LOG_Mongo, col, filter, err)
 		return nil, err
 	}
 
@@ -195,7 +195,7 @@ func GetDocIDsByFilter(col string, filter bson.M) ([]string, error) {
 }
 
 // 更新文件
-func UpdateDocByBsonD(col string, id string, updateData bson.D) (*mongoDriver.UpdateResult, error) {
+func UpdateDocByBson(col string, id string, updateData interface{}) (*mongoDriver.UpdateResult, error) {
 	if db == nil {
 		return nil, errDBNotInitialized
 	}

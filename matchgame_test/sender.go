@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"matchgame/packet"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func sendPacket(pack packet.Pack) {
@@ -22,7 +23,7 @@ func send_Auth() {
 	pack := packet.Pack{
 		CMD: packet.AUTH,
 		Content: packet.Auth{
-			Token: "",
+			ConnToken: "",
 		},
 	}
 	sendPacket(pack)

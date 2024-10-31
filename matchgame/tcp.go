@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"fmt"
 	logger "matchgame/logger"
 	"sync"
 
@@ -92,36 +93,33 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 			}
 			if pack.CMD == packet.AUTH {
 				authContent := packet.Auth{}
-				if ok := authContent.Parse(pack.Content); !ok {
-					log.Errorf("%s 反序列化AUTH封包失敗", logger.LOG_Main)
-					continue
+				err := json.Unmarshal([]byte(pack.GetContentStr()), &authContent)
+				if err != nil {
+					log.Errorf("%s (TCP)Auth解包錯誤: %v.", logger.LOG_Main, err)
+					return
 				}
 				// 像mongodb atlas驗證token並取得playerID 有通過驗證後才處理後續
-				playerID, authErr := mongo.VerifyPlayerID(authContent.Token)
-				if authErr != nil {
-					playerID = "6607f78e328b32b9c2b18728" // 測試用帳戶
+				dbPlayer, authErr := mongo.VerifyPlayerByToken(authContent.ConnToken)
+				if authErr != nil || dbPlayer == nil {
+					errLog := fmt.Sprintf("%s mongo.VerifyPlayerByToken錯誤, Token: %v", logger.LOG_Main, authContent.ConnToken)
+					_ = packet.SendPack(encoder, packet.Pack{
+						CMD:    packet.AUTH_TOCLIENT,
+						PackID: pack.PackID,
+						ErrMsg: errLog,
+						Content: packet.Auth_ToClient{
+							IsAuth: false,
+						},
+					})
+					continue
 				}
-				// // 驗證失敗
-				// if authErr != nil || playerID == "" {
-				// 	log.Errorf("%s 玩家驗證錯誤: %v", logger.LOG_Main, authErr)
-				// 	_ = packet.SendPack(encoder, packet.Pack{
-				// 		CMD:    packet.AUTH_TOCLIENT,
-				// 		PackID: pack.PackID,
-				// 		ErrMsg: "玩家驗證錯誤",
-				// 		Content: packet.Auth_ToClient{
-				// 			IsAuth: false,
-				// 		},
-				// 	})
-				// 	continue
-				// }
 				isAuth = true
 				var player *game.Player
 				// 斷線重連檢測
 				reConnection := false
 				for _, v := range game.MyRoom.Gamers {
 					if p, ok := v.(*game.Player); ok {
-						if p.GetID() == playerID {
-							log.Infof("玩家(%v)斷線重連", playerID)
+						if p.GetID() == dbPlayer.ID {
+							log.Infof("玩家(%v)斷線重連", dbPlayer.ID)
 							reConnection = true
 							player = p
 							break
@@ -133,9 +131,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				newConnToken := generateSecureToken(32)
 
 				if !reConnection { // 不是斷線重連就建立玩家資料
-
-					var dbPlayer mongo.DBPlayer
-					getPlayerDocErr := mongo.GetDocByID(mongo.Col.Player, playerID, &dbPlayer)
+					dbPlayer, getPlayerDocErr := mongo.GetDocByID[mongo.DBPlayer](mongo.Col.Player, dbPlayer.ID)
 					if getPlayerDocErr != nil {
 						log.Errorf("%s DBPlayer資料錯誤: %v", logger.LOG_Main, getPlayerDocErr)
 						_ = packet.SendPack(encoder, packet.Pack{
@@ -173,8 +169,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					CMD:    packet.AUTH_TOCLIENT,
 					PackID: pack.PackID,
 					Content: packet.Auth_ToClient{
-						IsAuth:    true,
-						ConnToken: player.ConnUDP.ConnToken,
+						IsAuth: true,
 					},
 				})
 				if err != nil {

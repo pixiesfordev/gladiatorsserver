@@ -69,7 +69,7 @@ func handleConnectionTCP(ctx context.Context, conn net.Conn, cancel context.Canc
 					log.Errorf("%s (TCP)Auth解包錯誤: %v.", logger.LOG_TCP, err)
 					return
 				}
-				dbPlayer, authErr := mongo.VerifyPlayerByToken(content.Token)
+				dbPlayer, authErr := mongo.VerifyPlayerByToken(content.ConnToken)
 				if authErr != nil || dbPlayer == nil {
 					log.Errorf("%s %v驗證錯誤: %v", logger.LOG_TCP, remoteAddr, authErr)
 					encoder := json.NewEncoder(conn)

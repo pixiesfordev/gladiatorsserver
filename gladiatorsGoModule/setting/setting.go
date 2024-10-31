@@ -15,7 +15,6 @@ const (
 	// 服務名稱
 	LOBBY                 = "gladiators-lobby"         // 大廳伺服器Services名稱
 	MATCHGAME_TESTVER_TCP = "gladiators-matchgame-tcp" // 個人測試用遊戲房Services TCP名稱
-	MATCHGAME_TESTVER_UDP = "gladiators-matchgame-udp" // 個人測試用遊戲房Services UDP名稱
 
 	// 遊戲房設定
 	PLAYER_NUMBER = 2 // 遊戲房最多X位玩家
@@ -28,12 +27,12 @@ var EnvGCPProject = map[string]string{
 
 // 登入方式
 const (
-	AUTH_GUSET  = "GUSET"
+	AUTH_GUEST  = "GUEST"
 	AUTH_GOOGLE = "GOOGLE"
 	AUTH_APPLE  = "APPLE"
 	AUTH_X      = "X"
-	AUTH_WECHAT = "WECHAT"
 	AUTH_TIKTOK = "TIKTOK"
+	AUTH_WECHAT = "WECHAT"
 )
 
 // 環境版本

@@ -5,27 +5,18 @@ import (
 	"encoding/hex"
 	"fmt"
 	"gladiatorsGoModule/logger"
-	"gladiatorsGoModule/setting"
-	"time"
-
+	// "gladiatorsGoModule/setting"
+	// log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"time"
 )
 
 func VerifyPlayer(authType, playerID, authData string) (*DBPlayer, error) {
-	var dbPlayer *DBPlayer
-	err := GetDocByID(Col.Player, playerID, dbPlayer)
+	dbPlayer, err := GetDocByID[DBPlayer](Col.Player, playerID)
 	if err != nil || dbPlayer == nil {
 		return nil, fmt.Errorf("%v VerifyPlayer玩家資料錯誤: %v", logger.LOG_Mongo, err)
 	}
-
-	verify := false
-	switch authType {
-	case setting.AUTH_GUSET:
-		verify = authData == dbPlayer.AuthDatas[setting.AUTH_GUSET]
-	default:
-		return nil, fmt.Errorf("%v VerifyPlayer驗證類型錯誤: %v", logger.LOG_Mongo, err)
-	}
-
+	verify := (authData == dbPlayer.AuthDatas[authType])
 	if !verify {
 		return nil, fmt.Errorf("%v VerifyPlayer驗證失敗: %v", logger.LOG_Mongo, err)
 	}

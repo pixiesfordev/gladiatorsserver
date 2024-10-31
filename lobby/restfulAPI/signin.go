@@ -7,6 +7,7 @@ import (
 
 	"gladiatorsGoModule/logger"
 	"gladiatorsGoModule/mongo"
+	"gladiatorsGoModule/setting"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -22,7 +23,7 @@ type (
 	}
 )
 
-// [POST] /player/signin
+// [POST] /game/signin
 func Signin(w http.ResponseWriter, r *http.Request) {
 	var data signinData
 	err := json.NewDecoder(r.Body).Decode(&data)
@@ -44,15 +45,20 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 更新 上線狀態，登入時間，連線Token
+	// 更新玩家資料
+	dbPlayer.ConnToken = connToken
+	dbPlayer.OnlineState = string(setting.Online)
+	dbPlayer.LastSigninAt = time.Now()
+	dbPlayer.DeviceType = data.DeviceType
+	dbPlayer.DeviceUID = data.DeviceUID
 	_, err = mongo.UpsertDocByStruct(mongo.Col.Player,
 		dbPlayer.ID,
 		map[string]interface{}{
-			"$set": map[string]interface{}{
-				"connToken":    connToken,
-				"onlineState":  "Online",
-				"lastSigninAt": time.Now(),
-			},
+			"connToken":    dbPlayer.ConnToken,
+			"onlineState":  dbPlayer.OnlineState,
+			"lastSigninAt": dbPlayer.LastSigninAt,
+			"deviceType":   dbPlayer.DeviceType,
+			"deviceUID":    dbPlayer.DeviceUID,
 		},
 	)
 	if err != nil {

@@ -44,7 +44,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	var authDatas map[string]string
 	// Guest:裝置UID
 	switch data.AuthType {
-	case setting.AUTH_GUSET:
+	case setting.AUTH_GUEST:
 		authDatas = map[string]string{data.AuthType: data.AuthData}
 	case setting.AUTH_GOOGLE:
 	case setting.AUTH_APPLE:
@@ -69,7 +69,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		LastSigninAt:  time.Now(),
 		LastSignoutAt: time.Now(),
 		Ban:           false,
-		DeviceType:    data.AuthType,
+		DeviceType:    data.DeviceType,
 		DeviceUID:     data.DeviceUID,
 		InMatchgameID: "",
 		MyGladiatorID: "",

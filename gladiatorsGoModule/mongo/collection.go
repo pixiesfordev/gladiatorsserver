@@ -12,13 +12,10 @@ type colStruct struct {
 	// 遊戲設定
 	GameSetting string
 	GameLog     string
-	Template    string
 	Map         string
 
 	// 玩家資料
 	Player        string
-	PlayerCustom  string
-	PlayerState   string
 	PlayerHistory string
 	Gladiator     string
 	// 遊戲資料
@@ -31,13 +28,10 @@ var Col = colStruct{
 	// 遊戲設定
 	GameSetting: "gameSetting",
 	GameLog:     "gameLog",
-	Template:    "template",
 	Map:         "map",
 
 	// 玩家資料
 	Player:        "player",
-	PlayerCustom:  "playerCustom",
-	PlayerState:   "playerState",
 	PlayerHistory: "playerHistory",
 	Gladiator:     "gladiator",
 
@@ -124,20 +118,25 @@ type DBMap struct {
 type DBGameState struct {
 	ID                       string    `bson:"_id"`
 	CreatedAt                time.Time `bson:"createdAt"`
-	EnvVersion               string    `bson:"envVersion"`
 	GameVersion              string    `bson:"gameVersion"`
-	MinimumGameVersion       string    `bson:"minimumGameVersion"`
-	MatchgameTestverRoomName string    `bson:"matchgame-testver-roomName"`
-	MatchgameTestverMapID    string    `bson:"matchgame-testver-mapID"`
-	MatchgameTestverIP       string    `bson:"matchgame-testver-tcp-ip"`
-	MatchgameTestverPort     int       `bson:"matchgame-testver-port"`
+	Maintain                 bool      `bson:"maintain"`
+	MaintainEndAt            time.Time `bson:"maintainEndAt"`
+	MaintainExemptPlayerIDs  []string  `bson:"maintainExemptPlayerIDs"`
+	MinimumGameVersion       string    `bson:"minGameVersion"`
+	MatchgameTestverRoomName string    `bson:"matchgameTestverRoomName"`
+	MatchgameTestverMapID    string    `bson:"matchgameTestverMapID"`
+	MatchgameTestverPort     int       `bson:"matchgameTestverPort"`
+	MatchgameTestverTcpIp    string    `bson:"matchgameTestverTcpIp"`
+	LobbyIP                  string    `bson:"lobbyIP"`
+	LobbyEnable              bool      `bson:"lobbyEnable"`
+	LobbyPort                int       `bson:"lobbyPort"`
 }
 
 // gameSetting的Timer文件
 type DBTimer struct {
-	ID                  string    `bson:"_id"`
-	CreatedAt           time.Time `bson:"createdAt"`
-	PlayerOfflineMinute int       `bson:"playerOfflineMinute"`
+	ID                string    `bson:"_id"`
+	CreatedAt         time.Time `bson:"createdAt"`
+	PlayerOfflineSecs int       `bson:"playerOfflineSecs"`
 }
 
 // 遊戲房資料
@@ -145,10 +144,10 @@ type DBMatchgame struct {
 	ID                string                        `bson:"_id"`
 	CreatedAt         time.Time                     `bson:"createdAt"`
 	DBMapID           string                        `bson:"dbMapID"`
-	PlayerIDs         [setting.PLAYER_NUMBER]string `bson:"playerIDs"`
 	IP                string                        `bson:"ip"`
-	Port              int                           `bson:"port"`
-	NodeName          string                        `bson:"nodeName"`
-	PodName           string                        `bson:"podName"`
 	MatchmakerPodName string                        `bson:"matchmakerPodName"`
+	NodeName          string                        `bson:"nodeName"`
+	PlayerIDs         [setting.PLAYER_NUMBER]string `bson:"playerIDs"`
+	PodName           string                        `bson:"podName"`
+	Port              int                           `bson:"port"`
 }
