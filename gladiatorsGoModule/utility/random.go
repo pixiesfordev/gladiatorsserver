@@ -91,7 +91,7 @@ func GetRndValueFromMap[K comparable, V any](m map[K]V) V {
 // 傳入泛型map和要返回的隨機元素數量x，返回x個隨機且不重複的元素。
 func GetRandomNumberOfTFromMap[K comparable, V any](m map[K]V, count int) ([]V, error) {
 	if len(m) == 0 || count <= 0 || count > len(m) {
-		return nil, fmt.Errorf("GetRandomNumberOfTFromMap傳入參數錯誤 count: %d", count)
+		return nil, fmt.Errorf("GetRandomNumberOfTFromMap傳入參數錯誤 mLen: %v  count: %d", len(m), count)
 	}
 
 	src := rand.NewSource(time.Now().UnixNano())

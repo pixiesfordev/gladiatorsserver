@@ -23,16 +23,18 @@ const (
 	SETDIVINESKILL_TOCLIENT  = "SETDIVINESKILL_TOCLIENT"  // (TCP)神祉選擇-送Client
 	PLAYERACTION             = "PLAYERACTION"             // (TCP)玩家指令
 	PLAYERACTION_TOCLIENT    = "PLAYERACTION_TOCLIENT"    // (TCP)玩家指令-送Client
-	GMACTION                 = "GMACTION"                 // (TCP)GM指令
-	GMACTION_TOCLIENT        = "GMACTION_TOCLIENT"        // (TCP)GM指令-送Client
 	CARDSTATE_TOCLIENT       = "CARDSTATE_TOCLIENT"       // (TCP)手牌更新-送Client
 	ENDGAME_TOCLIENT         = "ENDGAME_TOCLIENT"         // (TCP)遊戲結算-送Client
 	PING                     = "PING"                     // (TCP)心跳(太久沒收到回傳會視玩家斷線)
 	PING_TOCLIENT            = "PING_TOCLIENT"            // (TCP)心跳-送Client(太久沒收到回傳會視玩家斷線)
 	GAMESTATE_TOCLIENT       = "GAMESTATE_TOCLIENT"       // (TCP)遊戲狀態-送Client
 	MELEE_TOCLIENT           = "MELEE_TOCLIENT"           // (TCP)肉搏-送Client
+	BEFORE_MELEE_TOCLIENT    = "BEFORE_MELEE_TOCLIENT"    // (TCP)即將肉搏-送Client
 	HP_TOCLIENT              = "HP_TOCLIENT"              // (TCP)角鬥士生命-送Client
 	GLADIATORSTATES_TOCLIENT = "GLADIATORSTATES_TOCLIENT" // (TCP)角鬥士狀態-送Client
+
+	GMACTION          = "GMACTION"          // (TCP)GM指令
+	GMACTION_TOCLIENT = "GMACTION_TOCLIENT" // (TCP)GM指令-送Client
 
 	UDPAUTH = "UDPAUTH" // (UDP)身分驗證
 )

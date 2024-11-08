@@ -6,11 +6,12 @@ package packet
 type ActionType string
 
 const (
-	ACTION_SKILL         ActionType = "ACTION_SKILL"         // 啟用技能
-	ACTION_OPPONENTSKILL            = "ACTION_OPPONENTSKILL" // 衝刺
-	ACTION_RUSH                     = "ACTION_RUSH"          // 衝刺
-	ACTION_DIVINESKILL              = "ACTION_DIVINESKILL"   // 啟用神祉技能
-	ACTION_SURRENDER                = "ACTION_SURRENDER"     // 投降
+	ACTION_SKILL       ActionType = "ACTION_SKILL"       // 啟用技能
+	ACTIVE_MELEE_SKILL ActionType = "ACTIVE_MELEE_SKILL" // (ACTION_SKILL的回傳Client)
+	INSTANT_SKILL      ActionType = "INSTANT_SKILL"      // (ACTION_SKILL的回傳Client)
+	ACTION_RUSH        ActionType = "ACTION_RUSH"        // 衝刺
+	ACTION_DIVINESKILL ActionType = "ACTION_DIVINESKILL" // 啟用神祉技能
+	ACTION_SURRENDER   ActionType = "ACTION_SURRENDER"   // 投降
 )
 
 // 玩家動作
@@ -31,12 +32,18 @@ type PackAction_Skill struct {
 	On      bool
 	SkillID int
 }
-type PackAction_Skill_ToClient struct {
-	SkillOnID    int
-	HandSkillIDs [4]int
-}
-type PackAction_OpponentSkill_ToClient struct {
+
+// 啟用肉搏技能
+type PackAction_ActiveMeleeSkill_ToClient struct {
+	On      bool
 	SkillID int
+}
+
+// 發動立即技能
+type PackAction_InstantSkill_ToClient struct {
+	SkillID    int    // 施放的即時技能ID
+	NewSkilID  int    // 新抽到的技能(對手不會收到)
+	HandSkills [4]int // 手牌(對手不會收到)
 }
 
 // 施放神祉技能

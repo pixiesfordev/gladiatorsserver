@@ -40,18 +40,18 @@ type Gladiator struct {
 
 }
 
-func NewTestGladiator(owner Gamer) (Gladiator, error) {
+func NewTestGladiator(owner Gamer, gladiatorID int, jsonSkillIDs []int) (Gladiator, error) {
 	testGladiatorIdx := IDAccumulator.GetNextIdx()
 	testGladiatorID := fmt.Sprintf("gladiator%v", testGladiatorIdx)
 
-	gJson, _ := gameJson.GetJsonGladiator(1)
+	gJson, _ := gameJson.GetJsonGladiator(gladiatorID)
 	var jsonSkills [GladiatorSkillCount]gameJson.JsonSkill
-	jsonSkill1, _ := gameJson.GetJsonSkill(1)
-	jsonSkill2, _ := gameJson.GetJsonSkill(1001)
-	jsonSkill3, _ := gameJson.GetJsonSkill(1002)
-	jsonSkill4, _ := gameJson.GetJsonSkill(1003)
-	jsonSkill5, _ := gameJson.GetJsonSkill(1004)
-	jsonSkill6, _ := gameJson.GetJsonSkill(1005)
+	jsonSkill1, _ := gameJson.GetJsonSkill(jsonSkillIDs[0])
+	jsonSkill2, _ := gameJson.GetJsonSkill(jsonSkillIDs[1])
+	jsonSkill3, _ := gameJson.GetJsonSkill(jsonSkillIDs[2])
+	jsonSkill4, _ := gameJson.GetJsonSkill(jsonSkillIDs[3])
+	jsonSkill5, _ := gameJson.GetJsonSkill(jsonSkillIDs[4])
+	jsonSkill6, _ := gameJson.GetJsonSkill(jsonSkillIDs[5])
 	jsonSkills[0] = jsonSkill1
 	jsonSkills[1] = jsonSkill2
 	jsonSkills[2] = jsonSkill3

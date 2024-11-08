@@ -59,16 +59,18 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 }
 
 func (r *Room) KickTimeoutPlayer() {
+	if MyGameState == GAMESTATE_INITED || MyGameState == GAMESTATE_INITIALIZING {
+		return
+	}
 	for _, gamer := range r.Gamers {
 		if player, ok := gamer.(*Player); ok {
 			nowTime := time.Now()
 			// 玩家無心跳超過X秒就踢出遊戲房
 			// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
 			if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
-				ResetGame()
+				MyRoom.KickPlayer(player, "玩家逾時踢出")
 			}
 		}
-
 	}
 }
 
@@ -88,11 +90,22 @@ func (r *Room) GamerExist(gamerID string) bool {
 	return r.GetGamerByID(gamerID) != nil
 }
 
-// 取得房間玩家數
+// 取得房間遊戲人數(包含BOT)
 func (r *Room) GamerCount() int {
 	count := 0
 	for _, v := range r.Gamers {
 		if v != nil {
+			count++
+		}
+	}
+	return count
+}
+
+// 取得房間玩家數(不包含BOT)
+func (r *Room) PlayerCount() int {
+	count := 0
+	for _, gamer := range r.Gamers {
+		if _, ok := gamer.(*Player); ok {
 			count++
 		}
 	}
@@ -138,15 +151,15 @@ func (r *Room) JoinGamer(gamer Gamer) error {
 }
 
 // 重置房間
-func (r *Room) ResetRoom() {
+func (r *Room) KickAllGamer(reason string) {
 	for _, v := range r.Gamers {
 		if player, ok := v.(*Player); ok {
-			r.KickPlayer(player, "重置房間")
+			r.KickPlayer(player, reason)
 		} else if bot, ok := v.(*Bot); ok {
-			r.KickBot(bot, "重置房間")
+			r.KickBot(bot, reason)
 		}
 	}
-	log.Infof("重置房間完成")
+	log.Infof("踢出所有玩家: %v", reason)
 }
 
 // 將玩家踢出房間
@@ -178,6 +191,9 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 	player.CloseConnection() // 關閉連線
 	r.OnRoomPlayerChange()
 	log.Infof("%s 踢出Player完成, 目前Gamer人數: %v", logger.LOG_Room, r.GamerCount())
+	if MyRoom.PlayerCount() == 0 {
+		ResetGame("房間內無玩家")
+	}
 }
 
 // 將Bot踢出房間

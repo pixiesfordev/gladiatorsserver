@@ -19,12 +19,12 @@ import (
 type GameState string // 目前遊戲狀態列舉
 const (
 	GAMESTATE_INITIALIZING         GameState = "GAMESTATE_INITIALIZING"
-	GAMESTATE_INITED                         = "GAMESTATE_INITED"
-	GAMESTATE_WAITINGPLAYERS                 = "GAMESTATE_WAITINGPLAYERS"       // 等待雙方玩家入場
-	GAMESTATE_SELECTINGDIVINESKILL           = "GAMESTATE_SELECTINGDIVINESKILL" // 選擇神祉技能
-	GAMESTATE_COUNTINGDOWN                   = "GAMESTATE_COUNTINGDOWN"         // 戰鬥倒數開始中
-	GAMESTATE_FIGHTING                       = "GAMESTATE_FIGHTING"             // 戰鬥中
-	GAMESTATE_END                            = "GAMESTATE_END"                  // 結束戰鬥
+	GAMESTATE_INITED               GameState = "GAMESTATE_INITED"
+	GAMESTATE_WAITINGPLAYERS       GameState = "GAMESTATE_WAITINGPLAYERS"       // 等待雙方玩家入場
+	GAMESTATE_SELECTINGDIVINESKILL GameState = "GAMESTATE_SELECTINGDIVINESKILL" // 選擇神祉技能
+	GAMESTATE_COUNTINGDOWN         GameState = "GAMESTATE_COUNTINGDOWN"         // 戰鬥倒數開始中
+	GAMESTATE_FIGHTING             GameState = "GAMESTATE_FIGHTING"             // 戰鬥中
+	GAMESTATE_END                  GameState = "GAMESTATE_END"                  // 結束戰鬥
 )
 
 const (
@@ -39,7 +39,8 @@ const (
 	GladiatorSkillCount                    = 6    // 玩家有幾個技能
 	HandSkillCount                         = 4    // 玩家手牌技能, 索引0的技能是下一張牌
 	WAIT_BATTLE_START                      = 2    // (測試用)BattleStart等待時間
-	CollisionDis                           = 4    // 相距X單位就算碰撞
+	DIST_MELEE                             = 4    //  相距X單位就肉搏
+	DIST_BEFORE_MELEE                      = 8    //  相距X單位送表演肉搏技能
 	MaxVigor                       float64 = 20   // 最大體力
 	DefaultVigor                   float64 = 5    // 初始體力
 	SelectDivineCountDownSecs      int     = 15   // 選神祉技能倒數秒數
@@ -88,6 +89,14 @@ var GameTime = float64(0)                                             // 遊戲�
 var TickTimePass = float64(BattleLOOP_MILISECS) / 1000.0              // 每幀時間流逝秒數
 var MarketDivineJsonSkills [MarketDivineSkillCount]gameJson.JsonSkill // 本局遊戲可購買的神祉技能清單
 var MyGameState = GAMESTATE_INITIALIZING                              // 遊戲狀態
+var MyMeleeState MeleeState = MELEESTATE_NORMAL                       // 肉搏狀態
+
+type MeleeState string
+
+const (
+	MELEESTATE_NORMAL      MeleeState = "MELEESTATE_NORMAL"      // 已經送肉搏
+	MELEESTATE_WAITTOMELEE MeleeState = "MELEESTATE_WAITTOMELEE" //  已送MELEE表演封包給Client, 準備對撞
+)
 
 func InitGame() {
 	var err error
@@ -99,7 +108,7 @@ func InitGame() {
 	ChangeGameState(GAMESTATE_INITED)
 }
 func GetRndBribeSkills() ([MarketDivineSkillCount]gameJson.JsonSkill, error) {
-	allJsonSkills, err := gameJson.GetJsonSkills("Divine")
+	allJsonSkills, err := gameJson.GetJsonSkills(gameJson.DIVINE)
 	if err != nil {
 		return [MarketDivineSkillCount]gameJson.JsonSkill{}, fmt.Errorf("gameJson.GetJsonSkills()錯誤: %v", err)
 	}
@@ -148,8 +157,10 @@ func StartFighting() {
 }
 
 // ResetGame 重置遊戲
-func ResetGame() {
-	MyRoom.ResetRoom()
+func ResetGame(reason string) {
+	MyMeleeState = MELEESTATE_NORMAL
+	ChangeGameState(GAMESTATE_INITED)
+	MyRoom.KickAllGamer(reason)
 }
 
 // 改變遊戲階段
@@ -158,7 +169,6 @@ func ChangeGameState(state GameState) {
 		return
 	}
 	MyGameState = state
-	log.Infof("MyRoom: %v", MyRoom)
 	if MyRoom != nil {
 		// 回送封包
 		myPack := packet.Pack{
@@ -256,10 +266,8 @@ func timePass() {
 	gladiatorsTimePass()
 	// 雙方移動
 	gladiatorsMove()
-	// 有碰撞就進行肉搏
-	if checkCollision() {
-		melee()
-	}
+	// 肉搏檢測
+	checkMelee()
 }
 
 // gladiatorsTimePass 雙方觸發時間流逝效果
@@ -296,14 +304,70 @@ func gladiatorsMove() {
 	}
 }
 
-// checkCollision 碰撞檢測
-func checkCollision() bool {
-	if MyRoom.Gamers[0] == nil && MyRoom.Gamers[0].GetGladiator() == nil && MyRoom.Gamers[1] == nil && MyRoom.Gamers[1].GetGladiator() == nil {
-		return false
+func sendBeforeMelee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
+	g1MeleeSkillID := 0
+	if g1.ActivedMeleeJsonSkill != nil {
+		g1MeleeSkillID = g1.ActivedMeleeJsonSkill.ID
 	}
-	dis := math.Abs(MyRoom.Gamers[0].GetGladiator().CurPos - MyRoom.Gamers[1].GetGladiator().CurPos)
+	g2MeleeSkillID := 0
+	if g2.ActivedMeleeJsonSkill != nil {
+		g2MeleeSkillID = g2.ActivedMeleeJsonSkill.ID
+	}
+	if p1, ok := gamer1.(*Player); ok {
+		p1Pack := packet.Pack{
+			CMD: packet.BEFORE_MELEE_TOCLIENT,
+			Content: &packet.BeforeMeleeSkill_ToClient{
+				MySkillID:       g1MeleeSkillID,
+				OpponentSkillID: g2MeleeSkillID,
+			},
+		}
+		p1.SendPacketToPlayer(p1Pack)
+	}
+
+	if p2, ok := gamer2.(*Player); ok {
+		p2Pack := packet.Pack{
+			CMD: packet.BEFORE_MELEE_TOCLIENT,
+			Content: &packet.BeforeMeleeSkill_ToClient{
+				MySkillID:       g2MeleeSkillID,
+				OpponentSkillID: g1MeleeSkillID,
+			},
+		}
+		p2.SendPacketToPlayer(p2Pack)
+	}
+
+}
+
+// checkMelee 肉搏檢測
+func checkMelee() {
+	gamer1 := MyRoom.Gamers[0]
+	gamer2 := MyRoom.Gamers[1]
+	if gamer1 == nil || gamer2 == nil {
+		log.Errorf("checkMelee gamer1: %v gamer2: %v", gamer1, gamer2)
+		return
+	}
+
+	g1 := gamer1.GetGladiator()
+	g2 := gamer2.GetGladiator()
+	if g1 == nil || g2 == nil {
+		log.Errorf("checkMelee g1: %v g2: %v", g1, g2)
+		return
+	}
+
+	dis := math.Abs(g1.CurPos - g2.CurPos)
+	if MyMeleeState == MELEESTATE_NORMAL {
+		if dis < DIST_BEFORE_MELEE {
+			// log.Errorf("before melee dis: %v", dis)
+			MyMeleeState = MELEESTATE_WAITTOMELEE
+			sendBeforeMelee(gamer1, gamer2, g1, g2)
+		}
+	} else if MyMeleeState == MELEESTATE_WAITTOMELEE {
+		if dis < DIST_MELEE {
+			// log.Errorf("melee dis: %v", dis)
+			melee(gamer1, gamer2, g1, g2)
+			MyMeleeState = MELEESTATE_NORMAL
+		}
+	}
 	// log.Infof("pos1: %v  pos2: %v dis: %v", MyRoom.Gamers[0].GetGladiator().CurPos, MyRoom.Gamers[1].GetGladiator().CurPos, dis)
-	return dis <= CollisionDis
 }
 
 // getDistBetweenGladiators 取得角鬥士之間的距離

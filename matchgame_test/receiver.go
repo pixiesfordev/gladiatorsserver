@@ -86,14 +86,22 @@ func processData(data string) {
 			return
 		}
 		switch content.ActionType {
-		case packet.ACTION_SKILL:
-			var aContent packet.PackAction_Skill_ToClient
+		case packet.ACTIVE_MELEE_SKILL:
+			var aContent packet.PackAction_ActiveMeleeSkill_ToClient
 			err = mapstructure.Decode(content.ActionContent, &aContent)
 			if err != nil {
 				log.Infof("%v封包的Content轉換錯誤: %v", content.ActionContent, err)
 				return
 			}
-			sm.updateSkills(aContent.HandSkillIDs[:], aContent.SkillOnID)
+			sm.activeMeleeSkill(aContent.SkillID, aContent.On)
+		case packet.INSTANT_SKILL:
+			var aContent packet.PackAction_InstantSkill_ToClient
+			err = mapstructure.Decode(content.ActionContent, &aContent)
+			if err != nil {
+				log.Infof("%v封包的Content轉換錯誤: %v", content.ActionContent, err)
+				return
+			}
+			sm.updateSkills(aContent.HandSkills[:], aContent.SkillID)
 		}
 
 	case packet.MELEE_TOCLIENT:

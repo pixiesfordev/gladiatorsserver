@@ -25,7 +25,7 @@ func main() {
 		log.Errorf("取gameState失敗: %v", err)
 		return
 	}
-	address := fmt.Sprintf("%v:%v", gameState.MatchgameTestverTcpIP, gameState.MatchgameTestverPort)
+	address := fmt.Sprintf("%v:%v", gameState.MatchgameTestverTcpIp, gameState.MatchgameTestverPort)
 	log.Infof(" Address: %v", address)
 	conn, err = net.Dial("tcp", address)
 	if err != nil {

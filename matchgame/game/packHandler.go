@@ -54,7 +54,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 
 		ChangeGameState(GAMESTATE_WAITINGPLAYERS)
 		// 設定玩家使用的角鬥士
-		gladiator, err := NewTestGladiator(player) // 測試用角鬥士
+		gladiator, err := NewTestGladiator(player, 1, []int{1, 1001, 1002, 1003, 1004, 1005}) // 測試用角鬥士
 		if err != nil {
 			log.Errorf("初始化測試用角鬥士錯誤: %v", err)
 		}
@@ -73,38 +73,35 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			player.GetGladiator().Opponent = opponent.GetGladiator()
 			opponent.SetOpponent(player)
 			opponent.GetGladiator().Opponent = player.GetGladiator()
-		}
 
-		// 如果雙方角鬥士都設定了就送雙方資料回client
-		opponent := player.GetOpponent()
-		if player.MyGladiator != nil && opponent != nil && opponent.GetGladiator() != nil {
-			// 回送封包
-			myPack := packet.Pack{
-				CMD:    packet.SETPLAYER_TOCLIENT,
-				PackID: -1,
-				Content: &packet.SetPlayer_ToClient{
-					Time:               time.Now().UnixMilli(),
-					MyPackPlayer:       player.GetPackPlayer(true),
-					OpponentPackPlayer: player.GetOpponentPackPlayer(false),
-				},
-			}
-			player.SendPacketToPlayer(myPack)
-
-			// 送對手封包
-			opponent, ok := player.GetOpponent().(*Player)
-			if ok {
-				opponentPack := packet.Pack{
+			if player.MyGladiator != nil && opponent != nil && opponent.GetGladiator() != nil {
+				// 回送封包
+				myPack := packet.Pack{
 					CMD:    packet.SETPLAYER_TOCLIENT,
 					PackID: -1,
 					Content: &packet.SetPlayer_ToClient{
 						Time:               time.Now().UnixMilli(),
-						MyPackPlayer:       opponent.GetPackPlayer(true),
-						OpponentPackPlayer: player.GetPackPlayer(false),
+						MyPackPlayer:       player.GetPackPlayer(true),
+						OpponentPackPlayer: player.GetOpponentPackPlayer(false),
 					},
 				}
-				opponent.SendPacketToPlayer(opponentPack)
-			}
+				player.SendPacketToPlayer(myPack)
 
+				// 送對手封包
+				opponent, ok := player.GetOpponent().(*Player)
+				if ok {
+					opponentPack := packet.Pack{
+						CMD:    packet.SETPLAYER_TOCLIENT,
+						PackID: -1,
+						Content: &packet.SetPlayer_ToClient{
+							Time:               time.Now().UnixMilli(),
+							MyPackPlayer:       opponent.GetPackPlayer(true),
+							OpponentPackPlayer: player.GetPackPlayer(false),
+						},
+					}
+					opponent.SendPacketToPlayer(opponentPack)
+				}
+			}
 		}
 
 	// ==========設定準備就緒==========
@@ -241,47 +238,63 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			if err != nil {
 				return fmt.Errorf("PackAction_Skill錯誤: %v", err)
 			}
-			player.GetGladiator().ActiveSkill(targetSkill, action.On)
-			// 回送封包
-			skillOnID := 0
-			if action.On {
-				skillOnID = targetSkill.ID
-			}
-			myPack := packet.Pack{
-				CMD:    packet.PLAYERACTION_TOCLIENT,
-				PackID: -1,
-				Content: &packet.PlayerAction_ToClient{
-					PlayerDBID: player.ID,
-					ActionType: packet.ACTION_SKILL,
-					ActionContent: &packet.PackAction_Skill_ToClient{
-						SkillOnID:    skillOnID,
-						HandSkillIDs: player.GetGladiator().GetHandSkills(),
-					},
-				},
-			}
-			player.SendPacketToPlayer(myPack)
 
-			// 如果是立即技能 且對手不是電腦 就送對手封包
-			opponent, ok := player.GetOpponent().(*Player)
-			if ok && targetSkill.Type == "Instant" {
-				opponentPack := packet.Pack{
+			player.GetGladiator().ActiveSkill(targetSkill, action.On)
+			// 處理立即技能 與 肉搏技能
+			if targetSkill.Activation == gameJson.Instant {
+				if action.On {
+					if int(player.GetGladiator().CurVigor) < targetSkill.Cost {
+						return fmt.Errorf("%v  玩家%v 嘗試施放體力不足的技能", content.ActionType, player.ID)
+					}
+					myPack := packet.Pack{
+						CMD:    packet.PLAYERACTION_TOCLIENT,
+						PackID: -1,
+						Content: &packet.PlayerAction_ToClient{
+							PlayerDBID: player.ID,
+							ActionType: packet.INSTANT_SKILL,
+							ActionContent: &packet.PackAction_InstantSkill_ToClient{
+								SkillID:    targetSkill.ID,
+								NewSkilID:  player.GetGladiator().GetHandSkills()[3],
+								HandSkills: player.GetGladiator().GetHandSkills(),
+							},
+						},
+					}
+					player.SendPacketToPlayer(myPack)
+
+					opponentPack := packet.Pack{
+						CMD:    packet.PLAYERACTION_TOCLIENT,
+						PackID: -1,
+						Content: &packet.PlayerAction_ToClient{
+							PlayerDBID: player.ID,
+							ActionType: packet.INSTANT_SKILL,
+							ActionContent: &packet.PackAction_InstantSkill_ToClient{
+								SkillID: targetSkill.ID,
+							},
+						},
+					}
+					player.SendPacketToPlayer(opponentPack)
+				}
+			} else if targetSkill.Activation == gameJson.Melee {
+				myPack := packet.Pack{
 					CMD:    packet.PLAYERACTION_TOCLIENT,
 					PackID: -1,
 					Content: &packet.PlayerAction_ToClient{
 						PlayerDBID: player.ID,
-						ActionType: packet.ACTION_OPPONENTSKILL,
-						ActionContent: &packet.PackAction_OpponentSkill_ToClient{
+						ActionType: packet.ACTIVE_MELEE_SKILL,
+						ActionContent: &packet.PackAction_ActiveMeleeSkill_ToClient{
+							On:      action.On,
 							SkillID: targetSkill.ID,
 						},
 					},
 				}
-				opponent.SendPacketToPlayer(opponentPack)
+				player.SendPacketToPlayer(myPack)
 			}
+
 		case packet.ACTION_DIVINESKILL: // 神祉技能施放
 		default:
 			return fmt.Errorf("未定義的ActionType : %s", content.ActionType)
 		}
-	// ==========設定準備就緒==========
+	// ==========GM封包==========
 	case packet.GMACTION:
 		content := packet.GMAction{}
 		err := json.Unmarshal([]byte(pack.GetContentStr()), &content)
@@ -290,29 +303,65 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		}
 		log.Infof("%s 收到GM動作: %v", logger.LOG_Action, content.ActionType)
 		switch content.ActionType {
-		case packet.GMACTION_SETSKILLS: // 設定技能
-			var gmAction packet.PackGMAction_SetSkills
+		case packet.GMACTION_SETGLADIATOR: // 設定角鬥士
+			var gmAction packet.PackGMAction_SetGladiator
 			err = mapstructure.Decode(content.ActionContent, &gmAction)
 			if err != nil {
 				return fmt.Errorf("%v封包的Content轉換錯誤: %v", content.ActionType, err)
 			}
-			err := player.GetGladiator().SetSkillByIDs(gmAction.SkillIDs)
-			success := true
+
+			// 走跟SetPlayer封包一樣的流程
+			ChangeGameState(GAMESTATE_WAITINGPLAYERS)
+			// 設定玩家使用的角鬥士
+			gladiator, err := NewTestGladiator(player, gmAction.GladiatorID, gmAction.SkillIDs[:]) // 測試用角鬥士
 			if err != nil {
-				success = false
+				log.Errorf("初始化測試用角鬥士錯誤: %v", err)
 			}
-			// 回送封包
-			pack := packet.Pack{
-				CMD:    packet.GMACTION_TOCLIENT,
-				PackID: -1,
-				Content: &packet.GMAction_ToClient{
-					PlayerDBID:    player.ID,
-					ActionType:    packet.GMACTION_SETSKILLS,
-					Result:        success,
-					ActionContent: nil,
-				},
+			player.MyGladiator = &gladiator
+
+			if Mode == "non-agones" { // 遊戲模式是測試模式時, 自動加入Bot
+				AddBot() // 加入BOT
 			}
-			player.SendPacketToPlayer(pack)
+
+			if MyRoom.GamerCount() == 2 { // 如果雙方都進入房間就設定雙方玩家的Opponent
+				opponent := MyRoom.Gamers[0]
+				if player == MyRoom.Gamers[0] {
+					opponent = MyRoom.Gamers[1]
+				}
+				player.SetOpponent(opponent)
+				player.GetGladiator().Opponent = opponent.GetGladiator()
+				opponent.SetOpponent(player)
+				opponent.GetGladiator().Opponent = player.GetGladiator()
+
+				if player.MyGladiator != nil && opponent != nil && opponent.GetGladiator() != nil {
+					// 回送封包
+					myPack := packet.Pack{
+						CMD:    packet.SETPLAYER_TOCLIENT,
+						PackID: -1,
+						Content: &packet.SetPlayer_ToClient{
+							Time:               time.Now().UnixMilli(),
+							MyPackPlayer:       player.GetPackPlayer(true),
+							OpponentPackPlayer: player.GetOpponentPackPlayer(false),
+						},
+					}
+					player.SendPacketToPlayer(myPack)
+
+					// 送對手封包
+					opponent, ok := player.GetOpponent().(*Player)
+					if ok {
+						opponentPack := packet.Pack{
+							CMD:    packet.SETPLAYER_TOCLIENT,
+							PackID: -1,
+							Content: &packet.SetPlayer_ToClient{
+								Time:               time.Now().UnixMilli(),
+								MyPackPlayer:       opponent.GetPackPlayer(true),
+								OpponentPackPlayer: player.GetPackPlayer(false),
+							},
+						}
+						opponent.SendPacketToPlayer(opponentPack)
+					}
+				}
+			}
 		}
 	}
 

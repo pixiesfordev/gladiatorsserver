@@ -6,7 +6,7 @@ package packet
 type GMActionType string
 
 const (
-	GMACTION_SETSKILLS GMActionType = "GMACTION_SETSKILLS"
+	GMACTION_SETGLADIATOR GMActionType = "GMACTION_SETGLADIATOR"
 )
 
 type GMAction struct {
@@ -18,11 +18,11 @@ type GMAction_ToClient struct {
 	CMDContent
 	PlayerDBID    string
 	ActionType    GMActionType
-	Result        bool
 	ActionContent interface{}
 }
 
-// 施放技能
-type PackGMAction_SetSkills struct {
-	SkillIDs [6]int
+// 設定角鬥士
+type PackGMAction_SetGladiator struct {
+	GladiatorID int
+	SkillIDs    [6]int
 }

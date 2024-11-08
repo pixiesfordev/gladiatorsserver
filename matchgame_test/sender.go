@@ -41,7 +41,7 @@ func send_UseSkill(skillID int) {
 	pack := packet.Pack{
 		CMD: packet.PLAYERACTION,
 		Content: packet.PlayerAction{
-			ActionType: packet.ACTION_SKILL,
+			ActionType: packet.ACTION_ACTIVESKILL,
 			ActionContent: packet.PackAction_Skill{
 				On:      true,
 				SkillID: skillID,
@@ -55,9 +55,10 @@ func send_SetSkills() {
 	pack := packet.Pack{
 		CMD: packet.GMACTION,
 		Content: packet.GMAction{
-			ActionType: packet.GMACTION_SETSKILLS,
-			ActionContent: packet.PackGMAction_SetSkills{
-				SkillIDs: [6]int{1011, 1012, 1013, 1014, 1015, 1016},
+			ActionType: packet.GMACTION_SETGLADIATOR,
+			ActionContent: packet.PackGMAction_SetGladiator{
+				GladiatorID: 1,
+				SkillIDs:    [6]int{1011, 1012, 1013, 1014, 1015, 1016},
 			},
 		},
 	}

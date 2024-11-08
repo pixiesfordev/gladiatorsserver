@@ -10,13 +10,7 @@ import (
 )
 
 // melee 雙方進行肉搏
-func melee() {
-	if MyRoom.Gamers[0] == nil && MyRoom.Gamers[0].GetGladiator() == nil && MyRoom.Gamers[1] == nil && MyRoom.Gamers[1].GetGladiator() == nil {
-		log.Errorf("melee錯誤")
-		return
-	}
-	g1 := MyRoom.Gamers[0].GetGladiator()
-	g2 := MyRoom.Gamers[1].GetGladiator()
+func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 
 	if !g1.IsAlive() || !g2.IsAlive() {
 		log.Infof("取消melee，一方角鬥已死亡 g1: %v   g2: %v", g1.IsAlive(), g2.IsAlive())
@@ -90,7 +84,8 @@ func melee() {
 	if g2Skill != nil {
 		g2SkillID = g2Skill.JsonSkill.ID
 	}
-	if player, ok := MyRoom.Gamers[0].(*Player); ok {
+
+	if p1, ok := gamer1.(*Player); ok {
 		packMelee := packet.Pack{
 			CMD: packet.MELEE_TOCLIENT,
 			Content: &packet.Melee_ToClient{
@@ -111,9 +106,10 @@ func melee() {
 				MyHandSkillIDs: g1.GetHandSkills(),
 			},
 		}
-		player.SendPacketToPlayer(packMelee)
+		p1.SendPacketToPlayer(packMelee)
 	}
-	if player, ok := MyRoom.Gamers[1].(*Player); ok {
+
+	if p2, ok := gamer2.(*Player); ok {
 		packMelee := packet.Pack{
 			CMD: packet.MELEE_TOCLIENT,
 			Content: &packet.Melee_ToClient{
@@ -132,7 +128,7 @@ func melee() {
 				MyHandSkillIDs: g2.GetHandSkills(),
 			},
 		}
-		player.SendPacketToPlayer(packMelee)
+		p2.SendPacketToPlayer(packMelee)
 	}
 
 }

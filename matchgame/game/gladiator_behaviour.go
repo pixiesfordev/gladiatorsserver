@@ -36,13 +36,13 @@ func (g *Gladiator) SetRush(on bool) {
 // ActiveSkill 啟用技能
 func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) {
 	switch jsonSkill.Activation {
-	case "Melee": // 肉搏技能
+	case gameJson.Melee: // 肉搏技能
 		if on {
 			g.ActivedMeleeJsonSkill = &jsonSkill
 		} else {
 			g.ActivedMeleeJsonSkill = nil
 		}
-	case "Instant": // 即時技能
+	case gameJson.Instant: // 即時技能
 		if on {
 			// 發動即時技能
 			_, skill, err := g.createSkill(jsonSkill)
@@ -90,7 +90,7 @@ func (myself *Gladiator) knockWall() {
 
 // SpellInstantSkill 施放立即技能
 func (myself *Gladiator) SpellInstantSkill(skill *Skill) {
-	if skill.JsonSkill.Activation != "Instant" {
+	if skill.JsonSkill.Activation != gameJson.Instant {
 		return
 	}
 	// 計算命中技能花費的時間

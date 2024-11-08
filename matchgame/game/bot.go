@@ -34,7 +34,7 @@ func (bot *Bot) SetBot(botID string) error {
 		return err
 	}
 	// 隨機角鬥士技能
-	normalJsonSkills, err := gameJson.GetJsonSkills("Normal")
+	normalJsonSkills, err := gameJson.GetJsonSkills(gameJson.NORMAL)
 	if err != nil {
 		return err
 	}

@@ -92,6 +92,25 @@ func newSkillManager() *skillManager {
 	}
 }
 
+// activeSkill 啟用肉搏技能
+func (sm *skillManager) activeMeleeSkill(skillID int, on bool) {
+	logStr := ""
+	if on {
+		sm.skillOnID = skillID
+		logStr = fmt.Sprintf("  啟用中的技能ID: %d", skillID)
+	} else {
+		sm.skillOnID = 0
+	}
+	logStr = " 手牌: "
+	for i, id := range sm.skillIDs {
+		logStr += fmt.Sprintf("%d", id)
+		if i != len(sm.skillIDs)-1 {
+			logStr += ", "
+		}
+	}
+	log.Infof(logStr)
+}
+
 // updateSkills 更新技能列表和啟用中的技能
 func (sm *skillManager) updateSkills(skillIDs []int, skillOnID int) {
 	sm.skillIDs = skillIDs
