@@ -1,12 +1,12 @@
 {"Gladiator":[
-	{	"ID": 1,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "1"},
-	{	"ID": 2,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "2"},
-	{	"ID": 3,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "3"},
-	{	"ID": 4,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "4"},
-	{	"ID": 5,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "5"},
-	{	"ID": 6,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "6"},
-	{	"ID": 7,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "7"},
-	{	"ID": 8,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "8"},
-	{	"ID": 9,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "9"},
-	{	"ID": 10,	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"Ref": "10"}
+	{	"ID": 1,	"Ref": "1",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 2.5},
+	{	"ID": 2,	"Ref": "2",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 2.5},
+	{	"ID": 3,	"Ref": "3",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 4.0},
+	{	"ID": 4,	"Ref": "4",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 2.5},
+	{	"ID": 5,	"Ref": "5",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 2.5},
+	{	"ID": 6,	"Ref": "6",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 3.38},
+	{	"ID": 7,	"Ref": "7",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 4.08},
+	{	"ID": 8,	"Ref": "8",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 2.5},
+	{	"ID": 9,	"Ref": "9",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 4.0},
+	{	"ID": 10,	"Ref": "10",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 3.55}
 ]}

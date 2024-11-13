@@ -72,6 +72,9 @@ func (r *Room) KickTimeoutPlayer() {
 			}
 		}
 	}
+	if MyRoom.PlayerCount() == 0 {
+		ResetGame("房間內無玩家")
+	}
 }
 
 // 傳入玩家ID取得Player
@@ -191,9 +194,6 @@ func (r *Room) KickPlayer(player *Player, reason string) {
 	player.CloseConnection() // 關閉連線
 	r.OnRoomPlayerChange()
 	log.Infof("%s 踢出Player完成, 目前Gamer人數: %v", logger.LOG_Room, r.GamerCount())
-	if MyRoom.PlayerCount() == 0 {
-		ResetGame("房間內無玩家")
-	}
 }
 
 // 將Bot踢出房間

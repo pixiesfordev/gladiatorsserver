@@ -23,7 +23,7 @@ func (e *Effect) Trigger_Time() {
 			return
 		}
 		e.AddDuration(-passTime)
-		e.Target.AddHp(value, true)
+		e.Target.AddHp(value, e.Type, true)
 	case gameJson.RegenVigor: // 回復體力
 		e.NextTriggerAt += 1 // 1秒觸發1次
 		value, err := GetEffectValue[float64](e, 0)
@@ -35,7 +35,7 @@ func (e *Effect) Trigger_Time() {
 		e.Target.AddVigor(value)
 	case gameJson.Poison: // 中毒
 		e.NextTriggerAt += 3 // 3秒觸發1次
-		e.Target.AddHp(-int(e.Duration), true)
+		e.Target.AddHp(-int(e.Duration), e.Type, true)
 	case gameJson.Burning: // 著火
 		e.NextTriggerAt += 3 // 3秒觸發1次
 		value := int(e.Duration)
@@ -44,7 +44,7 @@ func (e *Effect) Trigger_Time() {
 			reduce = 1
 		}
 		e.AddDuration(-reduce)
-		e.Target.AddHp(-value, true)
+		e.Target.AddHp(-value, e.Type, true)
 	case gameJson.Enraged: // 激怒
 		e.NextTriggerAt += TickTimePass // 每幀觸發
 		e.AddDuration(-passTime)
@@ -66,11 +66,11 @@ func (e *Effect) Trigger_Time() {
 
 // Trigger_AfterBeAttack 受擊後觸發
 func (e *Effect) Trigger_AfterBeAttack(dmg int) {
-	log.Infof("Trigger_AfterBeAttack :%v", e.Type)
+	// log.Infof("Trigger_AfterBeAttack :%v", e.Type)
 	switch e.Type {
 	case gameJson.Bleeding: // 流血
-		log.Infof("流血: %v", -int(e.Duration))
-		e.Target.AddHp(-int(e.Duration), true)
+		// log.Infof("流血: %v", -int(e.Duration))
+		e.Target.AddHp(-int(e.Duration), e.Type, true)
 	}
 }
 
@@ -85,6 +85,6 @@ func (e *Effect) Trigger_AfterAttack(dmg int) {
 		}
 		e.AddDuration(-1)
 		restoreHP := int(math.Round(value * float64(dmg)))
-		e.Target.AddHp(restoreHP, true)
+		e.Target.AddHp(restoreHP, e.Type, true)
 	}
 }

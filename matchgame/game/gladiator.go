@@ -109,7 +109,7 @@ func (g *Gladiator) AddPassiveEffect(effect *Effect) {
 
 // AddEffect 賦予狀態效果
 func (g *Gladiator) AddEffect(effect *Effect) {
-	log.Infof("AddEffect1 %v To %v", effect.Type, g.ID)
+	// log.Infof("AddEffect1 %v To %v", effect.Type, g.ID)
 	// 不是狀態就返回
 	if effect.BelongTo(NOTBUFFER) {
 		return
@@ -131,7 +131,7 @@ func (g *Gladiator) AddEffect(effect *Effect) {
 		}
 	}
 	g.RemoveEffects(removeEffectTypes...)
-	log.Infof("AddEffect2 %v To %v", effect.Type, g.ID)
+	// log.Infof("AddEffect2 %v To %v", effect.Type, g.ID)
 	switch effect.MyStackType {
 	case STACKABLE:
 		if len(g.Effects[effect.Type]) > 0 {
@@ -171,7 +171,7 @@ func (g *Gladiator) RemoveEffects(types ...gameJson.EffectType) {
 		return
 	}
 	for _, t := range types {
-		log.Infof("Remove Effect: %v", t)
+		// log.Infof("Remove Effect: %v", t)
 		delete(g.Effects, t)
 	}
 }
@@ -206,7 +206,6 @@ func (myself *Gladiator) TriggerBuffer_Time() {
 
 // TriggerBuffer_AfterBeAttack 受擊後觸發Buffer
 func (myself *Gladiator) TriggerBuffer_AfterBeAttack(dmg int) {
-	log.Infof("TriggerBuffer_AfterBeAttack")
 	if !myself.IsAlive() {
 		return
 	}
@@ -230,7 +229,7 @@ func (myself *Gladiator) TriggerBuffer_AfterAttack(dmg int) {
 }
 
 // AddHp 增加生命
-func (myself *Gladiator) AddHp(value int, sendPack bool) {
+func (myself *Gladiator) AddHp(value int, effectType gameJson.EffectType, sendPack bool) {
 	if !myself.IsAlive() {
 		return
 	}
@@ -245,10 +244,11 @@ func (myself *Gladiator) AddHp(value int, sendPack bool) {
 		packState := packet.Pack{
 			CMD: packet.HP_TOCLIENT,
 			Content: packet.Hp_ToClient{
-				PlayerID: myself.Owner.GetID(),
-				HPChange: value,
-				CurHp:    myself.CurHp,
-				MaxHp:    myself.Hp,
+				PlayerID:   myself.Owner.GetID(),
+				HPChange:   value,
+				EffectType: string(effectType),
+				CurHp:      myself.CurHp,
+				MaxHp:      myself.Hp,
 			},
 		}
 		MyRoom.BroadCastPacket(-1, packState)
@@ -287,17 +287,6 @@ func (g *Gladiator) GetSkill(skillID int) (gameJson.JsonSkill, int, error) {
 	log.Errorf("使用技能%v 手牌%v", skillID, g.HandSkills)
 	log.Errorf("玩家選擇的技能不存在手牌技能中: %v", skillID)
 	return gameJson.JsonSkill{}, -1, fmt.Errorf("玩家選擇的技能不存在手牌技能中: %v", skillID)
-}
-
-// GetPackPlayerState 取得玩家的狀態封包
-func (g *Gladiator) GetPackHp(myselfPack bool) packet.Hp_ToClient {
-	packPlayerState := packet.Hp_ToClient{
-		PlayerID: g.Owner.GetID(),
-		HPChange: 0,
-		CurHp:    g.CurHp,
-		MaxHp:    g.Hp,
-	}
-	return packPlayerState
 }
 
 func (g *Gladiator) GetEffectStrs() []string {

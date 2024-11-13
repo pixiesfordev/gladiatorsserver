@@ -15,7 +15,9 @@ type Melee_ToClient struct {
 	CMDContent
 	MyAttack       PackMelee
 	OpponentAttack PackMelee
-	MyHandSkillIDs [4]int
+	SkillOnID      int    // 啟用中的肉搏技能
+	NewSkilID      int    // 新抽到的技能
+	MyHandSkillIDs [4]int // 目前手牌
 }
 type BeforeMeleeSkill_ToClient struct {
 	MySkillID       int

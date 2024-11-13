@@ -11,6 +11,7 @@ import (
 
 // 使用牌後更新手牌，使用的牌放回牌庫最後一張
 func (g *Gladiator) UseSkill(skillID int) error {
+	// log.Errorf("手牌: %v,   使用技能: %v   牌庫: %v", g.HandSkills, skillID, g.Deck)
 	_, useSkillIdx, err := g.GetSkill(skillID)
 	if err != nil {
 		return err
@@ -22,7 +23,7 @@ func (g *Gladiator) UseSkill(skillID int) error {
 	// 從牌庫中按順序抽出一張作為新的第4張牌
 	g.HandSkills[3] = g.Deck[0] // 將牌庫頂部的牌補到第4張手牌中(下一張牌)
 	g.Deck = g.Deck[1:]         // 從剛抽出的牌移除
-
+	// log.Errorf("結果 手牌: %v,   牌庫: %v", g.HandSkills, g.Deck)
 	return nil
 }
 func (g *Gladiator) SetRush(on bool) {
@@ -84,7 +85,7 @@ func (myself *Gladiator) DoKnockback(knockbackValue float64) {
 // 撞牆
 func (myself *Gladiator) knockWall() {
 	time.AfterFunc(time.Duration(Knockwall_DmgDelayMiliSecs)*time.Millisecond, func() {
-		myself.AddHp(-Knockwall_Dmg, true)
+		myself.AddHp(-Knockwall_Dmg, gameJson.PDmg, true)
 	})
 }
 
@@ -93,12 +94,20 @@ func (myself *Gladiator) SpellInstantSkill(skill *Skill) {
 	if skill.JsonSkill.Activation != gameJson.Instant {
 		return
 	}
+	// 消耗體力
+	if int(myself.CurVigor) < skill.JsonSkill.Vigor {
+		log.Errorf("SpellInstantSkill 體力不足")
+		return
+	}
+	myself.AddVigor(float64(-skill.JsonSkill.Vigor))
+
 	// 計算命中技能花費的時間
 	hitMiliSecs := 0
 	if skill.JsonSkill.Init != 0 {
 		dist := getDistBetweenGladiators()
 		hitMiliSecs = int(math.Round((dist / skill.JsonSkill.Init) * 1000))
 	}
+	log.Infof("hitMiliSecs: %v", hitMiliSecs)
 	// 延遲時間後命中目標
 	time.AfterFunc(time.Duration(hitMiliSecs)*time.Millisecond, func() {
 		myself.Spell(skill)
@@ -110,6 +119,13 @@ func (myself *Gladiator) Spell(skill *Skill) {
 	if skill == nil {
 		return
 	}
+	// 消耗體力
+	if int(myself.CurVigor) < skill.JsonSkill.Vigor {
+		log.Errorf("Spell 體力不足")
+		return
+	}
+	myself.AddVigor(float64(-skill.JsonSkill.Vigor))
+
 	// 執行技能效果
 	for _, effect := range skill.Effects {
 		if effect == nil {
@@ -131,18 +147,18 @@ func (myself *Gladiator) Spell(skill *Skill) {
 		switch effect.Type {
 		case gameJson.PDmg: // 物理攻擊
 			dmg := AttackDmgModify(myself, effect.Target, effect)
-			myself.Attack(effect.Target, dmg)
+			myself.Attack(effect.Target, dmg, effect.Type)
 		case gameJson.MDmg: // 魔法攻擊
 			dmg := AttackDmgModify(myself, effect.Target, effect)
-			myself.Attack(effect.Target, dmg)
+			myself.Attack(effect.Target, dmg, effect.Type)
 		case gameJson.TrueDmg: // 真實傷害攻擊
 			dmg := 0.0
 			if !effect.Target.ImmuneTo(TDMG) {
 				dmg, _ = GetEffectValue[float64](effect, 0)
 			}
-			myself.Attack(effect.Target, int(dmg))
+			myself.Attack(effect.Target, int(dmg), effect.Type)
 		case gameJson.RestoreHP: // 回復生命
-			effect.Target.AddHp(effect.GetRestoreHPValue(), true)
+			effect.Target.AddHp(effect.GetRestoreHPValue(), effect.Type, true)
 		case gameJson.RestoreVigor: // 回復體力
 			effect.Target.AddVigor(effect.GetRestoreVigorValue())
 		case gameJson.Purge: // 移除負面狀態
@@ -202,9 +218,9 @@ func AttackDmgModify(myself, target *Gladiator, effect *Effect) int {
 }
 
 // Attack 造成傷害
-func (myself *Gladiator) Attack(target *Gladiator, dmg int) {
+func (myself *Gladiator) Attack(target *Gladiator, dmg int, effectType gameJson.EffectType) {
 	// 造成傷害
-	target.AddHp(-dmg, true)
+	target.AddHp(-dmg, effectType, true)
 	// 觸發攻擊後效果
 	target.TriggerBuffer_AfterBeAttack(dmg)
 	myself.TriggerBuffer_AfterAttack(dmg)

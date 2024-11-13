@@ -7,10 +7,11 @@ type GameState_ToClient struct {
 
 type Hp_ToClient struct {
 	CMDContent
-	PlayerID string
-	HPChange int
-	CurHp    int
-	MaxHp    int
+	PlayerID   string
+	HPChange   int
+	EffectType string
+	CurHp      int
+	MaxHp      int
 }
 
 // 角鬥士狀態

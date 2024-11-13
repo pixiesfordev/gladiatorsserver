@@ -154,6 +154,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					}
 					// 將玩家加入遊戲房
 					player = game.NewPlayer(dbPlayer.ID, connTCP, connUDP)
+					log.Infof("player: %v ", player)
 					err = game.MyRoom.JoinGamer(player)
 					if err != nil {
 						log.Errorf("%s 玩家加入房間失敗: %v", logger.LOG_Main, err)
@@ -175,7 +176,6 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 				if err != nil {
 					continue
 				}
-
 			} else {
 				err = game.HandleTCPMsg(conn, pack)
 				if err != nil {

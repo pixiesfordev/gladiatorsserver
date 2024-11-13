@@ -243,7 +243,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			// 處理立即技能 與 肉搏技能
 			if targetSkill.Activation == gameJson.Instant {
 				if action.On {
-					if int(player.GetGladiator().CurVigor) < targetSkill.Cost {
+					if int(player.GetGladiator().CurVigor) < targetSkill.Vigor {
 						return fmt.Errorf("%v  玩家%v 嘗試施放體力不足的技能", content.ActionType, player.ID)
 					}
 					myPack := packet.Pack{
@@ -261,18 +261,21 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 					}
 					player.SendPacketToPlayer(myPack)
 
-					opponentPack := packet.Pack{
-						CMD:    packet.PLAYERACTION_TOCLIENT,
-						PackID: -1,
-						Content: &packet.PlayerAction_ToClient{
-							PlayerDBID: player.ID,
-							ActionType: packet.INSTANT_SKILL,
-							ActionContent: &packet.PackAction_InstantSkill_ToClient{
-								SkillID: targetSkill.ID,
+					opponent, ok := player.GetOpponent().(*Player)
+					if ok {
+						opponentPack := packet.Pack{
+							CMD:    packet.PLAYERACTION_TOCLIENT,
+							PackID: -1,
+							Content: &packet.PlayerAction_ToClient{
+								PlayerDBID: player.ID,
+								ActionType: packet.INSTANT_SKILL,
+								ActionContent: &packet.PackAction_InstantSkill_ToClient{
+									SkillID: targetSkill.ID,
+								},
 							},
-						},
+						}
+						opponent.SendPacketToPlayer(opponentPack)
 					}
-					player.SendPacketToPlayer(opponentPack)
 				}
 			} else if targetSkill.Activation == gameJson.Melee {
 				myPack := packet.Pack{

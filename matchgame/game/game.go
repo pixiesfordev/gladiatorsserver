@@ -28,7 +28,6 @@ const (
 )
 
 const (
-	PingMiliSecs                           = 1000 // 每X毫秒送Ping封包給client(心跳檢測)
 	AGONES_HEALTH_PIN_INTERVAL_SEC         = 2    // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
 	TCP_CONN_TIMEOUT_SEC                   = 120  // TCP連線逾時時間X秒
 	BattleLOOP_MILISECS            int     = 100  // 戰鬥每X毫秒循環
@@ -40,12 +39,12 @@ const (
 	HandSkillCount                         = 4    // 玩家手牌技能, 索引0的技能是下一張牌
 	WAIT_BATTLE_START                      = 2    // (測試用)BattleStart等待時間
 	DIST_MELEE                             = 4    //  相距X單位就肉搏
-	DIST_BEFORE_MELEE                      = 8    //  相距X單位送表演肉搏技能
+	DIST_BEFORE_MELEE                      = 6    //  相距X單位送表演肉搏技能
 	MaxVigor                       float64 = 20   // 最大體力
 	DefaultVigor                   float64 = 5    // 初始體力
 	SelectDivineCountDownSecs      int     = 15   // 選神祉技能倒數秒數
 	FightingCountDownSecs          int     = 4    // 戰鬥倒數秒數
-	Knockwall_Dmg                  int     = 15   // 撞牆傷害
+	Knockwall_Dmg                  int     = 10   // 撞牆傷害
 	Knockwall_DmgDelayMiliSecs     int     = 400  // Melee執行後幾毫秒才觸發撞牆傷害
 )
 

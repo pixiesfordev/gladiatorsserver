@@ -23,12 +23,20 @@ func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 	g2SpellInit := 0.0
 	var g2Skill *Skill
 	if g1.ActivedMeleeJsonSkill != nil {
-		g1SpellInit, g1Skill, _ = g1.createSkill(*g1.ActivedMeleeJsonSkill)
-		g1.ActivedMeleeJsonSkill = nil
+		if g1.ActivedMeleeJsonSkill.Vigor <= int(g1.CurVigor) {
+			g1SpellInit, g1Skill, _ = g1.createSkill(*g1.ActivedMeleeJsonSkill)
+			g1.ActivedMeleeJsonSkill = nil
+		} else {
+			log.Errorf("%v 體力不足無法施放技能 %v", gamer1.GetID(), g1.ActivedMeleeJsonSkill.ID)
+		}
 	}
 	if g2.ActivedMeleeJsonSkill != nil {
-		g2SpellInit, g2Skill, _ = g2.createSkill(*g2.ActivedMeleeJsonSkill)
-		g2.ActivedMeleeJsonSkill = nil
+		if g2.ActivedMeleeJsonSkill.Vigor <= int(g1.CurVigor) {
+			g2SpellInit, g2Skill, _ = g2.createSkill(*g2.ActivedMeleeJsonSkill)
+			g2.ActivedMeleeJsonSkill = nil
+		} else {
+			log.Errorf("%v 體力不足無法施放技能 %v", gamer2.GetID(), g2.ActivedMeleeJsonSkill.ID)
+		}
 	}
 	if g1SpellInit > g2SpellInit {
 		bothCastSpell(g1, g2, g1Skill, g2Skill) // g1先攻
@@ -84,8 +92,22 @@ func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 	if g2Skill != nil {
 		g2SkillID = g2Skill.JsonSkill.ID
 	}
+	g1SkillOnID := 0
+	g2SkillOnID := 0
+	if g1.ActivedMeleeJsonSkill != nil {
+		g1SkillOnID = g1.ActivedMeleeJsonSkill.ID
+	}
+	if g2.ActivedMeleeJsonSkill != nil {
+		g2SkillOnID = g2.ActivedMeleeJsonSkill.ID
+	}
 
 	if p1, ok := gamer1.(*Player); ok {
+		hands := g1.GetHandSkills()
+		newSkillID := 0
+		if g1Skill != nil {
+			newSkillID = hands[3]
+		}
+
 		packMelee := packet.Pack{
 			CMD: packet.MELEE_TOCLIENT,
 			Content: &packet.Melee_ToClient{
@@ -103,13 +125,20 @@ func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 					CurPos:      g2.CurPos,
 					EffectTypes: g2.GetEffectStrs(),
 				},
-				MyHandSkillIDs: g1.GetHandSkills(),
+				NewSkilID:      newSkillID,
+				SkillOnID:      g1SkillOnID,
+				MyHandSkillIDs: hands,
 			},
 		}
 		p1.SendPacketToPlayer(packMelee)
 	}
 
 	if p2, ok := gamer2.(*Player); ok {
+		hands := g2.GetHandSkills()
+		newSkillID := 0
+		if g2Skill != nil {
+			newSkillID = hands[3]
+		}
 		packMelee := packet.Pack{
 			CMD: packet.MELEE_TOCLIENT,
 			Content: &packet.Melee_ToClient{
@@ -125,7 +154,9 @@ func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 					CurPos:      g1.CurPos,
 					EffectTypes: g1.GetEffectStrs(),
 				},
-				MyHandSkillIDs: g2.GetHandSkills(),
+				NewSkilID:      newSkillID,
+				SkillOnID:      g2SkillOnID,
+				MyHandSkillIDs: hands,
 			},
 		}
 		p2.SendPacketToPlayer(packMelee)
@@ -134,11 +165,11 @@ func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 }
 
 // 雙方執行技能
-func bothCastSpell(first, second *Gladiator, firstSkill, secondSkill *Skill) {
-	if firstSkill != nil {
-		first.Spell(firstSkill)
+func bothCastSpell(g1, g2 *Gladiator, g1Skill, g2Skill *Skill) {
+	if g1Skill != nil {
+		g1.Spell(g1Skill)
 	}
-	if secondSkill != nil {
-		second.Spell(secondSkill)
+	if g2Skill != nil {
+		g2.Spell(g2Skill)
 	}
 }
