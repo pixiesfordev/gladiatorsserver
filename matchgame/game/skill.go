@@ -29,7 +29,7 @@ func NewSkill(speller *Gladiator, opponent *Gladiator, jsonSkill gameJson.JsonSk
 			} else if jsonSkillEffect.Target == "Enemy" {
 				skillEffectTarget = opponent
 			} else {
-				log.Infof("jsonSkillEffect.Target錯誤: %v", jsonSkillEffect.Target)
+				log.Errorf("jsonSkillEffect.Target錯誤: %v", jsonSkillEffect.Target)
 				continue
 			}
 			for _, v := range jsonSkillEffect.Effects {

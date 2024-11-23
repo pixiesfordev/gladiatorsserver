@@ -100,13 +100,13 @@ func (player *Player) CloseConnection() {
 	defer player.MutexLock.Unlock()
 
 	if player.ConnTCP.Conn != nil {
-		player.ConnTCP.MyLoopChan.ClosePackReadStopChan()
+		player.ConnTCP.MyLoopChan.Close()
 		player.ConnTCP.Conn.Close()
 		player.ConnTCP.Conn = nil
 		player.ConnTCP = nil
 	}
 	if player.ConnUDP.Conn != nil {
-		player.ConnUDP.MyLoopChan.ClosePackReadStopChan()
+		player.ConnUDP.MyLoopChan.Close()
 		player.ConnUDP.Conn = nil
 		player.ConnUDP = nil
 	}

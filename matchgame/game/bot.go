@@ -3,25 +3,34 @@ package game
 import (
 	"fmt"
 	"gladiatorsGoModule/gameJson"
+	"sync"
+
 	// "gladiatorsGoModule/setting"
+	log "github.com/sirupsen/logrus"
 	"gladiatorsGoModule/utility"
 	"matchgame/packet"
 )
 
 // 玩家
 type Bot struct {
-	ID          string                         // DBot的ID
-	Idx         int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
-	opponent    Gamer                          // 對手
-	MyGladiator *Gladiator                     // 使用中的鬥士
-	BribeSkills [DivineSkillCount]*DivineSkill // 神祉技能
+	ID            string                         // DBot的ID
+	Idx           int                            // 第一位玩家是0(左方) 第二位玩家是1(右方)
+	opponent      Gamer                          // 對手
+	MyGladiator   *Gladiator                     // 使用中的鬥士
+	BribeSkills   [DivineSkillCount]*DivineSkill // 神祉技能
+	BehaviourChan *MyChan                        // 行為Channel
 }
 
 func NewBot() *Bot {
 	botIdx := IDAccumulator.GetNextIdx() // 取下一個BotIdx
 	botID := fmt.Sprintf("bot%v", botIdx)
+	behaviourChan := MyChan{
+		StopChan:      make(chan struct{}, 1),
+		ChanCloseOnce: sync.Once{},
+	}
 	bot := &Bot{
-		ID: botID,
+		ID:            botID,
+		BehaviourChan: &behaviourChan,
 	}
 	return bot
 }
@@ -34,26 +43,32 @@ func (bot *Bot) SetBot(botID string) error {
 		return err
 	}
 	// 隨機角鬥士技能
-	normalJsonSkills, err := gameJson.GetJsonSkills(gameJson.NORMAL)
+	jsonSkills, err := gameJson.GetRndJsonSkills(gameJson.NORMAL, 5)
 	if err != nil {
 		return err
-	}
-	var jsonSkills [GladiatorSkillCount]gameJson.JsonSkill
-	rndJsonSkills, err := utility.GetRandomNumberOfTFromMap(normalJsonSkills, 5)
-	if err != nil {
-		return err
-	}
-	for i, _ := range rndJsonSkills {
-		jsonSkills[i] = rndJsonSkills[i]
 	}
 	// 設定天賦技能
 	talentSkillJson, err := gameJson.GetJsonSkill(rndJsonGladiator.ID)
 	if err != nil {
 		return err
 	}
-	jsonSkills[5] = talentSkillJson
+	jsonSkills = append(jsonSkills, talentSkillJson)
+
+	// 輸出隨機技能log
+	skillLogStr := "BOT 隨機技能為: "
+	for i, v := range jsonSkills {
+		if i != 0 {
+			skillLogStr += ","
+		}
+		skillLogStr += fmt.Sprintf("%d", v.ID)
+	}
+	log.Infof(skillLogStr)
+
+	var arrayJsonSkills [GladiatorSkillCount]gameJson.JsonSkill
+	copy(arrayJsonSkills[:], jsonSkills)
+
 	// 設定角鬥士
-	gladiator, err := NewGladiator(bot, "botGladiator", rndJsonGladiator, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
+	gladiator, err := NewGladiator(bot, "botGladiator", rndJsonGladiator, arrayJsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 	if err != nil {
 		return err
 	}
@@ -77,6 +92,8 @@ func (bot *Bot) SetBot(botID string) error {
 
 	bot.MyGladiator = &gladiator
 	bot.BribeSkills = divineSkills
+
+	go bot.runBotBehaviour() // 開始Bot行為循環
 
 	return nil
 }

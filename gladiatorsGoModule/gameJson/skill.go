@@ -132,3 +132,17 @@ func GetRndJsonSkill(skillType SkillType) (JsonSkill, error) {
 		return JsonSkill{}, fmt.Errorf("%s GetJsonSkill錯誤: %v", logger.LOG_GameJson, err)
 	}
 }
+
+// 取得指定數量的隨機技能（傳入技能類型和數量）
+func GetRndJsonSkills(skillType SkillType, count int) ([]JsonSkill, error) {
+	normalSkills, err := GetJsonSkills(skillType)
+	if err != nil {
+		return nil, err
+	}
+	rndSkills, err := utility.GetRandomNumberOfTFromMap(normalSkills, count)
+	if err != nil {
+		return nil, err
+	}
+
+	return rndSkills, nil
+}

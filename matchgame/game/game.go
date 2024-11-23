@@ -42,8 +42,8 @@ const (
 	DIST_BEFORE_MELEE                      = 6    //  相距X單位送表演肉搏技能
 	MaxVigor                       float64 = 20   // 最大體力
 	DefaultVigor                   float64 = 5    // 初始體力
-	SelectDivineCountDownSecs      int     = 15   // 選神祉技能倒數秒數
-	FightingCountDownSecs          int     = 4    // 戰鬥倒數秒數
+	SelectDivineCountDownSecs      int     = 10   // 選神祉技能倒數秒數
+	FightingCountDownSecs          int     = 3    // 戰鬥倒數秒數
 	Knockwall_Dmg                  int     = 10   // 撞牆傷害
 	Knockwall_DmgDelayMiliSecs     int     = 400  // Melee執行後幾毫秒才觸發撞牆傷害
 )
@@ -104,7 +104,7 @@ func InitGame() {
 		log.Errorf("%s InitGame: %v", logger.LOG_Game, err)
 		return
 	}
-	ChangeGameState(GAMESTATE_INITED)
+	ChangeGameState(GAMESTATE_INITED, false)
 }
 func GetRndBribeSkills() ([MarketDivineSkillCount]gameJson.JsonSkill, error) {
 	allJsonSkills, err := gameJson.GetJsonSkills(gameJson.DIVINE)
@@ -126,17 +126,17 @@ type ConnectionTCP struct {
 	Conn       net.Conn      // TCP連線
 	Encoder    *json.Encoder // 連線編碼
 	Decoder    *json.Decoder // 連線解碼
-	MyLoopChan *LoopChan
+	MyLoopChan *MyChan
 }
 
-// 關閉PackReadStopChan通道
-func (loopChan *LoopChan) ClosePackReadStopChan() {
+// Close 關閉Channel
+func (loopChan *MyChan) Close() {
 	loopChan.ChanCloseOnce.Do(func() {
 		close(loopChan.StopChan)
 	})
 }
 
-type LoopChan struct {
+type MyChan struct {
 	StopChan      chan struct{} // 讀取封包Chan
 	ChanCloseOnce sync.Once
 }
@@ -145,30 +145,30 @@ type ConnectionUDP struct {
 	Conn       net.PacketConn // UDP連線
 	Addr       net.Addr       // 玩家連線地址
 	ConnToken  string         // 驗證Token
-	MyLoopChan *LoopChan
+	MyLoopChan *MyChan
 }
 
 // StartFighting 開始戰鬥
 func StartFighting() {
 	GameTime = 0
-	ChangeGameState(GAMESTATE_FIGHTING)
+	ChangeGameState(GAMESTATE_FIGHTING, true)
 	log.Infof("戰鬥開始")
 }
 
 // ResetGame 重置遊戲
 func ResetGame(reason string) {
 	MyMeleeState = MELEESTATE_NORMAL
-	ChangeGameState(GAMESTATE_INITED)
 	MyRoom.KickAllGamer(reason)
+	ChangeGameState(GAMESTATE_INITED, false)
 }
 
 // 改變遊戲階段
-func ChangeGameState(state GameState) {
+func ChangeGameState(state GameState, sendPack bool) {
 	if MyGameState == state {
 		return
 	}
 	MyGameState = state
-	if MyRoom != nil {
+	if sendPack && MyRoom != nil {
 		// 回送封包
 		myPack := packet.Pack{
 			CMD:    packet.GAMESTATE_TOCLIENT,
@@ -197,6 +197,8 @@ func RunGameTimer(stop chan struct{}) {
 	battleStateAccumulator := utility.NewAccumulator()
 	for {
 		select {
+		case <-stop:
+			return
 		case <-battleTicker.C:
 			if MyGameState == GAMESTATE_FIGHTING {
 				timePass()
@@ -205,13 +207,16 @@ func RunGameTimer(stop chan struct{}) {
 			}
 		case <-gameTicker.C:
 			MyRoom.KickTimeoutPlayer()
-		case <-stop:
-			return
 		}
 	}
 }
 
 func snedGladiatorStatePackToClient(packID int64) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("%s snedGladiatorStatePackToClient 錯誤: %v", logger.LOG_Room, err)
+		}
+	}()
 	for _, v := range MyRoom.Gamers {
 		if player, ok := v.(*Player); ok {
 			myGladiator := player.GetGladiator()
@@ -222,9 +227,9 @@ func snedGladiatorStatePackToClient(packID int64) {
 			myGState := packet.PackGladiatorState{
 				CurPos:      utility.RoundToDecimal(myGladiator.CurPos, 3),
 				CurSpd:      myGladiator.GetSpd(),
-				CurVigor:    myGladiator.CurVigor,
+				CurVigor:    utility.RoundToDecimal(myGladiator.CurVigor, 2),
 				Rush:        myGladiator.IsRush,
-				EffectTypes: myGladiator.GetEffectStrs(),
+				EffectDatas: myGladiator.GetPackEffects(),
 			}
 			// 設定對手的PackGladiatorState
 			opponentGamer := player.GetOpponent()
@@ -242,7 +247,7 @@ func snedGladiatorStatePackToClient(packID int64) {
 				CurSpd:      opponentGladiator.GetSpd(),
 				CurVigor:    0, // 對手的體力是隱藏資訊
 				Rush:        opponentGladiator.IsRush,
-				EffectTypes: opponentGladiator.GetEffectStrs(),
+				EffectDatas: opponentGladiator.GetPackEffects(),
 			}
 
 			pack := packet.Pack{
@@ -260,6 +265,11 @@ func snedGladiatorStatePackToClient(packID int64) {
 }
 
 func timePass() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("%s timePass 錯誤: %v", logger.LOG_Room, err)
+		}
+	}()
 	GameTime += TickTimePass
 	// 雙方觸發狀態效果
 	gladiatorsTimePass()
@@ -271,6 +281,11 @@ func timePass() {
 
 // gladiatorsTimePass 雙方觸發時間流逝效果
 func gladiatorsTimePass() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("%s gladiatorsTimePass 錯誤: %v", logger.LOG_Room, err)
+		}
+	}()
 	for _, v := range MyRoom.Gamers {
 		if v == nil {
 			continue
@@ -292,6 +307,11 @@ func gladiatorsTimePass() {
 
 // gladiatorsMove 雙方移動
 func gladiatorsMove() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("%s gladiatorsMove 錯誤: %v", logger.LOG_Room, err)
+		}
+	}()
 	for _, v := range MyRoom.Gamers {
 		if v == nil {
 			continue
@@ -338,6 +358,11 @@ func sendBeforeMelee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 
 // checkMelee 肉搏檢測
 func checkMelee() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("%s checkMelee: %v", logger.LOG_Room, err)
+		}
+	}()
 	gamer1 := MyRoom.Gamers[0]
 	gamer2 := MyRoom.Gamers[1]
 	if gamer1 == nil || gamer2 == nil {

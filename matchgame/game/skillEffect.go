@@ -33,8 +33,8 @@ type StackType string
 
 const (
 	STACKABLE  StackType = "STACKABLE"  // 堆疊型-同樣的新Buffer會累加Duration
-	OVERRIDING           = "OVERRIDING" // 覆蓋型-同樣的新Buffer會完全取代舊Buffer
-	ADDITIVE             = "ADDITIVE"   // 擴增型-同樣的新Buffer會擴增一個Buffer
+	OVERRIDING StackType = "OVERRIDING" // 覆蓋型-同樣的新Buffer會完全取代舊Buffer
+	ADDITIVE   StackType = "ADDITIVE"   // 擴增型-同樣的新Buffer會擴增一個Buffer
 )
 
 func NewEffect(effectType gameJson.EffectType, valueStr string, speller *Gladiator, target *Gladiator, prob float64, isPassive bool) (*Effect, error) {

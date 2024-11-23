@@ -59,6 +59,11 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 }
 
 func (r *Room) KickTimeoutPlayer() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("%s KickTimeoutPlayer 錯誤: %v", logger.LOG_Room, err)
+		}
+	}()
 	if MyGameState == GAMESTATE_INITED || MyGameState == GAMESTATE_INITIALIZING {
 		return
 	}
@@ -206,7 +211,7 @@ func (r *Room) KickBot(bot *Bot, reason string) {
 		log.Infof("%s 要踢掉的Bot已經不存在", logger.LOG_Room)
 		return
 	}
-
+	bot.BehaviourChan.Close() // 關閉Bot行為Channel
 	r.Gamers[bot.Idx] = nil
 	r.DBMatchgame.KickPlayer(bot.GetID())
 	r.UpdateMatchgameToDB() // 更新房間DB

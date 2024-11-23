@@ -46,18 +46,17 @@ func NewTestGladiator(owner Gamer, gladiatorID int, jsonSkillIDs []int) (Gladiat
 
 	gJson, _ := gameJson.GetJsonGladiator(gladiatorID)
 	var jsonSkills [GladiatorSkillCount]gameJson.JsonSkill
-	jsonSkill1, _ := gameJson.GetJsonSkill(jsonSkillIDs[0])
-	jsonSkill2, _ := gameJson.GetJsonSkill(jsonSkillIDs[1])
-	jsonSkill3, _ := gameJson.GetJsonSkill(jsonSkillIDs[2])
-	jsonSkill4, _ := gameJson.GetJsonSkill(jsonSkillIDs[3])
-	jsonSkill5, _ := gameJson.GetJsonSkill(jsonSkillIDs[4])
-	jsonSkill6, _ := gameJson.GetJsonSkill(jsonSkillIDs[5])
-	jsonSkills[0] = jsonSkill1
-	jsonSkills[1] = jsonSkill2
-	jsonSkills[2] = jsonSkill3
-	jsonSkills[3] = jsonSkill4
-	jsonSkills[4] = jsonSkill5
-	jsonSkills[5] = jsonSkill6
+	if len(jsonSkillIDs) == 6 { // 指定技能
+		for i, skillID := range jsonSkillIDs {
+			skill, err := gameJson.GetJsonSkill(skillID)
+			if err != nil {
+				return Gladiator{}, fmt.Errorf("gameJson.GetJsonSkill 錯誤: %v", err)
+			}
+			jsonSkills[i] = skill
+		}
+	} else {
+		return Gladiator{}, fmt.Errorf("NewTestGladiator 錯誤: 傳入的jsonSkillIDs錯誤")
+	}
 
 	return NewGladiator(owner, testGladiatorID, gJson, jsonSkills, []gameJson.TraitJson{}, []gameJson.JsonEquip{})
 }
@@ -261,6 +260,9 @@ func (myself *Gladiator) AddVigor(value float64) {
 	if !myself.IsAlive() {
 		return
 	}
+	// if value < 0 {
+	// 	log.Errorf("AddVigor: %v", value)
+	// }
 	myself.CurVigor += value
 	if myself.CurVigor < 0 {
 		myself.CurVigor = 0
@@ -271,7 +273,8 @@ func (myself *Gladiator) AddVigor(value float64) {
 
 // OnDeath 死亡時觸發
 func (myself *Gladiator) OnDeath() {
-
+	ChangeGameState(GAMESTATE_END, true)
+	ResetGame("遊戲結束")
 }
 
 // GetSkill 傳入skillID取得目標JsonSkill與索引
@@ -289,10 +292,25 @@ func (g *Gladiator) GetSkill(skillID int) (gameJson.JsonSkill, int, error) {
 	return gameJson.JsonSkill{}, -1, fmt.Errorf("玩家選擇的技能不存在手牌技能中: %v", skillID)
 }
 
-func (g *Gladiator) GetEffectStrs() []string {
-	effectTypes := []string{}
-	for k := range g.Effects {
-		effectTypes = append(effectTypes, string(k))
+func (g *Gladiator) GetPackEffects() []packet.PackEffect {
+	effectTypes := []packet.PackEffect{}
+	for _, v := range g.Effects {
+		if len(v) != 0 {
+			switch v[0].MyStackType {
+			case STACKABLE, OVERRIDING:
+				effectTypes = append(effectTypes, packet.PackEffect{
+					EffectName: string(v[0].Type),
+					Duration:   utility.RoundToDecimal(v[0].Duration, 2),
+				})
+			case ADDITIVE:
+				effectTypes = append(effectTypes, packet.PackEffect{
+					EffectName: string(v[0].Type),
+					Duration:   float64(len(v)),
+				})
+			default:
+				log.Errorf("GetPackEffects 有尚未定義實作的StackType: %v", v[0].MyStackType)
+			}
+		}
 	}
 	return effectTypes
 }
@@ -327,9 +345,10 @@ func (g *Gladiator) createSkill(jsonSKill gameJson.JsonSkill) (float64, *Skill, 
 	var skill *Skill
 	err := g.UseSkill(jsonSKill.ID)
 	if err != nil {
-		log.Errorf("%s.UseSkill錯誤", g.ID)
+		log.Errorf("%s UseSkill錯誤: %v", g.ID, err)
 		return spellInit, nil, err
 	}
+	g.AddVigor(float64(-jsonSKill.Vigor))
 	skill, err = NewSkill(g, g.Opponent, jsonSKill)
 	if err != nil {
 		log.Errorf("NewSkill錯誤")
@@ -351,9 +370,7 @@ func (g *Gladiator) SetSkillByIDs(skillIDs [6]int) error {
 		return fmt.Errorf("技能數量不正確，期望 %d，實際 %d", GladiatorSkillCount, len(skillSlice))
 	}
 
-	for i, skill := range skillSlice {
-		jsonSkills[i] = skill
-	}
+	copy(jsonSkills[:], skillSlice)
 
 	handSkills, deck := GetHandsAndDeck(jsonSkills, false)
 	g.HandSkills = handSkills
@@ -382,4 +399,30 @@ func GetHandsAndDeck(jsonSkills [GladiatorSkillCount]gameJson.JsonSkill, shuffle
 		}
 	}
 	return handSkills, deck
+}
+
+// GetHandSkillsByActivationType 取得手牌中指定發動類型的技能
+func (g *Gladiator) GetHandSkillsByActivationType(activationType gameJson.ActivationType) []gameJson.JsonSkill {
+	var jsonSkills = make([]gameJson.JsonSkill, 0)
+	for i, v := range g.HandSkills {
+		if i < 3 {
+			if v.Activation == activationType {
+				jsonSkills = append(jsonSkills, v)
+			}
+		}
+	}
+	return jsonSkills
+}
+
+// GetAvaliableHandSkillsByActivationType 取得手牌中 體力足夠的指定發動類型的技能
+func (g *Gladiator) GetAvaliableHandSkillsByActivationType(activationType gameJson.ActivationType) []gameJson.JsonSkill {
+	var typeSkills = g.GetHandSkillsByActivationType(activationType)
+	jsonSkils := make([]gameJson.JsonSkill, 0)
+	for _, v := range typeSkills {
+		if v.Activation == gameJson.Instant && v.Vigor > int(g.CurVigor) { // 立即技能要確認體力是否足夠
+			continue
+		}
+		jsonSkils = append(jsonSkils, v)
+	}
+	return jsonSkils
 }

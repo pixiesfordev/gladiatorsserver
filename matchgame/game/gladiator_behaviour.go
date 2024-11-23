@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"gladiatorsGoModule/gameJson"
 	"gladiatorsGoModule/utility"
 	"math"
@@ -35,7 +36,7 @@ func (g *Gladiator) SetRush(on bool) {
 }
 
 // ActiveSkill 啟用技能
-func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) {
+func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) error {
 	switch jsonSkill.Activation {
 	case gameJson.Melee: // 肉搏技能
 		if on {
@@ -45,16 +46,22 @@ func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) {
 		}
 	case gameJson.Instant: // 即時技能
 		if on {
+			// 消耗體力
+			if int(g.CurVigor) < jsonSkill.Vigor {
+				log.Warnf("SpellInstantSkill 體力不足: %v", g.CurVigor)
+				return fmt.Errorf("玩家%v 嘗試施放體力不足的技能", g.Owner.GetID())
+			}
 			// 發動即時技能
 			_, skill, err := g.createSkill(jsonSkill)
 			if err != nil {
-				return
+				return err
 			}
 			g.SpellInstantSkill(skill)
 		}
 	default:
-		log.Errorf("未定義的技能啟用類型: %v", jsonSkill.Activation)
+		return fmt.Errorf("未定義的技能啟用類型: %v", jsonSkill.Activation)
 	}
+	return nil
 }
 
 // 執行擊退
@@ -94,37 +101,24 @@ func (myself *Gladiator) SpellInstantSkill(skill *Skill) {
 	if skill.JsonSkill.Activation != gameJson.Instant {
 		return
 	}
-	// 消耗體力
-	if int(myself.CurVigor) < skill.JsonSkill.Vigor {
-		log.Errorf("SpellInstantSkill 體力不足")
-		return
-	}
-	myself.AddVigor(float64(-skill.JsonSkill.Vigor))
 
-	// 計算命中技能花費的時間
-	hitMiliSecs := 0
 	if skill.JsonSkill.Init != 0 {
+		// 計算命中技能花費的時間
 		dist := getDistBetweenGladiators()
-		hitMiliSecs = int(math.Round((dist / skill.JsonSkill.Init) * 1000))
-	}
-	log.Infof("hitMiliSecs: %v", hitMiliSecs)
-	// 延遲時間後命中目標
-	time.AfterFunc(time.Duration(hitMiliSecs)*time.Millisecond, func() {
+		hitMiliSecs := int(math.Round((dist / skill.JsonSkill.Init) * 1000))
+		// 延遲時間後命中目標
+		time.AfterFunc(time.Duration(hitMiliSecs)*time.Millisecond, func() {
+			myself.Spell(skill)
+		})
+	} else {
 		myself.Spell(skill)
-	})
+	}
+
 }
 
 // Spell 施放技能
 func (myself *Gladiator) Spell(skill *Skill) {
-	if skill == nil {
-		return
-	}
-	// 消耗體力
-	if int(myself.CurVigor) < skill.JsonSkill.Vigor {
-		log.Errorf("Spell 體力不足")
-		return
-	}
-	myself.AddVigor(float64(-skill.JsonSkill.Vigor))
+	log.Infof("勇士 %s 發動技能: %v", myself.ID, skill.JsonSkill.ID)
 
 	// 執行技能效果
 	for _, effect := range skill.Effects {
@@ -132,13 +126,14 @@ func (myself *Gladiator) Spell(skill *Skill) {
 			log.Errorf("effect為nil")
 			continue
 		}
-		// 如果施法者或目標死亡就跳過
+		// 如果施法者或目標為nil
 		if effect.Target == nil || effect.Speller == nil {
 			log.Errorf("target 或 speller 為nil, target: %v speller: %v", effect.Target, effect.Speller)
-			continue
+			break
 		}
+		// 如果施法者或目標死亡就跳過
 		if !effect.Target.IsAlive() || !effect.Speller.IsAlive() {
-			continue
+			break
 		}
 		// 如果沒觸發成功就跳過
 		if !utility.GetProbResult(effect.Prob) {
@@ -167,7 +162,6 @@ func (myself *Gladiator) Spell(skill *Skill) {
 			effect.Target.AddEffect(effect)
 		}
 	}
-	log.Infof("勇士 %s 發動技能: %v", myself.ID, skill.JsonSkill.ID)
 
 	// 如果有ComboAttack就重複觸發技能
 	if effects, ok := myself.Effects[gameJson.ComboAttack]; ok {
@@ -176,6 +170,7 @@ func (myself *Gladiator) Spell(skill *Skill) {
 			myself.Spell(skill)
 		}
 	}
+
 }
 
 func AttackDmgModify(myself, target *Gladiator, effect *Effect) int {

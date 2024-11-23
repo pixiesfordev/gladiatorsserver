@@ -59,7 +59,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 	decoder := json.NewDecoder(conn)
 	conn.SetReadDeadline(time.Now().Add(game.TCP_CONN_TIMEOUT_SEC * time.Second))
 
-	packReadChan := &game.LoopChan{
+	packReadChan := &game.MyChan{
 		StopChan:      make(chan struct{}, 1),
 		ChanCloseOnce: sync.Once{},
 	}
@@ -69,7 +69,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 		select {
 		case <-stop:
 			log.Errorf("%s (TCP)強制終止連線", logger.LOG_Main)
-			packReadChan.ClosePackReadStopChan()
+			packReadChan.Close()
 			return
 		case <-packReadChan.StopChan:
 			log.Infof("%s (TCP)關閉封包讀取", logger.LOG_Main)
@@ -78,7 +78,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 			pack, err := packet.ReadPack(decoder)
 			if err != nil {
 				log.Infof("%s (TCP)packReadReadResult錯誤: %v.", logger.LOG_Main, err)
-				packReadChan.ClosePackReadStopChan()
+				packReadChan.Close()
 				return
 			}
 			if pack.CMD != packet.PING {
@@ -88,7 +88,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 			//未驗證前，除了Auth指令進來其他都擋掉
 			if !isAuth && pack.CMD != packet.AUTH {
 				log.Infof("%s 收到未驗證的封包", logger.LOG_Main)
-				packReadChan.ClosePackReadStopChan()
+				packReadChan.Close()
 				return
 			}
 			if pack.CMD == packet.AUTH {
@@ -158,7 +158,7 @@ func handleConnectionTCP(conn net.Conn, stop chan struct{}) {
 					err = game.MyRoom.JoinGamer(player)
 					if err != nil {
 						log.Errorf("%s 玩家加入房間失敗: %v", logger.LOG_Main, err)
-						packReadChan.ClosePackReadStopChan()
+						packReadChan.Close()
 						return
 					}
 				} else { // 斷線重連時使用已存在的玩家資料, 不須重建資料

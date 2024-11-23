@@ -52,7 +52,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		// 	return fmt.Errorf("%s 取mongoDB gladiator doc資料發生錯誤: %v", logger.LOG_Action, getDocErr)
 		// }
 
-		ChangeGameState(GAMESTATE_WAITINGPLAYERS)
+		ChangeGameState(GAMESTATE_WAITINGPLAYERS, true)
 		// 設定玩家使用的角鬥士
 		gladiator, err := NewTestGladiator(player, 1, []int{1, 1001, 1002, 1003, 1004, 1005}) // 測試用角鬥士
 		if err != nil {
@@ -122,11 +122,11 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			MyRoom.BroadCastPacket(-1, pack)
 
 			// 進入神祉技能倒數
-			ChangeGameState(GAMESTATE_SELECTINGDIVINESKILL)
+			ChangeGameState(GAMESTATE_SELECTINGDIVINESKILL, true)
 			go func() {
 				time.Sleep(time.Duration(SelectDivineCountDownSecs) * time.Second) // 等待後進入下一階段
 				if MyGameState == GAMESTATE_SELECTINGDIVINESKILL {                 // 如果選神祉倒數結束還沒進入戰鬥開始倒數階段就進入戰鬥開始倒數階段
-					ChangeGameState(GAMESTATE_COUNTINGDOWN)
+					ChangeGameState(GAMESTATE_COUNTINGDOWN, true)
 					go func() {
 						time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
 						StartFighting()
@@ -177,7 +177,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 
 		// 如果對手也選好技能就進入戰鬥開始倒數階段
 		if player.GetOpponent().IsSelectedDivineSkill() {
-			ChangeGameState(GAMESTATE_COUNTINGDOWN)
+			ChangeGameState(GAMESTATE_COUNTINGDOWN, true)
 			go func() {
 				time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
 				StartFighting()
@@ -239,7 +239,10 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				return fmt.Errorf("PackAction_Skill錯誤: %v", err)
 			}
 
-			player.GetGladiator().ActiveSkill(targetSkill, action.On)
+			err = player.GetGladiator().ActiveSkill(targetSkill, action.On)
+			if err != nil {
+				return err
+			}
 			// 處理立即技能 與 肉搏技能
 			if targetSkill.Activation == gameJson.Instant {
 				if action.On {
@@ -314,7 +317,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			}
 
 			// 走跟SetPlayer封包一樣的流程
-			ChangeGameState(GAMESTATE_WAITINGPLAYERS)
+			ChangeGameState(GAMESTATE_WAITINGPLAYERS, true)
 			// 設定玩家使用的角鬥士
 			gladiator, err := NewTestGladiator(player, gmAction.GladiatorID, gmAction.SkillIDs[:]) // 測試用角鬥士
 			if err != nil {
