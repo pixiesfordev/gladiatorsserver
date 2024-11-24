@@ -86,17 +86,19 @@ func handleConnectionTCP(ctx context.Context, conn net.Conn, cancel context.Canc
 				}
 				player, err = game.NewPlayer(dbPlayer.ID, conn)
 				if err != nil {
+					log.Errorf("%s (TCP)建立玩家錯誤: %v", logger.LOG_TCP, err)
 					cancel()
 					return
 				}
 			} else {
 				if !isAuth {
-					log.Errorf("%s 收到來自 %v 的未驗證封包", logger.LOG_TCP, remoteAddr)
+					log.Errorf("%s (TCP)收到來自 %v 的未驗證封包", logger.LOG_TCP, remoteAddr)
 					cancel()
+					return
 				}
 				err := game.HandleTCPMsg(player, pack)
 				if err != nil {
-					log.Errorf("%v HandleTCPMsg錯誤: %v", logger.LOG_TCP, err)
+					log.Errorf("%s (TCP)HandleTCPMsg錯誤: %v", logger.LOG_TCP, err)
 					cancel()
 					return
 				}

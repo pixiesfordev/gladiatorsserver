@@ -12,10 +12,12 @@ import (
 
 // 封包命令列表
 const (
-	AUTH          = "AUTH"          // (TCP)身分驗證
-	AUTH_TOCLIENT = "AUTH_TOCLIENT" // (TCP)身分驗證-送Client
-	PING          = "PING"          // (TCP)心跳(太久沒收到回傳會視玩家斷線)
-	PING_TOCLIENT = "PING_TOCLIENT" // (TCP)心跳-送Client(太久沒收到回傳會視玩家斷線)
+	AUTH           = "AUTH"           // (TCP)身分驗證
+	AUTH_TOCLIENT  = "AUTH_TOCLIENT"  // (TCP)身分驗證-送Client
+	PING           = "PING"           // (TCP)心跳(太久沒收到回傳會視玩家斷線)
+	PING_TOCLIENT  = "PING_TOCLIENT"  // (TCP)心跳-送Client(太久沒收到回傳會視玩家斷線)
+	MATCH          = "MATCH"          // (TCP)配對
+	MATCH_TOCLIENT = "MATCH_TOCLIENT" // (TCP)配對-送Client
 )
 
 type Pack struct {

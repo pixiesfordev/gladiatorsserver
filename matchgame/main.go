@@ -88,7 +88,7 @@ func main() {
 	var packID = int64(0)
 
 	if game.Mode == "standard" { // standard模式
-		var matchmakerPodName string
+		var lobbyPodName string
 		var err error
 		roomInit := false
 
@@ -105,7 +105,7 @@ func main() {
 			if !roomInit && gs.ObjectMeta.Labels["RoomName"] != "" {
 				log.Infof("%s 開始房間建立", logger.LOG_Main)
 
-				matchmakerPodName = gs.ObjectMeta.Labels["MatchmakerPodName"]
+				lobbyPodName = gs.ObjectMeta.Labels["LobbyPodName"]
 
 				playerIDs := [setting.PLAYER_NUMBER]string{}
 
@@ -136,12 +136,12 @@ func main() {
 				log.Infof("%s Port: %v", logger.LOG_Main, gs.Status.Ports[0].Port)
 				log.Infof("%s Get Info Finished", logger.LOG_Main)
 
-				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, int(gs.Status.Ports[0].Port), podName, nodeName, matchmakerPodName, roomCreatedChan)
+				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, int(gs.Status.Ports[0].Port), podName, nodeName, lobbyPodName, roomCreatedChan)
 				agones.SetServerState(agonesv1.GameServerStateAllocated) // 設定房間為Allocated(agones應該會在WatchGameServer後自動設定為Allocated但這邊還是主動設定)
 				log.Infof("%s GameServer狀態為: %s", logger.LOG_Main, gs.Status.State)
 				log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
 			} else {
-				if matchmakerPodName != "" && gs.ObjectMeta.Labels["MatchmakerPodName"] != "" && matchmakerPodName != gs.ObjectMeta.Labels["MatchmakerPodName"] {
+				if lobbyPodName != "" && gs.ObjectMeta.Labels["LobbyPodName"] != "" && lobbyPodName != gs.ObjectMeta.Labels["LobbyPodName"] {
 					log.Errorf("%s Agones has allocate error in parelle", logger.LOG_Main)
 				}
 			}
@@ -213,8 +213,6 @@ func main() {
 			log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
 		}()
 	}
-
-	// go TestLoop() // 測試Loop
 
 	stopChan := make(chan struct{})
 	endGameChan := make(chan struct{})

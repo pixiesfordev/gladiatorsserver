@@ -114,6 +114,10 @@ type DBMap struct {
 	Enable    bool      `bson:"enable"`
 }
 
+const (
+	MATCHTYPE_QUICK = "QUICK" // 快速配對
+)
+
 // gameSetting的GameState文件
 type DBGameState struct {
 	ID                       string    `bson:"_id"`
@@ -141,13 +145,13 @@ type DBTimer struct {
 
 // 遊戲房資料
 type DBMatchgame struct {
-	ID                string                        `bson:"_id"`
-	CreatedAt         time.Time                     `bson:"createdAt"`
-	DBMapID           string                        `bson:"dbMapID"`
-	IP                string                        `bson:"ip"`
-	MatchmakerPodName string                        `bson:"matchmakerPodName"`
-	NodeName          string                        `bson:"nodeName"`
-	PlayerIDs         [setting.PLAYER_NUMBER]string `bson:"playerIDs"`
-	PodName           string                        `bson:"podName"`
-	Port              int                           `bson:"port"`
+	ID           string                        `bson:"_id"`
+	CreatedAt    time.Time                     `bson:"createdAt"`
+	DBMapID      string                        `bson:"dbMapID"`
+	IP           string                        `bson:"ip"`
+	LobbyPodName string                        `bson:"lobbyPodName"`
+	NodeName     string                        `bson:"nodeName"`
+	PlayerIDs    [setting.PLAYER_NUMBER]string `bson:"playerIDs"`
+	PodName      string                        `bson:"podName"`
+	Port         int                           `bson:"port"`
 }

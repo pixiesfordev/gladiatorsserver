@@ -26,7 +26,7 @@ type Room struct {
 
 var MyRoom *Room // 房間
 
-func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomName string, ip string, port int, podName string, nodeName string, matchmakerPodName string, roomCreatedChan chan struct{}) {
+func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomName string, ip string, port int, podName string, nodeName string, lobbyPodName string, roomCreatedChan chan struct{}) {
 	log.Infof("%s InitGameRoom開始", logger.LOG_Room)
 	if MyRoom != nil {
 		log.Errorf("%s MyRoom已經被初始化過", logger.LOG_Room)
@@ -44,7 +44,7 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 	dbMatchgame.Port = port
 	dbMatchgame.NodeName = nodeName
 	dbMatchgame.PodName = podName
-	dbMatchgame.MatchmakerPodName = matchmakerPodName
+	dbMatchgame.LobbyPodName = lobbyPodName
 
 	log.Infof("%s 初始化房間設定", logger.LOG_Room)
 	// 初始化房間設定

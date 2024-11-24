@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 	"gladiatorsGoModule/env"
-	"gladiatorsGoModule/gameJson"
 	"gladiatorsGoModule/mongo"
-	"lobby/config"
+	"lobby/game"
 	"lobby/logger"
 	"lobby/middleware"
 	"lobby/restfulAPI"
@@ -21,9 +20,6 @@ func main() {
 	logger.InitLogger()
 	log.Infof("%s ============= Lobby 啟動 ==============", logger.LOG_Main)
 
-	// 設定環境版本
-	config.Set(env.GetEnv("Env", "Dev", "", false))
-
 	// 初始化 MongoDB 設定
 	initMongo(
 		env.GetEnv("MongoAPIPublicKey", "", "", false),
@@ -31,14 +27,9 @@ func main() {
 		env.GetEnv("MongoUser", "", "", false),
 		env.GetEnv("MongoPW", "", "", false),
 	)
-	// 初始化 GameJson
-	gameJson.Init(config.Env())
 
 	// 建立路由
 	initRouter(env.GetEnv("PORT_HTTPS", "", "", false))
-
-	// 初始化Agones
-	initAgones()
 
 	// 設定Loadbalance分配的對外IP
 	tcpPort := env.GetEnv("PORT_TCP", "", "", false)
@@ -47,6 +38,8 @@ func main() {
 		log.Errorf("%v podSet失敗: %v", logger.LOG_Main, err)
 		select {} // 停止主程式避免程式結束後又被K8s自動重啟
 	}
+
+	game.InitGame() // 初始化遊戲
 
 	// 建立[TCP]socket連線
 	initTcp(tcpPort)
@@ -58,8 +51,9 @@ func main() {
 // 初始化 MongoDB 設定
 func initMongo(mongoAPIPublicKey string, mongoAPIPrivateKey string, user string, pw string) {
 	log.Infof("%s 初始化 mongo 開始", logger.LOG_Main)
+	env := env.GetEnv("Env", "", "", false)
 	mongo.Init(mongo.InitData{
-		Env:           config.Env(),
+		Env:           env,
 		APIPublicKey:  mongoAPIPublicKey,
 		APIPrivateKey: mongoAPIPrivateKey,
 	}, user, pw)

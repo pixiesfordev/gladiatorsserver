@@ -43,7 +43,7 @@ const (
 	MaxVigor                       float64 = 20   // 最大體力
 	DefaultVigor                   float64 = 5    // 初始體力
 	SelectDivineCountDownSecs      int     = 10   // 選神祉技能倒數秒數
-	FightingCountDownSecs          int     = 3    // 戰鬥倒數秒數
+	FightingCountDownSecs          float64 = 6.4  // 戰鬥倒數秒數
 	Knockwall_Dmg                  int     = 10   // 撞牆傷害
 	Knockwall_DmgDelayMiliSecs     int     = 400  // Melee執行後幾毫秒才觸發撞牆傷害
 )

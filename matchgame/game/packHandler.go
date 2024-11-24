@@ -128,7 +128,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 				if MyGameState == GAMESTATE_SELECTINGDIVINESKILL {                 // 如果選神祉倒數結束還沒進入戰鬥開始倒數階段就進入戰鬥開始倒數階段
 					ChangeGameState(GAMESTATE_COUNTINGDOWN, true)
 					go func() {
-						time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
+						time.Sleep(time.Duration(FightingCountDownSecs * float64(time.Second)))
 						StartFighting()
 					}()
 				}
@@ -179,7 +179,7 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 		if player.GetOpponent().IsSelectedDivineSkill() {
 			ChangeGameState(GAMESTATE_COUNTINGDOWN, true)
 			go func() {
-				time.Sleep(time.Duration(FightingCountDownSecs) * time.Second) // 等待後開始戰鬥
+				time.Sleep(time.Duration(FightingCountDownSecs * float64(time.Second))) // 等待後開始戰鬥
 				StartFighting()
 			}()
 		}
