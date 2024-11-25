@@ -69,16 +69,17 @@ func handleConnectionTCP(ctx context.Context, conn net.Conn, cancel context.Canc
 					log.Errorf("%s (TCP)Auth解包錯誤: %v.", logger.LOG_TCP, err)
 					return
 				}
+				encoder := json.NewEncoder(conn)
 				dbPlayer, authErr := mongo.VerifyPlayerByToken(content.ConnToken)
 				if authErr != nil || dbPlayer == nil {
 					log.Errorf("%s %v驗證錯誤: %v", logger.LOG_TCP, remoteAddr, authErr)
-					encoder := json.NewEncoder(conn)
 					packet.SendPack(encoder, packet.Pack{
 						CMD:    packet.AUTH_TOCLIENT,
 						PackID: pack.PackID,
 						ErrMsg: "驗證錯誤",
 						Content: &packet.Auth_ToClient{
 							IsAuth: false,
+							Time:   time.Now().UnixMilli(),
 						},
 					})
 					cancel()
@@ -90,9 +91,24 @@ func handleConnectionTCP(ctx context.Context, conn net.Conn, cancel context.Canc
 					cancel()
 					return
 				}
+				isAuth = true
+				// 回送client
+				err = packet.SendPack(encoder, packet.Pack{
+					CMD:    packet.AUTH_TOCLIENT,
+					PackID: pack.PackID,
+					Content: packet.Auth_ToClient{
+						IsAuth: isAuth,
+					},
+				})
+				if err != nil {
+					log.Errorf("%s (TCP)回送Auth_ToClient錯誤: %v", logger.LOG_TCP, err)
+					cancel()
+					return
+				}
+
 			} else {
 				if !isAuth {
-					log.Errorf("%s (TCP)收到來自 %v 的未驗證封包", logger.LOG_TCP, remoteAddr)
+					log.Errorf("%s (TCP)收到來自 %v 的未驗證封包: %v", logger.LOG_TCP, remoteAddr, pack.CMD)
 					cancel()
 					return
 				}

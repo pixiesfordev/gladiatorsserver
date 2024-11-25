@@ -13,23 +13,23 @@ spec:
       labels:
         app: gladiators-lobby
         type: gladiators-lobby  # 標示為gladiators-service, 方便之後對版本做刪除等管理
-        imgVersion: "0.1.46"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
+        imgVersion: "0.1.61"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
     spec:
       containers:
       - name: gladiators-lobby
-        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-lobby:0.1.46
+        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-lobby:0.1.61
         resources:
           requests:
             memory: "32Mi"
-            cpu: "10m"
+            cpu: "20m"
           limits:
             memory: "64Mi"
-            cpu: "20m"
+            cpu: "40m"
         # 環境變數設定
         env:
         - name: "Env"
           value: "Dev"
-        - name: MY_POD_NAME
+        - name: PodName
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
@@ -78,3 +78,23 @@ spec:
       target:
         type: Utilization
         averageUtilization: 50
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gladiators-lobby
+  namespace: gladiators-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: gladiators-lobby
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8080  # HTTP 服務
+  - name: tcp-socket
+    protocol: TCP
+    port: 9090
+    targetPort: 9090  # 為 TCP socket 暴露的端口
+

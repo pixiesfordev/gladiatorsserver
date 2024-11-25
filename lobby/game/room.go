@@ -86,6 +86,13 @@ func (u *Usher) RemovePlayerFromQueue(player *Player, mapID string) {
 // MatchPlayers 配對玩家
 func (u *Usher) MatchPlayers() {
 	for {
+		log.Infof("%v 配對玩家循環", logger.LOG_Room)
+		var matchGroups []struct {
+			mapID   string
+			players []*Player
+		}
+
+		// 在較小的臨界區內完成玩家選擇
 		u.QueueLock.Lock()
 		for mapID, players := range u.Queue {
 			queueLen := len(players)
@@ -93,36 +100,37 @@ func (u *Usher) MatchPlayers() {
 				continue
 			}
 
-			// 更新索引以避免每次都從頭開始
 			startIdx := u.LastJoinRoomIdx % queueLen
-
-			// 根據循環索引找到配對的玩家
 			matchedPlayers := make([]*Player, ROOM_MAX_PLAYER)
 			for i := 0; i < ROOM_MAX_PLAYER; i++ {
 				matchedPlayers[i] = players[(startIdx+i)%queueLen]
 			}
 
-			// 更新 LastJoinRoomIdx
 			u.LastJoinRoomIdx = (startIdx + ROOM_MAX_PLAYER) % queueLen
-
-			// 從隊列中移除已配對的玩家
 			u.Queue[mapID] = append(players[:startIdx], players[startIdx+ROOM_MAX_PLAYER:]...)
 
-			// 建立房間
-			u.CreateRoom(mapID, matchedPlayers...)
+			// 將配對結果保存起來，稍後處理
+			matchGroups = append(matchGroups, struct {
+				mapID   string
+				players []*Player
+			}{mapID, matchedPlayers})
 		}
 		u.QueueLock.Unlock()
 
-		// 每次檢查排隊的間隔
+		// 在釋放 QueueLock 後再創建房間
+		for _, group := range matchGroups {
+			u.CreateRoom(group.mapID, group.players...)
+		}
+
 		time.Sleep(time.Duration(ROOM_MATCH_LOOP_MILISEC) * time.Millisecond)
 	}
 }
 
 // CreateRoom 建立房間
 func (u *Usher) CreateRoom(dbMapID string, players ...*Player) {
-
 	timestamp := time.Now()
 	roomID := fmt.Sprintf("%s_%v_%v", dbMapID, players[0].ID, timestamp)
+	log.Infof("%v 開始建立房間 %v，玩家資料: %v", logger.LOG_Room, roomID, players)
 	playerIDs := make([]string, len(players))
 	for i, player := range players {
 		playerIDs[i] = player.ID
@@ -174,5 +182,5 @@ func (u *Usher) CreateRoom(dbMapID string, players ...*Player) {
 		player.SendPacketToPlayer(pack)
 	}
 
-	log.Infof("%v 建立房間 %s，%d 位玩家配對成功", logger.LOG_Room, roomID, len(players))
+	log.Infof("%v 建立房間 %s 成功，%d 位玩家配對成功", logger.LOG_Room, roomID, len(players))
 }

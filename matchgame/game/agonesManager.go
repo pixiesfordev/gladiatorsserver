@@ -1,11 +1,11 @@
-package agones
+package game
 
 import (
-	agonesv1 "agones.dev/agones/pkg/apis/agones/v1"
-	"matchgame/game"
 	"matchgame/logger"
-	"os"
 	"time"
+
+	agonesv1 "agones.dev/agones/pkg/apis/agones/v1"
+
 	// serverSDK "agones.dev/agones/pkg/sdk"
 	// "agones.dev/agones/pkg/util/signals"
 	sdk "agones.dev/agones/sdks/go"
@@ -50,19 +50,17 @@ func SetServerState(state agonesv1.GameServerState) {
 
 }
 
-// 通知Agones關閉server並結束應用程式
-func ShutdownServer() {
+// 通知Agones關閉server，會把agones狀態標示回 Ready 代表可以再次被Lobby分配
+func ShutdownAgonesServer() {
 	if AgonesSDK == nil {
 		log.Errorf("%s 尚未初始化AgonesSDK", logger.LOG_Main)
 		return
 	}
-	log.Infof("%s Shutdown agones server and exit app.", logger.LOG_Main)
+	log.Infof("%s 將 Agones Server 狀態標示回 Ready", logger.LOG_Main)
 	// 通知Agones關閉server
 	if err := AgonesSDK.Shutdown(); err != nil {
-		log.Errorf("%s Could not call shutdown: %v", logger.LOG_Main, err)
+		log.Errorf("%s 通知Agones關閉server錯誤: %v", logger.LOG_Main, err)
 	}
-	// 結束應用
-	os.Exit(0)
 }
 
 // 送定時送Agones健康ping通知agones server遊戲房還活著
@@ -72,7 +70,7 @@ func AgonesHealthPin(stop <-chan struct{}) {
 		log.Errorf("%s 尚未初始化AgonesSDK", logger.LOG_Main)
 		return
 	}
-	tick := time.Tick(game.AGONES_HEALTH_PIN_INTERVAL_SEC * time.Second)
+	tick := time.Tick(AGONES_HEALTH_PIN_INTERVAL_SEC * time.Second)
 	for {
 		if err := AgonesSDK.Health(); err != nil {
 			log.Errorf("%s ping agones server錯誤: %v", logger.LOG_Main, err)

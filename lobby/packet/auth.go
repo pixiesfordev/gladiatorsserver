@@ -10,4 +10,5 @@ type Auth struct {
 type Auth_ToClient struct {
 	CMDContent
 	IsAuth bool // 是否驗證成功
+	Time   int64
 }

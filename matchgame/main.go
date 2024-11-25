@@ -19,7 +19,6 @@ import (
 	// "fmt"
 	"gladiatorsGoModule/gameJson"
 	mongo "gladiatorsGoModule/mongo"
-	"matchgame/agones"
 	"matchgame/game"
 	"os"
 	"time"
@@ -35,15 +34,73 @@ var Env string // 環境版本
 
 var PodName string // Pod名稱
 
-func main() {
-	// 設定日誌級別
+// 初始化日誌設置
+func initLogger() {
 	log.SetLevel(log.InfoLevel)
-	// 設定日誌輸出，預設為標準輸出
 	log.SetOutput(os.Stdout)
-	// 自定義時間格式，包含毫秒
 	log.SetFormatter(&log.JSONFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
+}
+
+// 從環境變量獲取配置
+func getEnvConfig() (*string, error) {
+	port := flag.String("port", "7654", "The port to listen to tcp traffic on")
+	if ep := os.Getenv("PORT"); ep != "" {
+		port = &ep
+	}
+
+	// 檢查必要的環境變量
+	if imgVer := os.Getenv("ImgVer"); imgVer != "" {
+		log.Infof("%s Image版本為: %s", logger.LOG_Main, imgVer)
+	} else {
+		log.Errorf("%s 取不到環境變數: ImgVer", logger.LOG_Main)
+	}
+
+	if game.Mode = os.Getenv("Mode"); game.Mode != "" {
+		log.Infof("%s Mode為: %s", logger.LOG_Main, game.Mode)
+	} else {
+		game.Mode = "standard"
+		log.Errorf("%s 取不到環境變數: Mode", logger.LOG_Main)
+	}
+
+	if PodName = os.Getenv("PodName"); PodName != "" {
+		log.Infof("%s PodName為: %s", logger.LOG_Main, PodName)
+	} else {
+		log.Errorf("%s 取不到環境變數: PodName", logger.LOG_Main)
+	}
+
+	Env = *flag.String("Version", "Dev", "version setting")
+	if ep := os.Getenv("Version"); ep != "" {
+		Env = ep
+	}
+
+	return port, nil
+}
+
+// 獲取MongoDB認證信息
+func getMongoCredentials() (string, string, string, string) {
+	return os.Getenv("MongoAPIPublicKey"),
+		os.Getenv("MongoAPIPrivateKey"),
+		os.Getenv("MongoUser"),
+		os.Getenv("MongoPW")
+}
+
+// 輸出房間初始化日誌
+func logRoomInitInfo(packID int64, podName, nodeName string, playerIDs [setting.PLAYER_NUMBER]string, dbMapID, roomName string, port interface{}) {
+	log.Infof("%s ==============開始初始化房間==============", logger.LOG_Main)
+	log.Infof("%s packID: %v", logger.LOG_Main, packID)
+	log.Infof("%s podName: %v", logger.LOG_Main, podName)
+	log.Infof("%s nodeName: %v", logger.LOG_Main, nodeName)
+	log.Infof("%s PlayerIDs: %s", logger.LOG_Main, playerIDs)
+	log.Infof("%s dbMapID: %s", logger.LOG_Main, dbMapID)
+	log.Infof("%s roomName: %s", logger.LOG_Main, roomName)
+	log.Infof("%s Port: %v", logger.LOG_Main, port)
+	log.Infof("%s Get Info Finished", logger.LOG_Main)
+}
+
+func main() {
+	initLogger()
 	defer func() {
 		if r := recover(); r != nil {
 			log.Errorf("Main Crash: %v", r)
@@ -51,71 +108,52 @@ func main() {
 	}()
 
 	log.Infof("%s ==============MATCHGAME 啟動==============", logger.LOG_Main)
-	port := flag.String("port", "7654", "The port to listen to tcp traffic on")
-	if ep := os.Getenv("PORT"); ep != "" {
-		port = &ep
+
+	port, err := getEnvConfig()
+	if err != nil {
+		log.Errorf("%s 獲取環境配置失敗: %v", logger.LOG_Main, err)
+		return
 	}
 
-	if imgVer := os.Getenv("ImgVer"); imgVer != "" {
-		log.Infof("%s Image版本為: %s", logger.LOG_Main, imgVer)
-	} else {
-		log.Errorf("%s 取不到環境變數: ImgVer", logger.LOG_Main)
-	}
-	if game.Mode = os.Getenv("Mode"); game.Mode != "" {
-		log.Infof("%s Mode為: %s", logger.LOG_Main, game.Mode)
-	} else {
-		game.Mode = "standard"
-		log.Errorf("%s 取不到環境變數: Mode", logger.LOG_Main)
-	}
-	if PodName = os.Getenv("PodName"); PodName != "" {
-		log.Infof("%s PodName為: %s", logger.LOG_Main, PodName)
-	} else {
-		log.Errorf("%s 取不到環境變數: PodName", logger.LOG_Main)
-	}
-	Env = *flag.String("Version", "Dev", "version setting")
-	if ep := os.Getenv("Version"); ep != "" {
-		Env = ep
-	}
 	if game.Mode != "non-agones" { // non-agones模式下不要呼叫初始化Agones, 也不要偵聽agones訊號
-		err := agones.InitAgones()
+		err := game.InitAgones()
 		if err != nil {
 			log.Errorf("%s %s", logger.LOG_Main, err)
 		}
 		go signalListen()
 	}
+
+	// 共用的初始化邏輯
+	mongoAPIPublicKey, mongoAPIPrivateKey, mongoUser, mongoPW := getMongoCredentials()
+	initMonogo(mongoAPIPublicKey, mongoAPIPrivateKey, mongoUser, mongoPW)
 	InitGameJson() // 初始化遊戲Json資料
+
 	roomCreatedChan := make(chan struct{})
 	var packID = int64(0)
 
-	if game.Mode == "standard" { // standard模式
+	if game.Mode == "standard" {
 		var lobbyPodName string
 		var err error
 		roomInit := false
 
-		agones.AgonesSDK.WatchGameServer(func(gs *serverSDK.GameServer) {
+		game.AgonesSDK.WatchGameServer(func(gs *serverSDK.GameServer) {
 
 			// log.Infof("%s 遊戲房狀態 %s", logger.LOG_Main, gs.Status.State)
 			defer func() {
 				if err := recover(); err != nil {
 					log.Errorf("%s 遊戲崩潰: %v.\n", logger.LOG_Main, err)
-					agones.AgonesSDK.Shutdown()
+					game.AgonesSDK.Shutdown()
 				}
 			}()
 
 			if !roomInit && gs.ObjectMeta.Labels["RoomName"] != "" {
-				log.Infof("%s 開始房間建立", logger.LOG_Main)
+				log.Infof("%s 開始新局遊戲", logger.LOG_Main)
 
 				lobbyPodName = gs.ObjectMeta.Labels["LobbyPodName"]
 
 				playerIDs := [setting.PLAYER_NUMBER]string{}
 
-				// 初始化MongoDB設定
-				mongoAPIPublicKey := os.Getenv("MongoAPIPublicKey")
-				mongoAPIPrivateKey := os.Getenv("MongoAPIPrivateKey")
-				mongoUser := os.Getenv("MongoUser")
-				mongoPW := os.Getenv("MongoPW")
-				initMonogo(mongoAPIPublicKey, mongoAPIPrivateKey, mongoUser, mongoPW)
-
+				// 從Agones取得房間資訊
 				dbMapID := gs.ObjectMeta.Labels["DBMapID"]
 				roomInit = true
 				packID, err = strconv.ParseInt(gs.ObjectMeta.Labels["PackID"], 10, 64)
@@ -125,19 +163,10 @@ func main() {
 				roomName := gs.ObjectMeta.Labels["RoomName"]
 				podName := gs.ObjectMeta.Name
 				nodeName := os.Getenv("NodeName")
-				log.Infof("%s ==============開始初始化房間==============", logger.LOG_Main)
-				log.Infof("%s packID: %v", logger.LOG_Main, packID)
-				log.Infof("%s podName: %v", logger.LOG_Main, podName)
-				log.Infof("%s nodeName: %v", logger.LOG_Main, nodeName)
-				log.Infof("%s PlayerIDs: %s", logger.LOG_Main, playerIDs)
-				log.Infof("%s dbMapID: %s", logger.LOG_Main, dbMapID)
-				log.Infof("%s roomName: %s", logger.LOG_Main, roomName)
-				log.Infof("%s Address: %s", logger.LOG_Main, gs.Status.Address)
-				log.Infof("%s Port: %v", logger.LOG_Main, gs.Status.Ports[0].Port)
-				log.Infof("%s Get Info Finished", logger.LOG_Main)
+				logRoomInitInfo(packID, podName, nodeName, playerIDs, dbMapID, roomName, int(gs.Status.Ports[0].Port))
 
 				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, int(gs.Status.Ports[0].Port), podName, nodeName, lobbyPodName, roomCreatedChan)
-				agones.SetServerState(agonesv1.GameServerStateAllocated) // 設定房間為Allocated(agones應該會在WatchGameServer後自動設定為Allocated但這邊還是主動設定)
+				game.SetServerState(agonesv1.GameServerStateAllocated) // 設定房間為Allocated(agones應該會在WatchGameServer後自動設定為Allocated但這邊還是主動設定)
 				log.Infof("%s GameServer狀態為: %s", logger.LOG_Main, gs.Status.State)
 				log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
 			} else {
@@ -148,7 +177,7 @@ func main() {
 		})
 	} else if game.Mode == "non-agones" { // non-agones模式
 
-		log.Infof("%s 開始房間建立", logger.LOG_Main)
+		log.Infof("%s 開始新局遊戲", logger.LOG_Main)
 
 		go func() {
 
@@ -157,59 +186,27 @@ func main() {
 				log.Errorf("%s parse Port錯誤: %v", logger.LOG_Main, parsePortErr)
 			}
 
-			// 初始化MongoDB設定
-			mongoAPIPublicKey := os.Getenv("MongoAPIPublicKey")
-			mongoAPIPrivateKey := os.Getenv("MongoAPIPrivateKey")
-			mongoUser := os.Getenv("MongoUser")
-			mongoPW := os.Getenv("MongoPW")
-			initMonogo(mongoAPIPublicKey, mongoAPIPrivateKey, mongoUser, mongoPW)
-
-			// 取Loadbalancer分配給此pod的對外IP並寫入資料庫(non-agones的連線方式不會透過Matchmaker分配房間再把ip回傳給client, 而是直接讓client去連資料庫matchgame的ip)
-			// 因為每個LoadBalancer Service似乎不支持
-			log.Infof("%s 取Loadbalancer分配給此pod的對外IP.\n", logger.LOG_Main)
-			tcpIP := ""
-			for tcpIP == "" {
-				// 因為pod啟動後Loadbalancer並不會立刻就分配好ip(會有延遲) 所以每5秒取一次 直到取到ip才往下跑
-				time.Sleep(1 * time.Second) // 每秒取一次ip
-				// 取TCP服務開放的對外IP
-				if tcpIP == "" {
-					getTcpIP, getTcpIPErr := getExternalIP(setting.MATCHGAME_TESTVER_TCP)
-					if getTcpIPErr != nil {
-						// 取得ip失敗
-						break
-					}
-					if getTcpIP != "" {
-						tcpIP = getTcpIP
-						log.Infof("%s 取得對外TCP IP成功: %s .\n", logger.LOG_Main, tcpIP)
-					}
-				}
-
-			}
+			// 處理外部IP和端口
+			tcpIP := getAndWaitForExternalIP()
 			setExternalIPandPort(tcpIP, int(myPort))
-			matchmakerPodName := ""
+
+			// 初始化房間資訊
+			lobbyPodName := ""
 			playerIDs := [setting.PLAYER_NUMBER]string{}
 
-			// 依據DBGameSetting中取GameState設定
-			log.Infof("%s 取DBGameState資料", logger.LOG_Main)
-			dbGameState, dbGameStateErr := mongo.GetDocByID[mongo.DBGameState](mongo.Col.GameSetting, "GameState")
-			if dbGameStateErr != nil {
-				log.Errorf("%s InitGameRoom時取DBGameState資料發生錯誤: %v", logger.LOG_Main, dbGameStateErr)
+			// 從DB取得房間資訊
+			dbGameState, err := mongo.GetDocByID[mongo.DBGameState](mongo.Col.GameSetting, "GameState")
+			if err != nil {
+				log.Errorf("%s InitGameRoom時取DBGameState資料發生錯誤: %v", logger.LOG_Main, err)
 			}
-			log.Infof("%s 取DBGameState資料成功", logger.LOG_Main)
 
 			dbMapID := dbGameState.MatchgameTestverMapID
 			roomName := dbGameState.MatchgameTestverRoomName
 			nodeName := os.Getenv("NodeName")
-			log.Infof("%s ==============開始初始化房間==============", logger.LOG_Main)
-			log.Infof("%s podName: %v", logger.LOG_Main, PodName)
-			log.Infof("%s nodeName: %v", logger.LOG_Main, nodeName)
-			log.Infof("%s PlayerIDs: %s", logger.LOG_Main, playerIDs)
-			log.Infof("%s dbMapID: %s", logger.LOG_Main, dbMapID)
-			log.Infof("%s roomName: %s", logger.LOG_Main, roomName)
-			log.Infof("%s Port: %v", logger.LOG_Main, port)
-			log.Infof("%s Get Info Finished", logger.LOG_Main)
 
-			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int(myPort), PodName, nodeName, matchmakerPodName, roomCreatedChan)
+			logRoomInitInfo(packID, PodName, nodeName, playerIDs, dbMapID, roomName, port)
+			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int(myPort), PodName, nodeName, lobbyPodName, roomCreatedChan)
+
 			log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
 		}()
 	}
@@ -217,8 +214,8 @@ func main() {
 	stopChan := make(chan struct{})
 	endGameChan := make(chan struct{})
 	if game.Mode != "non-agones" {
-		agones.SetServerState(agonesv1.GameServerStateReady) // 設定房間為Ready(才會被Matchmaker分配玩家進來)
-		go agones.AgonesHealthPin(stopChan)                  // Agones伺服器健康檢查
+		game.SetServerState(agonesv1.GameServerStateReady) // 設定房間為Ready(才會被Matchmaker分配玩家進來)
+		go game.AgonesHealthPin(stopChan)                  // Agones伺服器健康檢查
 	}
 	game.InitGame() // 初始化遊戲
 	<-roomCreatedChan
@@ -238,7 +235,7 @@ func main() {
 		// FirebaseFunction.DeleteGameRoom(RoomName)
 		log.Infof("%s game stop chan", logger.LOG_Main)
 		if game.Mode != "non-agones" { // non-agones模式下不使用agones服務
-			agones.ShutdownServer()
+			game.ShutdownAgonesServer()
 		}
 
 		return
@@ -247,13 +244,13 @@ func main() {
 		// FirebaseFunction.DeleteGameRoom(RoomName)
 		log.Infof("%s End game chan", logger.LOG_Main)
 		if game.Mode != "non-agones" { // non-agones模式下不使用agones服務
-			agones.DelayShutdownServer(60*time.Second, stopChan)
+			game.DelayShutdownServer(60*time.Second, stopChan)
 		}
 	}
 	<-stopChan
 
 	if game.Mode != "non-agones" { // non-agones模式下不使用agones服務
-		agones.ShutdownServer() // 關閉Server
+		game.ShutdownAgonesServer() // 關閉Server
 	}
 
 }
@@ -316,4 +313,23 @@ func signalListen() {
 	// FirebaseFunction.DeleteGameRoom(documentID)
 	log.Infof("%s Exit signal received. Shutting down.", logger.LOG_Main)
 	os.Exit(0)
+}
+
+// 新增的輔助函數：等待並獲取外部IP
+func getAndWaitForExternalIP() string {
+	log.Infof("%s 取Loadbalancer分配給此pod的對外IP.\n", logger.LOG_Main)
+	var tcpIP string
+	for tcpIP == "" {
+		time.Sleep(1 * time.Second)
+		getTcpIP, err := getExternalIP(setting.MATCHGAME_TESTVER_TCP)
+		if err != nil {
+			break
+		}
+		if getTcpIP != "" {
+			tcpIP = getTcpIP
+			log.Infof("%s 取得對外TCP IP成功: %s .\n", logger.LOG_Main, tcpIP)
+			break
+		}
+	}
+	return tcpIP
 }

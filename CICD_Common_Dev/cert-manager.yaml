@@ -50,3 +50,17 @@ spec:
     - http01:
         ingress:
           class: nginx
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gladiators-certification
+  namespace: gladiators-service
+spec:
+  secretName: gladiators-service-tls 
+  issuerRef:
+    name: gladiators-cert-issuer  
+    kind: ClusterIssuer
+  commonName: pixies.dev
+  dnsNames:
+  - pixies.dev

@@ -4,9 +4,9 @@ go 1.22.0
 
 toolchain go1.22.3
 
-replace gladiatorsGoModule => ../gladiatorsGoModule // for local
+// replace gladiatorsGoModule => ../gladiatorsGoModule // for local
 
-// replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker
+replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker
 
 require (
 	github.com/gorilla/mux v1.8.1

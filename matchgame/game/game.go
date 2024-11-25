@@ -160,6 +160,7 @@ func ResetGame(reason string) {
 	MyMeleeState = MELEESTATE_NORMAL
 	MyRoom.KickAllGamer(reason)
 	ChangeGameState(GAMESTATE_INITED, false)
+	ShutdownAgonesServer()
 }
 
 // 改變遊戲階段
