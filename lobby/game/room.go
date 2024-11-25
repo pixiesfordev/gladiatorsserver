@@ -31,10 +31,12 @@ type Room struct {
 
 // NewUsher 初始化 Usher
 func NewUsher() *Usher {
-	return &Usher{
+	usher := &Usher{
 		Rooms: make(map[string]*Room),
 		Queue: make(map[string][]*Player),
 	}
+	go usher.MatchPlayers()
+	return usher
 }
 
 func (u *Usher) Match(player *Player, dbMapID string) error {
@@ -85,8 +87,10 @@ func (u *Usher) RemovePlayerFromQueue(player *Player, mapID string) {
 
 // MatchPlayers 配對玩家
 func (u *Usher) MatchPlayers() {
+	log.Infof("%v 配對玩家循環開始", logger.LOG_Room)
+	defer log.Errorf("%v 配對玩家循環終止", logger.LOG_Room)
+
 	for {
-		log.Infof("%v 配對玩家循環", logger.LOG_Room)
 		var matchGroups []struct {
 			mapID   string
 			players []*Player
