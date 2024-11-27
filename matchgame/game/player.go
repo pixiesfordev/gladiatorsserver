@@ -83,7 +83,7 @@ func (player *Player) IsReady() bool {
 }
 
 func (player *Player) FinishSelectedDivineSkill() {
-	player.selectDivineSkillFinished = false
+	player.selectDivineSkillFinished = true
 }
 
 func (player *Player) IsSelectedDivineSkill() bool {

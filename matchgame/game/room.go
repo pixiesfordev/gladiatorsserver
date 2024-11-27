@@ -64,21 +64,23 @@ func (r *Room) KickTimeoutPlayer() {
 			log.Errorf("%s KickTimeoutPlayer 錯誤: %v", logger.LOG_Room, err)
 		}
 	}()
-	if MyGameState == GAMESTATE_INITED || MyGameState == GAMESTATE_INITIALIZING {
+	if MyGameState == GAMESTATE_READY {
 		return
-	}
-	for _, gamer := range r.Gamers {
-		if player, ok := gamer.(*Player); ok {
-			nowTime := time.Now()
-			// 玩家無心跳超過X秒就踢出遊戲房
-			// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
-			if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
-				MyRoom.KickPlayer(player, "玩家逾時踢出")
-			}
-		}
 	}
 	if MyRoom.PlayerCount() == 0 {
 		ResetGame("房間內無玩家")
+		return
+	} else {
+		for _, gamer := range r.Gamers {
+			if player, ok := gamer.(*Player); ok {
+				nowTime := time.Now()
+				// 玩家無心跳超過X秒就踢出遊戲房
+				// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
+				if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
+					MyRoom.KickPlayer(player, "玩家逾時踢出")
+				}
+			}
+		}
 	}
 }
 

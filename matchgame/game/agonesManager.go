@@ -50,13 +50,12 @@ func SetServerState(state agonesv1.GameServerState) {
 
 }
 
-// 通知Agones關閉server，會把agones狀態標示回 Ready 代表可以再次被Lobby分配
+// 通知Agones關閉server，pod會被回收
 func ShutdownAgonesServer() {
 	if AgonesSDK == nil {
 		log.Errorf("%s 尚未初始化AgonesSDK", logger.LOG_Main)
 		return
 	}
-	log.Infof("%s 將 Agones Server 狀態標示回 Ready", logger.LOG_Main)
 	// 通知Agones關閉server
 	if err := AgonesSDK.Shutdown(); err != nil {
 		log.Errorf("%s 通知Agones關閉server錯誤: %v", logger.LOG_Main, err)

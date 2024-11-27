@@ -55,34 +55,29 @@ func ReadPack(decoder *json.Decoder) (Pack, error) {
 	var packet Pack
 	err := decoder.Decode(&packet)
 
-	// 寫LOG
-	// log.WithFields(log.Fields{
-	// 	"cmd":     packet.CMD,
-	// 	"content": packet.Content,
-	// 	"error":   packet.ErrMsg,
-	// }).Infof("%s Read: %s", logger.LOG_Pack, packet.CMD)
 	if err != nil {
 		// 檢查是否為EOF錯誤
 		if err == io.EOF {
 			// 玩家已經斷線，記錄斷線日誌
 			log.WithFields(log.Fields{
-				"error": err.Error(),
+				"error":  err.Error(),
+				"cmd":    packet.CMD,
+				"packet": packet,
 			}).Info("目標玩家已斷線-EOF")
-		} else if strings.Contains(err.Error(), "connection reset by peer") {
+		} else if strings.Contains(err.Error(), "connection reset by peer") ||
+			strings.Contains(err.Error(), "use of closed network connection") {
 			// 連接被對端重置，記錄斷線日誌
 			log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Info("目標玩家已斷線-connection reset by peer")
-
-		} else if strings.Contains(err.Error(), "use of closed network connection") {
-			// 連接被對端重置，記錄斷線日誌
-			log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Info("目標玩家已斷線-use of closed network connection")
+				"error":  err.Error(),
+				"cmd":    packet.CMD,
+				"packet": packet,
+			}).Info("目標玩家已斷線-連線重置")
 		} else {
 			// 處理其他類型的錯誤
 			log.WithFields(log.Fields{
-				"error": err.Error(),
+				"error":  err.Error(),
+				"cmd":    packet.CMD,
+				"packet": packet,
 			}).Error("解包packet錯誤")
 		}
 		return packet, err
@@ -92,19 +87,7 @@ func ReadPack(decoder *json.Decoder) (Pack, error) {
 
 func SendPack(encoder *json.Encoder, packet Pack) error {
 
-	// pack, roundErr := roundDecimalCheck(&packet) // 對指定封包進行四捨五入
-	// if roundErr != nil {
-	// 	log.Errorf("%s 對指定封包進行四捨五入發生錯誤: %v", logger.LOG_Pack, roundErr)
-	// } else {
-	// 	packet = *pack
-	// }
 	err := encoder.Encode(packet)
-
-	// // 寫LOG
-	// log.WithFields(log.Fields{
-	// 	"cmd":     packet.CMD,
-	// 	"content": packet.Content,
-	// }).Infof("%s Send packet: %s", logger.LOG_Pack, packet.CMD)
 
 	if err != nil {
 		// 寫LOG

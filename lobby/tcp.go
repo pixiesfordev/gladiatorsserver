@@ -46,7 +46,7 @@ func handleConnectionTCP(ctx context.Context, conn net.Conn, cancel context.Canc
 		conn.Close()
 		cancel()
 	}()
-	conn.SetReadDeadline(time.Now().Add(60 * time.Second)) // 設定超時
+	conn.SetReadDeadline(time.Now().Add(game.CONN_TIMEOUT_SECONDS * time.Second)) // 設定超時
 	decoder := json.NewDecoder(conn)
 	isAuth := false
 	var player *game.Player
@@ -62,6 +62,7 @@ func handleConnectionTCP(ctx context.Context, conn net.Conn, cancel context.Canc
 				log.Errorf("%s (TCP)讀取封包錯誤: %v.", logger.LOG_TCP, err)
 				return
 			}
+			conn.SetReadDeadline(time.Now().Add(game.CONN_TIMEOUT_SECONDS * time.Second))
 			if pack.CMD == packet.AUTH {
 				content := packet.Auth{}
 				err := json.Unmarshal([]byte(pack.GetContentStr()), &content)
@@ -111,6 +112,9 @@ func handleConnectionTCP(ctx context.Context, conn net.Conn, cancel context.Canc
 					log.Errorf("%s (TCP)收到來自 %v 的未驗證封包: %v", logger.LOG_TCP, remoteAddr, pack.CMD)
 					cancel()
 					return
+				}
+				if pack.CMD != packet.PING {
+					log.Infof("%s (TCP)收到來自%s 的命令: %s \n", logger.LOG_TCP, remoteAddr, pack.CMD)
 				}
 				err := game.HandleTCPMsg(player, pack)
 				if err != nil {

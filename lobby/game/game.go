@@ -17,6 +17,7 @@ var MyDBMaps map[string]mongo.DBMap // 地圖資料
 
 // InitGame 初始化遊戲
 func InitGame() {
+	log.Infof("%v 初始化遊戲", logger.LOG_Main)
 	// 初始化Usher
 	MyUsher = NewUsher()
 	Env = env.GetEnv("Env", "", "", false)
@@ -30,6 +31,7 @@ func InitGame() {
 	}
 
 	InitAgones() // 初始化Agones
+	log.Infof("%v 初始化遊戲完成", logger.LOG_Main)
 }
 
 // initDBMaps 初始化地圖資料

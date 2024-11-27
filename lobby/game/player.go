@@ -14,10 +14,11 @@ import (
 var Players map[string]*Player
 
 type Player struct {
-	ID           string // 玩家ID
-	LastUpdateAt time.Time
-	ConnTCP      *ConnectionTCP // TCP連線
-	MyRoom       *Room          // 房間資料
+	ID            string // 玩家ID
+	LastUpdateAt  time.Time
+	ConnTCP       *ConnectionTCP // TCP連線
+	MyRoom        *Room          // 目前所在房間資料
+	QueueJoinTime time.Time      // 配房排隊時間
 }
 
 type ConnectionTCP struct {

@@ -220,7 +220,6 @@ func main() {
 	game.InitGame() // 初始化遊戲
 	<-roomCreatedChan
 	close(roomCreatedChan)
-	// ====================Room資料設定完成====================
 	log.Infof("%s ==============Room資料設定完成==============", logger.LOG_Main)
 
 	// 開啟連線

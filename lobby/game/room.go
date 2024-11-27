@@ -36,9 +36,11 @@ func NewUsher() *Usher {
 		Queue: make(map[string][]*Player),
 	}
 	go usher.MatchPlayers()
+	log.Infof("%v 配房者初始化完成", logger.LOG_Room)
 	return usher
 }
 
+// Match 配對玩家
 func (u *Usher) Match(player *Player, dbMapID string) error {
 	dbMap, ok := GetDBMap(dbMapID)
 	if !ok {
@@ -66,6 +68,7 @@ func (u *Usher) AddPlayerToQueue(player *Player, dbMapID string) {
 	u.QueueLock.Lock()
 	defer u.QueueLock.Unlock()
 
+	player.QueueJoinTime = time.Now()
 	u.Queue[dbMapID] = append(u.Queue[dbMapID], player)
 	log.Infof("%v 玩家 %s 加入地圖 %s 的排隊", logger.LOG_Room, player.ID, dbMapID)
 }
@@ -91,12 +94,52 @@ func (u *Usher) MatchPlayers() {
 	defer log.Errorf("%v 配對玩家循環終止", logger.LOG_Room)
 
 	for {
+		now := time.Now()
+		var timeoutPlayers [][]*Player // 逾時玩家
+
+		u.QueueLock.Lock()
+		for mapID, players := range u.Queue {
+			var remainingPlayers []*Player // 未逾時玩家
+			var timedOutPlayers []*Player  // 逾時玩家
+
+			// 檢查玩家是否逾時
+			for _, player := range players {
+				if now.Sub(player.QueueJoinTime) > MATCH_WAIT_MAX_TIME*time.Second {
+					timedOutPlayers = append(timedOutPlayers, player)
+				} else {
+					remainingPlayers = append(remainingPlayers, player)
+				}
+			}
+
+			// 如果排隊逾時玩家存在，則將未逾時玩家留下，並將逾時玩家加入逾時列表
+			if len(timedOutPlayers) > 0 {
+				u.Queue[mapID] = remainingPlayers
+				timeoutPlayers = append(timeoutPlayers, timedOutPlayers)
+			}
+		}
+		u.QueueLock.Unlock()
+
+		// 處理配對逾時的玩家
+		for _, players := range timeoutPlayers {
+			pack := packet.Pack{
+				CMD:    packet.MATCH_TOCLIENT,
+				ErrMsg: "配對逾時",
+			}
+			for _, player := range players {
+				player.SendPacketToPlayer(pack)
+				if player.MyRoom != nil {
+					u.RemovePlayerFromQueue(player, player.MyRoom.DbMapID)
+				}
+				log.Infof("%v 玩家 %s 配對逾時", logger.LOG_Room, player.ID)
+			}
+		}
+
 		var matchGroups []struct {
 			mapID   string
 			players []*Player
 		}
 
-		// 在較小的臨界區內完成玩家選擇
+		// 配對玩家
 		u.QueueLock.Lock()
 		for mapID, players := range u.Queue {
 			queueLen := len(players)
@@ -113,7 +156,7 @@ func (u *Usher) MatchPlayers() {
 			u.LastJoinRoomIdx = (startIdx + ROOM_MAX_PLAYER) % queueLen
 			u.Queue[mapID] = append(players[:startIdx], players[startIdx+ROOM_MAX_PLAYER:]...)
 
-			// 將配對結果保存起來，稍後處理
+			// 將配對結果保存起來，之後處理
 			matchGroups = append(matchGroups, struct {
 				mapID   string
 				players []*Player
@@ -121,9 +164,13 @@ func (u *Usher) MatchPlayers() {
 		}
 		u.QueueLock.Unlock()
 
-		// 在釋放 QueueLock 後再創建房間
+		// 根據配對結果建立房間
 		for _, group := range matchGroups {
-			u.CreateRoom(group.mapID, group.players...)
+			err := u.CreateRoom(group.mapID, group.players...)
+			if err != nil {
+				log.Errorf("%v 建立房間失敗: %v", logger.LOG_Room, err)
+				continue
+			}
 		}
 
 		time.Sleep(time.Duration(ROOM_MATCH_LOOP_MILISEC) * time.Millisecond)
@@ -131,9 +178,9 @@ func (u *Usher) MatchPlayers() {
 }
 
 // CreateRoom 建立房間
-func (u *Usher) CreateRoom(dbMapID string, players ...*Player) {
+func (u *Usher) CreateRoom(dbMapID string, players ...*Player) error {
 	timestamp := time.Now()
-	roomID := fmt.Sprintf("%s_%v_%v", dbMapID, players[0].ID, timestamp)
+	roomID := fmt.Sprintf("%s-%v-%v", dbMapID, players[0].ID, timestamp.UnixMilli())
 	log.Infof("%v 開始建立房間 %v，玩家資料: %v", logger.LOG_Room, roomID, players)
 	playerIDs := make([]string, len(players))
 	for i, player := range players {
@@ -161,6 +208,19 @@ func (u *Usher) CreateRoom(dbMapID string, players ...*Player) {
 		log.Errorf("%s CreateGameServer第%v次失敗: %v", logger.LOG_Room, i, err)
 		if i < CREATEROOM_RETRY_TIMES-1 {
 			<-timer.C
+		} else {
+			// 通知玩家配對失敗
+			pack := packet.Pack{
+				CMD:     packet.MATCH_TOCLIENT,
+				ErrMsg:  "開房失敗",
+				Content: &packet.Match_ToClient{},
+			}
+			for _, player := range players {
+				player.SendPacketToPlayer(pack)
+				u.RemovePlayerFromQueue(player, dbMapID)
+			}
+			log.Infof("%v 創建房間失敗，已將 %d 位玩家移出配對隊列", logger.LOG_Room, len(players))
+			return fmt.Errorf("%s CreateGameServer重試%d次後仍失敗: %v", logger.LOG_Room, CREATEROOM_RETRY_TIMES, err)
 		}
 	}
 
@@ -180,6 +240,9 @@ func (u *Usher) CreateRoom(dbMapID string, players ...*Player) {
 			PlayerIDs:     playerIDs,
 			DBMapID:       dbMapID,
 			DbMatchgameID: roomID,
+			IP:            room.GameServer.Status.Address,
+			Port:          room.GameServer.Status.Ports[0].Port,
+			PodName:       room.GameServer.Name,
 		},
 	}
 	for _, player := range players {
@@ -187,4 +250,5 @@ func (u *Usher) CreateRoom(dbMapID string, players ...*Player) {
 	}
 
 	log.Infof("%v 建立房間 %s 成功，%d 位玩家配對成功", logger.LOG_Room, roomID, len(players))
+	return nil
 }

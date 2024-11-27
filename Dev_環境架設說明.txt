@@ -21,8 +21,7 @@ kubectl config current-context
 # 列出k8s context清單
 kubectl config get-contexts
 # 指定使用某個context
-kubectl config use-context gke_mygladiators-dev_us-central1-a_cluster-dev
-
+gcloud container clusters get-credentials cluster-gladiators --zone=asia-east1-c --project mygladiators-dev
 
 # 在開始建環境先確保登入的GCP帳戶擁有Project IAM Admin權限(在專案持有帳戶加), 如果是使用帳戶擁有者就可以不用執行此步驟
 # 透過cli補其他權限, 要參考iam腳色清單可以查看官方文件: https://cloud.google.com/iam/docs/understanding-roles

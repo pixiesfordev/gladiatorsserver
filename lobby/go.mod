@@ -2,7 +2,7 @@ module lobby
 
 go 1.22.0
 
-toolchain go1.22.3
+toolchain go1.22.0
 
 replace gladiatorsGoModule => ../gladiatorsGoModule // for local
 

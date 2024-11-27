@@ -1,6 +1,6 @@
 module matchgame_test
 
-go 1.22.3
+go 1.22.0
 
 require github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 

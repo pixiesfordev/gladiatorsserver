@@ -13,13 +13,15 @@ import (
 	"sync"
 	"time"
 
+	agonesv1 "agones.dev/agones/pkg/apis/agones/v1"
 	log "github.com/sirupsen/logrus"
 )
 
 type GameState string // 目前遊戲狀態列舉
 const (
-	GAMESTATE_INITIALIZING         GameState = "GAMESTATE_INITIALIZING"
-	GAMESTATE_INITED               GameState = "GAMESTATE_INITED"
+	GAMESTATE_INITIALIZING         GameState = "GAMESTATE_INITIALIZING"         // 初始化中
+	GAMESTATE_INITED               GameState = "GAMESTATE_INITED"               // 初始化完成
+	GAMESTATE_READY                GameState = "GAMESTATE_READY"                // 房間待玩家配對
 	GAMESTATE_WAITINGPLAYERS       GameState = "GAMESTATE_WAITINGPLAYERS"       // 等待雙方玩家入場
 	GAMESTATE_SELECTINGDIVINESKILL GameState = "GAMESTATE_SELECTINGDIVINESKILL" // 選擇神祉技能
 	GAMESTATE_COUNTINGDOWN         GameState = "GAMESTATE_COUNTINGDOWN"         // 戰鬥倒數開始中
@@ -32,7 +34,7 @@ const (
 	TCP_CONN_TIMEOUT_SEC                   = 120  // TCP連線逾時時間X秒
 	BattleLOOP_MILISECS            int     = 100  // 戰鬥每X毫秒循環
 	GameLOOP_MILISECS              int     = 1000 // 遊戲每X毫秒循環
-	KICK_PLAYER_SECS               float64 = 10   // 最長允許玩家無心跳X秒後踢出遊戲房
+	KICK_PLAYER_SECS               float64 = 30   // 最長允許玩家無心跳X秒後踢出遊戲房
 	MarketDivineSkillCount                 = 4    // 有幾個神祉技能可以購買
 	DivineSkillCount                       = 2    // 玩家可以買幾個神祉技能
 	GladiatorSkillCount                    = 6    // 玩家有幾個技能
@@ -159,8 +161,8 @@ func StartFighting() {
 func ResetGame(reason string) {
 	MyMeleeState = MELEESTATE_NORMAL
 	MyRoom.KickAllGamer(reason)
-	ChangeGameState(GAMESTATE_INITED, false)
-	ShutdownAgonesServer()
+	ChangeGameState(GAMESTATE_READY, false)
+	SetServerState(agonesv1.GameServerStateReady) // 將pod狀態標示回Ready，代表可以再次被Lobby分配
 }
 
 // 改變遊戲階段
@@ -191,6 +193,11 @@ func RunGameTimer(stop chan struct{}) {
 			stop <- struct{}{}
 		}
 	}()
+
+	// 等待5秒再開始跑
+	time.Sleep(5 * time.Second)
+	log.Infof("開始RunGameTimer")
+
 	battleTicker := time.NewTicker(time.Duration(BattleLOOP_MILISECS) * time.Millisecond)
 	gameTicker := time.NewTicker(time.Duration(GameLOOP_MILISECS) * time.Millisecond)
 	defer battleTicker.Stop()
