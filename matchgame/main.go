@@ -87,9 +87,8 @@ func getMongoCredentials() (string, string, string, string) {
 }
 
 // 輸出房間初始化日誌
-func logRoomInitInfo(packID int64, podName, nodeName string, playerIDs [setting.PLAYER_NUMBER]string, dbMapID, roomName string, port interface{}) {
+func logRoomInitInfo(podName, nodeName string, playerIDs [setting.PLAYER_NUMBER]string, dbMapID, roomName string, port interface{}) {
 	log.Infof("%s ==============開始初始化房間==============", logger.LOG_Main)
-	log.Infof("%s packID: %v", logger.LOG_Main, packID)
 	log.Infof("%s podName: %v", logger.LOG_Main, podName)
 	log.Infof("%s nodeName: %v", logger.LOG_Main, nodeName)
 	log.Infof("%s PlayerIDs: %s", logger.LOG_Main, playerIDs)
@@ -128,13 +127,8 @@ func main() {
 	initMonogo(mongoAPIPublicKey, mongoAPIPrivateKey, mongoUser, mongoPW)
 	InitGameJson() // 初始化遊戲Json資料
 
-	roomCreatedChan := make(chan struct{})
-	var packID = int64(0)
-
 	if game.Mode == "standard" {
 		var lobbyPodName string
-		var err error
-		roomInit := false
 
 		game.AgonesSDK.WatchGameServer(func(gs *serverSDK.GameServer) {
 
@@ -146,8 +140,9 @@ func main() {
 				}
 			}()
 
-			if !roomInit && gs.ObjectMeta.Labels["RoomName"] != "" {
-				log.Infof("%s 開始新局遊戲", logger.LOG_Main)
+			if !game.GetAgonesAllocated() && gs.ObjectMeta.Labels["RoomName"] != "" {
+				game.SetAgonesAllocated(true)
+				log.Infof("%s 開始新局遊戲 Mode: %s", logger.LOG_Main, game.Mode)
 
 				lobbyPodName = gs.ObjectMeta.Labels["LobbyPodName"]
 
@@ -155,17 +150,12 @@ func main() {
 
 				// 從Agones取得房間資訊
 				dbMapID := gs.ObjectMeta.Labels["DBMapID"]
-				roomInit = true
-				packID, err = strconv.ParseInt(gs.ObjectMeta.Labels["PackID"], 10, 64)
-				if err != nil {
-					log.Errorf("%s strconv.ParseInt packID錯誤: %v", logger.LOG_Main, err)
-				}
 				roomName := gs.ObjectMeta.Labels["RoomName"]
 				podName := gs.ObjectMeta.Name
 				nodeName := os.Getenv("NodeName")
-				logRoomInitInfo(packID, podName, nodeName, playerIDs, dbMapID, roomName, int(gs.Status.Ports[0].Port))
+				logRoomInitInfo(podName, nodeName, playerIDs, dbMapID, roomName, int(gs.Status.Ports[0].Port))
 
-				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, int(gs.Status.Ports[0].Port), podName, nodeName, lobbyPodName, roomCreatedChan)
+				game.InitGameRoom(dbMapID, playerIDs, roomName, gs.Status.Address, int(gs.Status.Ports[0].Port), podName, nodeName, lobbyPodName)
 				game.SetServerState(agonesv1.GameServerStateAllocated) // 設定房間為Allocated(agones應該會在WatchGameServer後自動設定為Allocated但這邊還是主動設定)
 				log.Infof("%s GameServer狀態為: %s", logger.LOG_Main, gs.Status.State)
 				log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
@@ -177,7 +167,7 @@ func main() {
 		})
 	} else if game.Mode == "non-agones" { // non-agones模式
 
-		log.Infof("%s 開始新局遊戲", logger.LOG_Main)
+		log.Infof("%s 開始新局遊戲 Mode: %s", logger.LOG_Main, game.Mode)
 
 		go func() {
 
@@ -204,8 +194,8 @@ func main() {
 			roomName := dbGameState.MatchgameTestverRoomName
 			nodeName := os.Getenv("NodeName")
 
-			logRoomInitInfo(packID, PodName, nodeName, playerIDs, dbMapID, roomName, port)
-			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int(myPort), PodName, nodeName, lobbyPodName, roomCreatedChan)
+			logRoomInitInfo(PodName, nodeName, playerIDs, dbMapID, roomName, port)
+			game.InitGameRoom(dbMapID, playerIDs, roomName, "", int(myPort), PodName, nodeName, lobbyPodName)
 
 			log.Infof("%s ==============初始化房間完成==============", logger.LOG_Main)
 		}()
@@ -218,8 +208,6 @@ func main() {
 		go game.AgonesHealthPin(stopChan)                  // Agones伺服器健康檢查
 	}
 	game.InitGame() // 初始化遊戲
-	<-roomCreatedChan
-	close(roomCreatedChan)
 	log.Infof("%s ==============Room資料設定完成==============", logger.LOG_Main)
 
 	// 開啟連線

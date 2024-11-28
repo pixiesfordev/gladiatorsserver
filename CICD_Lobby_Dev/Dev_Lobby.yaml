@@ -13,11 +13,11 @@ spec:
       labels:
         app: gladiators-lobby
         type: gladiators-lobby  # 標示為gladiators-service, 方便之後對版本做刪除等管理
-        imgVersion: "0.1.76"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
+        imgVersion: "0.1.77"       # 加版本標籤, 未來方便針對某個版本進行移除也要連agones產生的gameserver一起移除, 版本必須要跟image版本一致
     spec:
       containers:
       - name: gladiators-lobby
-        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-lobby:0.1.76
+        image: asia-east1-docker.pkg.dev/mygladiators-dev/gladiators/gladiators-lobby:0.1.77
         resources:
           requests:
             memory: "32Mi"

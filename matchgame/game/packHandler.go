@@ -328,45 +328,50 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			if Mode == "non-agones" { // 遊戲模式是測試模式時, 自動加入Bot
 				AddBot() // 加入BOT
 			}
-
+			log.Infof("%s 收到GM設定角鬥士 GamerCount(): %v", logger.LOG_Action, MyRoom.GamerCount())
 			if MyRoom.GamerCount() == 2 { // 如果雙方都進入房間就設定雙方玩家的Opponent
 				opponent := MyRoom.Gamers[0]
 				if player == MyRoom.Gamers[0] {
 					opponent = MyRoom.Gamers[1]
 				}
-				player.SetOpponent(opponent)
-				player.GetGladiator().Opponent = opponent.GetGladiator()
-				opponent.SetOpponent(player)
-				opponent.GetGladiator().Opponent = player.GetGladiator()
 
-				if player.MyGladiator != nil && opponent != nil && opponent.GetGladiator() != nil {
-					// 回送封包
-					myPack := packet.Pack{
-						CMD:    packet.SETPLAYER_TOCLIENT,
-						PackID: -1,
-						Content: &packet.SetPlayer_ToClient{
-							Time:               time.Now().UnixMilli(),
-							MyPackPlayer:       player.GetPackPlayer(true),
-							OpponentPackPlayer: player.GetOpponentPackPlayer(false),
-						},
-					}
-					player.SendPacketToPlayer(myPack)
+				if opponent != nil && player.GetGladiator() != nil && opponent.GetGladiator() != nil {
+					player.SetOpponent(opponent)
+					player.GetGladiator().Opponent = opponent.GetGladiator()
+					opponent.SetOpponent(player)
+					opponent.GetGladiator().Opponent = player.GetGladiator()
 
-					// 送對手封包
-					opponent, ok := player.GetOpponent().(*Player)
-					if ok {
-						opponentPack := packet.Pack{
+					if player.MyGladiator != nil && opponent != nil && opponent.GetGladiator() != nil {
+						// 回送封包
+						myPack := packet.Pack{
 							CMD:    packet.SETPLAYER_TOCLIENT,
 							PackID: -1,
 							Content: &packet.SetPlayer_ToClient{
 								Time:               time.Now().UnixMilli(),
-								MyPackPlayer:       opponent.GetPackPlayer(true),
-								OpponentPackPlayer: player.GetPackPlayer(false),
+								MyPackPlayer:       player.GetPackPlayer(true),
+								OpponentPackPlayer: player.GetOpponentPackPlayer(false),
 							},
 						}
-						opponent.SendPacketToPlayer(opponentPack)
+						player.SendPacketToPlayer(myPack)
+
+						// 送對手封包
+						opponent, ok := player.GetOpponent().(*Player)
+						if ok {
+							opponentPack := packet.Pack{
+								CMD:    packet.SETPLAYER_TOCLIENT,
+								PackID: -1,
+								Content: &packet.SetPlayer_ToClient{
+									Time:               time.Now().UnixMilli(),
+									MyPackPlayer:       opponent.GetPackPlayer(true),
+									OpponentPackPlayer: player.GetPackPlayer(false),
+								},
+							}
+							opponent.SendPacketToPlayer(opponentPack)
+						}
 					}
+
 				}
+
 			}
 		}
 	}

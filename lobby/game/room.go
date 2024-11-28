@@ -247,6 +247,7 @@ func (u *Usher) CreateRoom(dbMapID string, players ...*Player) error {
 	}
 	for _, player := range players {
 		player.SendPacketToPlayer(pack)
+		time.Sleep(2 * time.Second) // 等待2秒在讓下一個玩家進入房間
 	}
 
 	log.Infof("%v 建立房間 %s 成功，%d 位玩家配對成功", logger.LOG_Room, roomID, len(players))

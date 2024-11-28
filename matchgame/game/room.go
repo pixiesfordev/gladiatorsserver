@@ -26,12 +26,8 @@ type Room struct {
 
 var MyRoom *Room // 房間
 
-func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomName string, ip string, port int, podName string, nodeName string, lobbyPodName string, roomCreatedChan chan struct{}) {
+func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomName string, ip string, port int, podName string, nodeName string, lobbyPodName string) {
 	log.Infof("%s InitGameRoom開始", logger.LOG_Room)
-	if MyRoom != nil {
-		log.Errorf("%s MyRoom已經被初始化過", logger.LOG_Room)
-		return
-	}
 
 	log.Infof("%s 設定dbMatchgame資料", logger.LOG_Room)
 	// 設定dbMatchgame資料
@@ -55,7 +51,6 @@ func InitGameRoom(dbMapID string, playerIDs [setting.PLAYER_NUMBER]string, roomN
 	}
 	MyRoom.UpdateMatchgameToDB()
 	log.Infof("%s InitGameRoom完成", logger.LOG_Room)
-	roomCreatedChan <- struct{}{}
 }
 
 func (r *Room) KickTimeoutPlayer() {
@@ -64,23 +59,23 @@ func (r *Room) KickTimeoutPlayer() {
 			log.Errorf("%s KickTimeoutPlayer 錯誤: %v", logger.LOG_Room, err)
 		}
 	}()
-	if MyGameState == GAMESTATE_READY {
+	if MyRoom == nil || MyRoom.PlayerCount() == 0 {
 		return
+	}
+
+	for _, gamer := range r.Gamers {
+		if player, ok := gamer.(*Player); ok {
+			nowTime := time.Now()
+			// 玩家無心跳超過X秒就踢出遊戲房
+			// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
+			if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
+				MyRoom.KickPlayer(player, "玩家逾時踢出")
+			}
+		}
 	}
 	if MyRoom.PlayerCount() == 0 {
 		ResetGame("房間內無玩家")
 		return
-	} else {
-		for _, gamer := range r.Gamers {
-			if player, ok := gamer.(*Player); ok {
-				nowTime := time.Now()
-				// 玩家無心跳超過X秒就踢出遊戲房
-				// log.Infof("%s 目前玩家 %s 已經無回應 %.0f 秒了", logger.LOG_Room, player.GetID(), nowTime.Sub(player.LastUpdateAt).Seconds())
-				if nowTime.Sub(player.LastUpdateAt) > time.Duration(KICK_PLAYER_SECS)*time.Second {
-					MyRoom.KickPlayer(player, "玩家逾時踢出")
-				}
-			}
-		}
 	}
 }
 

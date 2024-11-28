@@ -6,6 +6,7 @@ import (
 	"gladiatorsGoModule/utility"
 	"math"
 	"net"
+	"sync/atomic"
 
 	"encoding/json"
 	logger "matchgame/logger"
@@ -49,6 +50,14 @@ const (
 	Knockwall_Dmg                  int     = 10   // 撞牆傷害
 	Knockwall_DmgDelayMiliSecs     int     = 400  // Melee執行後幾毫秒才觸發撞牆傷害
 )
+
+var AgonesAllocated atomic.Bool // 是否已經分配到玩家
+func SetAgonesAllocated(value bool) {
+	AgonesAllocated.Store(value)
+}
+func GetAgonesAllocated() bool {
+	return AgonesAllocated.Load()
+}
 
 // Tag 標籤
 type Tag string
@@ -163,6 +172,7 @@ func ResetGame(reason string) {
 	MyRoom.KickAllGamer(reason)
 	ChangeGameState(GAMESTATE_READY, false)
 	SetServerState(agonesv1.GameServerStateReady) // 將pod狀態標示回Ready，代表可以再次被Lobby分配
+	SetAgonesAllocated(false)                     // 將AgonesAllocated設為false
 }
 
 // 改變遊戲階段
