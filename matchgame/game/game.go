@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gladiatorsGoModule/gameJson"
 	"gladiatorsGoModule/utility"
-	"math"
 	"net"
 	"sync/atomic"
 
@@ -31,24 +30,28 @@ const (
 )
 
 const (
-	AGONES_HEALTH_PIN_INTERVAL_SEC         = 2    // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
-	TCP_CONN_TIMEOUT_SEC                   = 120  // TCP連線逾時時間X秒
-	BattleLOOP_MILISECS            int     = 100  // 戰鬥每X毫秒循環
-	GameLOOP_MILISECS              int     = 1000 // 遊戲每X毫秒循環
-	KICK_PLAYER_SECS               float64 = 30   // 最長允許玩家無心跳X秒後踢出遊戲房
-	MarketDivineSkillCount                 = 4    // 有幾個神祉技能可以購買
-	DivineSkillCount                       = 2    // 玩家可以買幾個神祉技能
-	GladiatorSkillCount                    = 6    // 玩家有幾個技能
-	HandSkillCount                         = 4    // 玩家手牌技能, 索引0的技能是下一張牌
-	WAIT_BATTLE_START                      = 2    // (測試用)BattleStart等待時間
-	DIST_MELEE                             = 4    //  相距X單位就肉搏
-	DIST_BEFORE_MELEE                      = 6    //  相距X單位送表演肉搏技能
-	MaxVigor                       float64 = 20   // 最大體力
-	DefaultVigor                   float64 = 5    // 初始體力
-	SelectDivineCountDownSecs      int     = 10   // 選神祉技能倒數秒數
-	FightingCountDownSecs          float64 = 6.4  // 戰鬥倒數秒數
-	Knockwall_Dmg                  int     = 10   // 撞牆傷害
-	Knockwall_DmgDelayMiliSecs     int     = 400  // Melee執行後幾毫秒才觸發撞牆傷害
+	AGONES_HEALTH_PIN_INTERVAL_SEC         = 2   // 每X秒檢查AgonesServer是否正常運作(官方文件範例是用2秒)
+	TCP_CONN_TIMEOUT_SEC                   = 120 // TCP連線逾時時間X秒
+	KICK_PLAYER_SECS               float64 = 30  // 最長允許玩家無心跳X秒後踢出遊戲房
+)
+
+// 戰鬥
+const (
+	BattleLOOP_MILISECS        int     = 100  // 戰鬥每X毫秒循環
+	GameLOOP_MILISECS          int     = 1000 // 遊戲每X毫秒循環
+	MarketDivineSkillCount             = 4    // 有幾個神祉技能可以購買
+	DivineSkillCount                   = 2    // 玩家可以買幾個神祉技能
+	GladiatorSkillCount                = 6    // 玩家有幾個技能
+	HandSkillCount                     = 4    // 玩家手牌技能, 索引0的技能是下一張牌
+	DIST_MELEE                         = 4    //  相距X單位就肉搏
+	DIST_BEFORE_MELEE                  = 4    //  相距X單位送表演肉搏技能
+	DIST_LOCK_INSTANT                  = 6    //  相距X單位送鎖住技能
+	MaxVigor                   float64 = 20   // 最大體力
+	DefaultVigor               float64 = 5    // 初始體力
+	SelectDivineCountDownSecs  int     = 10   // 選神祉技能倒數秒數
+	FightingCountDownSecs      float64 = 6.4  // 戰鬥倒數秒數
+	Knockwall_Dmg              int     = 10   // 撞牆傷害
+	Knockwall_DmgDelayMiliSecs int     = 400  // Melee執行後幾毫秒才觸發撞牆傷害
 )
 
 var AgonesAllocated atomic.Bool // 是否已經分配到玩家
@@ -69,6 +72,7 @@ const (
 	SKILL_DIVINE      = "SKILL_DIVINE"  // 神祉技能
 	KNOCKBACK         = "KNOCKBACK"     // 擊退
 	MOVE              = "MOVE"          // 移動
+	IMMOBILE          = "IMMOBILE"      // 無法移動
 	//  效果類
 	PDMG          = "PDMG"
 	MDMG          = "MDMG"
@@ -84,12 +88,7 @@ const (
 
 )
 
-// 戰鬥
-const (
-	WallPos          = 20.0 // 中心點距離牆壁的單位數, 填20代表中心點左右20單位是牆壁, 也就是戰鬥場地總長度是40
-	InitGladiatorPos = 16.0 // 雙方角鬥士初始位置, 填16代表, 角鬥士戰鬥開始的起始位置距離中心點16單位
-)
-
+var LockInstantSkill bool = false            // 是否鎖住技能-距離一定單位會鎖住立即類技能，避免因立即技能與肉搏同時施放導致體力消耗問題
 var IDAccumulator = utility.NewAccumulator() // 產生一個ID累加器
 // Mode模式分為以下:
 // standard:一般版本
@@ -243,7 +242,7 @@ func snedGladiatorStatePackToClient(packID int64) {
 			}
 			// 設定自己的PackGladiatorState
 			myGState := packet.PackGladiatorState{
-				CurPos:      utility.RoundToDecimal(myGladiator.CurPos, 3),
+				CurPos:      myGladiator.CurPos.Round2(),
 				CurSpd:      myGladiator.GetSpd(),
 				CurVigor:    utility.RoundToDecimal(myGladiator.CurVigor, 2),
 				Rush:        myGladiator.IsRush,
@@ -261,7 +260,7 @@ func snedGladiatorStatePackToClient(packID int64) {
 				return
 			}
 			opponentGState := packet.PackGladiatorState{
-				CurPos:      utility.RoundToDecimal(opponentGladiator.CurPos, 3),
+				CurPos:      opponentGladiator.CurPos.Round2(),
 				CurSpd:      opponentGladiator.GetSpd(),
 				CurVigor:    0, // 對手的體力是隱藏資訊
 				Rush:        opponentGladiator.IsRush,
@@ -395,19 +394,34 @@ func checkMelee() {
 		return
 	}
 
-	dis := math.Abs(g1.CurPos - g2.CurPos)
+	dis := g1.CurPos.DistanceTo(g2.CurPos)
+	// 肉搏前-施放表演肉搏技能
 	if MyMeleeState == MELEESTATE_NORMAL {
 		if dis < DIST_BEFORE_MELEE {
 			// log.Errorf("before melee dis: %v", dis)
 			MyMeleeState = MELEESTATE_WAITTOMELEE
 			sendBeforeMelee(gamer1, gamer2, g1, g2)
 		}
-	} else if MyMeleeState == MELEESTATE_WAITTOMELEE {
+	} else if MyMeleeState == MELEESTATE_WAITTOMELEE { // 肉搏-施放技能
 		if dis < DIST_MELEE {
 			// log.Errorf("melee dis: %v", dis)
 			melee(gamer1, gamer2, g1, g2)
 			MyMeleeState = MELEESTATE_NORMAL
 		}
+	}
+
+	// 鎖住立即技能
+	lockInstantSkill := (dis < DIST_LOCK_INSTANT)
+	if LockInstantSkill != lockInstantSkill { // 如果鎖住狀態改變
+		LockInstantSkill = lockInstantSkill
+		// 送封包
+		pack := packet.Pack{
+			CMD: packet.LOCK_INSTANT_TOCLIENT,
+			Content: &packet.LockInstantSkill_ToClient{
+				Lock: LockInstantSkill,
+			},
+		}
+		MyRoom.BroadCastPacket(-1, pack)
 	}
 	// log.Infof("pos1: %v  pos2: %v dis: %v", MyRoom.Gamers[0].GetGladiator().CurPos, MyRoom.Gamers[1].GetGladiator().CurPos, dis)
 }
@@ -419,5 +433,7 @@ func getDistBetweenGladiators() float64 {
 		log.Error("getDistBetweenGladiators有玩家或角鬥士為nil")
 		return 0
 	}
-	return math.Abs(MyRoom.Gamers[0].GetGladiator().CurPos - MyRoom.Gamers[1].GetGladiator().CurPos)
+	g1 := MyRoom.Gamers[0].GetGladiator()
+	g2 := MyRoom.Gamers[1].GetGladiator()
+	return g1.CurPos.DistanceTo(g2.CurPos)
 }

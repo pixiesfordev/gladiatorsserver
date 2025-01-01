@@ -5,7 +5,8 @@ import (
 	// "gladiatorsGoModule/utility"
 	"matchgame/packet"
 	"math"
-	// log "github.com/sirupsen/logrus"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (gladiator *Gladiator) GetPackGladiator(myselfPack bool) packet.PackGladiator {
@@ -37,11 +38,6 @@ func (gladiator *Gladiator) GetPackGladiator(myselfPack bool) packet.PackGladiat
 		EffectTypes:  []string{},
 	}
 	return packGladiator
-}
-
-// IsAlive 是否死亡
-func (g *Gladiator) IsAlive() bool {
-	return (g.CurHp > 0)
 }
 
 func (g *Gladiator) GetDir() float64 {
@@ -179,6 +175,7 @@ func (g *Gladiator) GetVigorRegen() float64 {
 func (g *Gladiator) GetSpd() float64 {
 	spd := g.Spd
 	if g.IsRush {
+		log.Infof("RushSpd: %v", g.RushSpd)
 		spd += g.RushSpd
 	}
 	return spd

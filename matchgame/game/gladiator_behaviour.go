@@ -37,6 +37,11 @@ func (g *Gladiator) SetRush(on bool) {
 
 // ActiveSkill 啟用技能
 func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) error {
+	// 消耗體力
+	if int(g.CurVigor) < jsonSkill.Vigor {
+		return fmt.Errorf("玩家%v 嘗試施放體力不足的技能(%v)", g.Owner.GetID(), jsonSkill.ID)
+	}
+	g.AddVigor(float64(-jsonSkill.Vigor)) // 消耗體力
 	switch jsonSkill.Activation {
 	case gameJson.Melee: // 肉搏技能
 		if on {
@@ -46,11 +51,6 @@ func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) error {
 		}
 	case gameJson.Instant: // 即時技能
 		if on {
-			// 消耗體力
-			if int(g.CurVigor) < jsonSkill.Vigor {
-				log.Warnf("SpellInstantSkill 體力不足: %v", g.CurVigor)
-				return fmt.Errorf("玩家%v 嘗試施放體力不足的技能", g.Owner.GetID())
-			}
 			// 發動即時技能
 			_, skill, err := g.createSkill(jsonSkill)
 			if err != nil {
@@ -62,38 +62,6 @@ func (g *Gladiator) ActiveSkill(jsonSkill gameJson.JsonSkill, on bool) error {
 		return fmt.Errorf("未定義的技能啟用類型: %v", jsonSkill.Activation)
 	}
 	return nil
-}
-
-// 執行擊退
-func (myself *Gladiator) DoKnockback(knockbackValue float64) {
-
-	if knockbackValue <= 0 {
-		return
-	}
-
-	// 執行擊退位移
-	if myself.LeftSide {
-		myself.CurPos -= knockbackValue
-	} else {
-		myself.CurPos += knockbackValue
-	}
-
-	// 檢查是否有撞牆
-	if myself.LeftSide && myself.CurPos <= -WallPos {
-		myself.CurPos = -WallPos
-		myself.knockWall()
-	} else if !myself.LeftSide && myself.CurPos >= WallPos {
-		myself.CurPos = WallPos
-		myself.knockWall()
-	}
-
-}
-
-// 撞牆
-func (myself *Gladiator) knockWall() {
-	time.AfterFunc(time.Duration(Knockwall_DmgDelayMiliSecs)*time.Millisecond, func() {
-		myself.AddHp(-Knockwall_Dmg, gameJson.PDmg, true)
-	})
 }
 
 // SpellInstantSkill 施放立即技能
@@ -109,9 +77,11 @@ func (myself *Gladiator) SpellInstantSkill(skill *Skill) {
 		// 延遲時間後命中目標
 		time.AfterFunc(time.Duration(hitMiliSecs)*time.Millisecond, func() {
 			myself.Spell(skill)
+			knockback(myself.Opponent, myself, skill.JsonSkill.Knockback)
 		})
 	} else {
 		myself.Spell(skill)
+		knockback(myself.Opponent, myself, skill.JsonSkill.Knockback)
 	}
 
 }
@@ -132,7 +102,7 @@ func (myself *Gladiator) Spell(skill *Skill) {
 			break
 		}
 		// 如果施法者或目標死亡就跳過
-		if !effect.Target.IsAlive() || !effect.Speller.IsAlive() {
+		if !effect.Target.IsAlive || !effect.Speller.IsAlive {
 			break
 		}
 		// 如果沒觸發成功就跳過
@@ -228,12 +198,19 @@ func (g *Gladiator) Move() {
 		return
 	}
 
-	movePos := g.GetSpd() * g.GetDir() * TickTimePass
-	// log.Infof("g.CurPos1 %v g.GetSpd() %v g.GetDir() %v  TickTimePass %v movePos %v ", g.CurPos, g.GetSpd(), g.GetDir(), TickTimePass, movePos)
-	g.CurPos += movePos
-	if g.CurPos > WallPos {
-		g.CurPos = WallPos
-	} else if g.CurPos <= -WallPos {
-		g.CurPos = -WallPos
+	// 計算移動向量
+	moveVec := g.FaceDir.Multiply(g.GetSpd() * TickTimePass)
+	g.CurPos = g.CurPos.Add(moveVec)
+	// 限制在戰場範圍內
+	if g.CurPos.X > BATTLEFIELD.X {
+		g.CurPos.X = BATTLEFIELD.X
+	} else if g.CurPos.X < -BATTLEFIELD.X {
+		g.CurPos.X = -BATTLEFIELD.X
+	}
+
+	if g.CurPos.Y > BATTLEFIELD.Y {
+		g.CurPos.Y = BATTLEFIELD.Y
+	} else if g.CurPos.Y < -BATTLEFIELD.Y {
+		g.CurPos.Y = -BATTLEFIELD.Y
 	}
 }

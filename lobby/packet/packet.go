@@ -86,15 +86,19 @@ func ReadPack(decoder *json.Decoder) (Pack, error) {
 }
 
 func SendPack(encoder *json.Encoder, packet Pack) error {
-
 	err := encoder.Encode(packet)
 
 	if err != nil {
-		// 寫LOG
-		log.WithFields(log.Fields{
-			"error": err.Error(),
-		}).Errorf("%s Send packet encoder error", logger.LOG_Pack)
-
+		if strings.Contains(err.Error(), "use of closed network connection") {
+			// // 連線已關閉，記錄資訊日誌
+			// log.WithFields(log.Fields{
+			// 	"error": err.Error(),
+			// }).Info("目標玩家已斷線-連線關閉")
+		} else {
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Errorf("%s 送封包失敗", logger.LOG_Pack)
+		}
 	}
 	return err
 }

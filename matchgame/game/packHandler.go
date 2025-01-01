@@ -226,29 +226,31 @@ func HandleTCPMsg(conn net.Conn, pack packet.Pack) error {
 			jsonData, err := json.Marshal(content.ActionContent)
 			if err != nil {
 				log.Errorf("Failed to marshal ActionContent: %v", err)
+				player.SendPacketToPlayer_SkillFail() // 送技能施放失敗封包
 				return fmt.Errorf("%v  json.Marshal錯誤", content.ActionType)
 			}
 			var action packet.PackAction_Skill
 			err = json.Unmarshal(jsonData, &action)
 			if err != nil {
+				player.SendPacketToPlayer_SkillFail() // 送技能施放失敗封包
 				return fmt.Errorf("%v  json.Unmarshal錯誤", content.ActionType)
 			}
 
 			targetSkill, _, err := player.GetGladiator().GetSkill(action.SkillID)
 			if err != nil {
+				player.SendPacketToPlayer_SkillFail() // 送技能施放失敗封包
 				return fmt.Errorf("PackAction_Skill錯誤: %v", err)
 			}
-
+			// 施放立即技能 或 啟用肉搏技能
 			err = player.GetGladiator().ActiveSkill(targetSkill, action.On)
 			if err != nil {
+				log.Warnf("ActiveSkill 錯誤: %v", err)
+				player.SendPacketToPlayer_SkillFail() // 送技能施放失敗封包
 				return err
 			}
 			// 處理立即技能 與 肉搏技能
 			if targetSkill.Activation == gameJson.Instant {
 				if action.On {
-					if int(player.GetGladiator().CurVigor) < targetSkill.Vigor {
-						return fmt.Errorf("%v  玩家%v 嘗試施放體力不足的技能", content.ActionType, player.ID)
-					}
 					myPack := packet.Pack{
 						CMD:    packet.PLAYERACTION_TOCLIENT,
 						PackID: -1,

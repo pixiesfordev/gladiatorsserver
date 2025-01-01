@@ -1,5 +1,5 @@
 # 使用Go特定版本來建置購執行檔
-FROM golang:1.22.0 as builder
+FROM golang:1.22.3 as builder
 
 # 設置工作目錄
 WORKDIR /home/matchgame

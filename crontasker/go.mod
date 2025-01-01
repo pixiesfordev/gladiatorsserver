@@ -1,6 +1,6 @@
 module crontasker
 
-go 1.22.0
+go 1.22.3
 
 replace gladiatorsGoModule => ../gladiatorsGoModule // for local
 

@@ -7,6 +7,7 @@ type ActionType string
 
 const (
 	ACTION_SKILL       ActionType = "ACTION_SKILL"       // 啟用技能
+	ACTION_SKILL_FAIL  ActionType = "ACTION_SKILL_FAIL"  // 技能施放失敗
 	ACTIVE_MELEE_SKILL ActionType = "ACTIVE_MELEE_SKILL" // (ACTION_SKILL的回傳Client)
 	INSTANT_SKILL      ActionType = "INSTANT_SKILL"      // (ACTION_SKILL的回傳Client)
 	ACTION_RUSH        ActionType = "ACTION_RUSH"        // 衝刺
@@ -31,6 +32,11 @@ type PlayerAction_ToClient struct {
 type PackAction_Skill struct {
 	On      bool
 	SkillID int
+}
+
+// 施放技能失敗
+type PackAction_SkillFail_ToClient struct {
+	HandSkills [4]int // 手牌(對手不會收到)
 }
 
 // 啟用肉搏技能

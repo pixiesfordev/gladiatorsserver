@@ -1,6 +1,6 @@
 {"Gladiator":[
-	{	"ID": 6,	"Ref": "6",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 3.38},
-	{	"ID": 7,	"Ref": "7",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 4.08},
-	{	"ID": 9,	"Ref": "9",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 4.0},
-	{	"ID": 10,	"Ref": "10",	"Hp": 300,	"Str": 20,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 10.0,	"Init": 0.0,	"Spd": 6.0,	"RushSpd": 4.0,	"ModelCenter": 3.55}
+	{	"ID": 6,	"Ref": "6",	"Hp": 1000,	"Str": 25,	"PDef": 5,	"MDef": 5,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 8.0,	"Init": 20.0,	"Spd": 7.0,	"RushSpd": 5.0,	"ModelCenter": 3.38,	"ImgScale": 0.9},
+	{	"ID": 7,	"Ref": "7",	"Hp": 1000,	"Str": 22,	"PDef": 5,	"MDef": 7,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 11.0,	"Init": 15.0,	"Spd": 8.0,	"RushSpd": 5.0,	"ModelCenter": 4.08,	"ImgScale": 0.6},
+	{	"ID": 9,	"Ref": "9",	"Hp": 1100,	"Str": 28,	"PDef": 6,	"MDef": 3,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 13.0,	"Init": 5.0,	"Spd": 3.0,	"RushSpd": 5.0,	"ModelCenter": 4.0,	"ImgScale": 0.75},
+	{	"ID": 10,	"Ref": "10",	"Hp": 1000,	"Str": 20,	"PDef": 5,	"MDef": 10,	"Crit": 0.05,	"CritDmg": 1.5,	"VigorRegen": 1.0,	"Knockback": 11.0,	"Init": 10.0,	"Spd": 5.0,	"RushSpd": 5.0,	"ModelCenter": 3.55,	"ImgScale": 0.65}
 ]}

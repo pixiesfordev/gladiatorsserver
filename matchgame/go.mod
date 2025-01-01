@@ -4,7 +4,7 @@ replace gladiatorsGoModule => ../gladiatorsGoModule // for local
 
 // replace gladiatorsGoModule => /home/gladiatorsGoModule // for docker
 
-go 1.22.0
+go 1.22.3
 
 require (
 	agones.dev/agones v1.35.0

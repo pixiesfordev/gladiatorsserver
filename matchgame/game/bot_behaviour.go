@@ -12,7 +12,7 @@ import (
 )
 
 func (bot *Bot) runBotBehaviour() {
-	ticker := time.NewTicker(2 * time.Second) // 每秒判斷一次
+	ticker := time.NewTicker(4 * time.Second) // 每秒判斷一次
 	defer ticker.Stop()
 	for {
 		select {
@@ -59,7 +59,7 @@ func (bot *Bot) activeRndSkill() {
 
 	} else {
 		skills := g.GetAvaliableHandSkillsByActivationType(gameJson.Instant)
-		log.Infof("Vigor: %v    Skills: %v", g.CurVigor, skills)
+		// log.Infof("Vigor: %v    Skills: %v", g.CurVigor, skills)
 		if len(skills) == 0 {
 			return
 		}

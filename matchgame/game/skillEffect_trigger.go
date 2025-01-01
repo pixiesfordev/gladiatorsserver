@@ -12,42 +12,41 @@ func (e *Effect) Trigger_Time() {
 	if e.BelongTo(NOTBUFFER) || e.NextTriggerAt > GameTime {
 		return
 	}
-	passTime := GameTime - e.NextTriggerAt
 
 	switch e.Type {
 	case gameJson.RegenHP: // 回復生命
-		e.NextTriggerAt += 1 // 1秒觸發1次
+		triggerDuration := 1.0 // 1秒觸發1次
+		e.NextTriggerAt += triggerDuration
 		value, err := GetEffectValue[int](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
 			return
 		}
-		e.AddDuration(-passTime)
+		e.AddDuration(-triggerDuration)
 		e.Target.AddHp(value, e.Type, true)
 	case gameJson.RegenVigor: // 回復體力
-		e.NextTriggerAt += 1 // 1秒觸發1次
+		triggerDuration := 1.0 // 1秒觸發1次
+		e.NextTriggerAt += triggerDuration
 		value, err := GetEffectValue[float64](e, 0)
 		if err != nil {
 			log.Errorf("%v錯誤: %v", e.Type, err)
 			return
 		}
-		e.AddDuration(-passTime)
+		e.AddDuration(-triggerDuration)
 		e.Target.AddVigor(value)
 	case gameJson.Poison: // 中毒
-		e.NextTriggerAt += 3 // 3秒觸發1次
+		triggerDuration := 1.0 // 每1秒觸發1次
+		e.NextTriggerAt += triggerDuration
 		e.Target.AddHp(-int(e.Duration), e.Type, true)
 	case gameJson.Burning: // 著火
-		e.NextTriggerAt += 3 // 3秒觸發1次
-		value := int(e.Duration)
-		reduce := float64(int(e.Duration) - int(e.Duration/2)) // 每次減半,
-		if reduce == 0 {
-			reduce = 1
-		}
+		triggerDuration := 3.0 // 每3秒觸發1次
+		e.NextTriggerAt += triggerDuration
+		value := e.Duration                                    // 傷害為層數
+		reduce := float64(int(e.Duration) - int(e.Duration/2)) // 每次減半
 		e.AddDuration(-reduce)
-		e.Target.AddHp(-value, e.Type, true)
+		e.Target.AddHp(-int(value), e.Type, true)
 	case gameJson.Enraged: // 激怒
-		e.NextTriggerAt += TickTimePass // 每幀觸發
-		e.AddDuration(-passTime)
+		e.AddDuration(-TickTimePass)
 		if e.Target != nil && !e.Target.IsRush {
 			e.Target.SetRush(true)
 		}
@@ -57,9 +56,7 @@ func (e *Effect) Trigger_Time() {
 		gameJson.Fatigue, gameJson.Protection, gameJson.Indomitable, gameJson.Berserk, gameJson.Chaos, gameJson.PDefUp,
 		gameJson.MDefUp, gameJson.StrUp, gameJson.KnockbackUp, gameJson.Barrier, gameJson.Poisoning, gameJson.CriticalUp,
 		gameJson.InitUp:
-		e.NextTriggerAt += TickTimePass
-		e.AddDuration(-passTime)
-
+		e.AddDuration(-TickTimePass)
 	}
 
 }

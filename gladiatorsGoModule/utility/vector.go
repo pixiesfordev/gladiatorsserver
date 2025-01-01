@@ -5,11 +5,13 @@ import (
 	"math"
 )
 
+// 向量2D
 type Vector2 struct {
 	X float64
 	Y float64
 }
 
+// 向量加法
 func (v Vector2) Add(other Vector2) Vector2 {
 	return Vector2{
 		X: v.X + other.X,
@@ -17,11 +19,30 @@ func (v Vector2) Add(other Vector2) Vector2 {
 	}
 }
 
+// 向量減法
 func (v Vector2) Sub(other Vector2) Vector2 {
 	return Vector2{
 		X: v.X - other.X,
 		Y: v.Y - other.Y,
 	}
+}
+
+// 向量乘法
+func (v Vector2) Multiply(other float64) Vector2 {
+	return Vector2{
+		X: v.X * other,
+		Y: v.Y * other,
+	}
+}
+
+// 計算向量長度
+func (v Vector2) Distance() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+
+// 計算兩向量間距離
+func (v Vector2) DistanceTo(other Vector2) float64 {
+	return v.Sub(other).Distance()
 }
 
 // 向量正規化
@@ -56,6 +77,7 @@ func (vec Vector3) Normalize() Vector3 {
 	return Vector3{X: vec.X / mag, Y: vec.Y / mag, Z: vec.Z / mag}
 }
 
+// 向量3D減法
 func (v Vector3) Sub(other Vector3) Vector3 {
 	return Vector3{
 		X: v.X - other.X,
@@ -64,6 +86,7 @@ func (v Vector3) Sub(other Vector3) Vector3 {
 	}
 }
 
+// 矩形
 type Rect struct {
 	Center        Vector2
 	Width, Height float64
@@ -109,4 +132,21 @@ func NewVector2XZ(splitedStr string) (Vector2, error) {
 		return Vector2{}, fmt.Errorf("在NewVector2XZ時Split_FLOAT, 結果長度不為3")
 	}
 	return Vector2{X: vSlice[0], Y: vSlice[2]}, nil
+}
+
+// 旋轉向量
+func (dir Vector2) RotateVector(radians float64) Vector2 {
+	newDir := Vector2{
+		X: dir.X*math.Cos(radians) - dir.Y*math.Sin(radians),
+		Y: dir.X*math.Sin(radians) + dir.Y*math.Cos(radians),
+	}
+	return newDir
+}
+
+// Round2 將向量的X和Y四捨五入到小數點以下兩位
+func (v Vector2) Round2() Vector2 {
+	return Vector2{
+		X: RoundToDecimal(v.X, 2),
+		Y: RoundToDecimal(v.Y, 2),
+	}
 }

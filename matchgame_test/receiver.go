@@ -115,7 +115,7 @@ func processData(data string) {
 		if content.MyAttack.SkillID != 0 {
 			log.Infof("發動肉搏技能: %v", content.MyAttack.SkillID)
 		}
-		sm.updateSkills(content.MyHandSkillIDs[:], content.SkillOnID)
+		sm.updateSkills(content.HandSkills[:], content.SkillOnID)
 
 		// log.Infof("手牌: %v 啟用技能: %v", content.MyHandSkillIDs, content.MyAttack.SkillID)
 	case packet.HP_TOCLIENT:

@@ -34,6 +34,7 @@ type StackType string
 const (
 	STACKABLE  StackType = "STACKABLE"  // 堆疊型-同樣的新Buffer會累加Duration
 	OVERRIDING StackType = "OVERRIDING" // 覆蓋型-同樣的新Buffer會完全取代舊Buffer
+	KEEPMAX    StackType = "KEEPMAX"    // 保留最大值-同樣的新Buffer會保留最大值
 	ADDITIVE   StackType = "ADDITIVE"   // 擴增型-同樣的新Buffer會擴增一個Buffer
 )
 
@@ -137,7 +138,8 @@ func NewEffect(effectType gameJson.EffectType, valueStr string, speller *Gladiat
 		}
 		duration = values[0]
 		tags[DEBUFF] = true
-		stackType = STACKABLE
+		tags[IMMOBILE] = true
+		stackType = KEEPMAX
 		immueTags[MOVE] = true
 	case gameJson.Poison:
 		if len(values) != 1 {
@@ -266,6 +268,7 @@ func NewEffect(effectType gameJson.EffectType, valueStr string, speller *Gladiat
 		duration = values[0]
 		tags[BUFF] = true
 		stackType = STACKABLE
+		immueTags[IMMOBILE] = true
 	case gameJson.Berserk:
 		if len(values) != 1 {
 			return nil, fmt.Errorf("effectype %v 參數填入錯誤", effectType)

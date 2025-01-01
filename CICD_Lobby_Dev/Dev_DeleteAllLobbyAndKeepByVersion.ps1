@@ -1,5 +1,5 @@
 # 指定要刪除的pod類型與所在命名空間, 並指定要保留的版本(非指定版本都會刪除)
-$keepVersion = "0.1.77"  
+$keepVersion = "0.1.81"  
 $type = "gladiators-lobby"
 $namespace = "gladiators-service"
 

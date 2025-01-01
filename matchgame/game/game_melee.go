@@ -12,32 +12,51 @@ import (
 // melee 雙方進行肉搏
 func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 
-	if !g1.IsAlive() || !g2.IsAlive() {
-		log.Infof("取消melee，一方角鬥已死亡 g1: %v   g2: %v", g1.IsAlive(), g2.IsAlive())
+	if !g1.IsAlive || !g2.IsAlive {
+		log.Infof("取消melee，一方角鬥已死亡 g1: %v   g2: %v", g1.IsAlive, g2.IsAlive)
 		return
 	}
 
 	// <<<<<<<<<<初始化雙方肉搏技能>>>>>>>>>>
-	g1SpellInit := 0.0
+	g1SpellInit := g1.GetInit() // 先攻值
 	var g1Skill *Skill
-	g2SpellInit := 0.0
+	g2SpellInit := g2.GetInit() // 先攻值
 	var g2Skill *Skill
+	var err error
 	if g1.ActivedMeleeJsonSkill != nil {
-		if g1.ActivedMeleeJsonSkill.Vigor <= int(g1.CurVigor) {
-			g1SpellInit, g1Skill, _ = g1.createSkill(*g1.ActivedMeleeJsonSkill)
-			g1.ActivedMeleeJsonSkill = nil
-		} else {
-			log.Errorf("%v 體力不足無法施放技能 %v", gamer1.GetID(), g1.ActivedMeleeJsonSkill.ID)
+		// if g1.ActivedMeleeJsonSkill.Vigor <= int(g1.CurVigor) {
+		g1SpellInit, g1Skill, err = g1.createSkill(*g1.ActivedMeleeJsonSkill)
+		if err != nil {
+			log.Errorf("createSkill錯誤: %v", err)
+		}
+		g1.ActivedMeleeJsonSkill = nil
+	}
+	// 如果沒有施放肉搏技能，則施放基礎擊退技能
+	if g1Skill == nil {
+		g1SpellInit, g1Skill, err = g1.createBaseKnockSkill()
+		if err != nil {
+			log.Errorf("createBaseKnockSkill錯誤: %v", err)
 		}
 	}
 	if g2.ActivedMeleeJsonSkill != nil {
-		if g2.ActivedMeleeJsonSkill.Vigor <= int(g1.CurVigor) {
-			g2SpellInit, g2Skill, _ = g2.createSkill(*g2.ActivedMeleeJsonSkill)
-			g2.ActivedMeleeJsonSkill = nil
-		} else {
-			log.Errorf("%v 體力不足無法施放技能 %v", gamer2.GetID(), g2.ActivedMeleeJsonSkill.ID)
+		// if g2.ActivedMeleeJsonSkill.Vigor <= int(g1.CurVigor) {
+		g2SpellInit, g2Skill, err = g2.createSkill(*g2.ActivedMeleeJsonSkill)
+		if err != nil {
+			log.Errorf("createSkill錯誤: %v", err)
+		}
+		g2.ActivedMeleeJsonSkill = nil
+		// } else {
+		// 	log.Errorf("%v 體力不足無法施放技能 %v", gamer2.GetID(), g2.ActivedMeleeJsonSkill.ID)
+		// }
+	}
+	// 如果沒有施放肉搏技能，則施放基礎擊退技能
+	if g2Skill == nil {
+		g2SpellInit, g2Skill, err = g2.createBaseKnockSkill()
+		if err != nil {
+			log.Errorf("createBaseKnockSkill錯誤: %v", err)
 		}
 	}
+
 	if g1SpellInit > g2SpellInit {
 		bothCastSpell(g1, g2, g1Skill, g2Skill) // g1先攻
 	} else if g1SpellInit < g2SpellInit {
@@ -51,27 +70,19 @@ func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 	}
 
 	// <<<<<<<<<<擊退>>>>>>>>>>
-	g1AttackPos := g1.CurPos
 	g1SkillKnockback := 0.0
 	if g1Skill != nil {
 		g1SkillKnockback += g1Skill.JsonSkill.Knockback
 	}
 	g1Knockback := g1.GetKnockback() + g1SkillKnockback
-	if g2.ImmuneTo(KNOCKBACK) {
-		g1Knockback = 0
-	}
-	g2.DoKnockback(g1Knockback)
+	knockback(g2, g1, g1Knockback)
 
-	g2AttackPos := g2.CurPos
 	g2SkillKnockback := 0.0
 	if g2Skill != nil {
 		g2SkillKnockback += g2Skill.JsonSkill.Knockback
 	}
-	g2Knockback := g2.GetKnockback() + g2SkillKnockback + 5
-	if g1.ImmuneTo(KNOCKBACK) {
-		g2Knockback = 0
-	}
-	g1.DoKnockback(g2Knockback)
+	g2Knockback := g2.GetKnockback() + g2SkillKnockback
+	knockback(g1, g2, g2Knockback)
 
 	// 增加暈眩狀態
 	g1KnockDizzy, err := NewEffect(gameJson.Dizzy, "2", g2, g1, 1, false)
@@ -112,25 +123,20 @@ func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 			CMD: packet.MELEE_TOCLIENT,
 			Content: &packet.Melee_ToClient{
 				MyAttack: packet.PackMelee{
-					Knockback:   g1Knockback,
 					SkillID:     g1SkillID,
-					MeleePos:    g1AttackPos,
-					CurPos:      g1.CurPos,
 					EffectDatas: g1.GetPackEffects(),
 				},
 				OpponentAttack: packet.PackMelee{
-					Knockback:   g2Knockback,
 					SkillID:     g2SkillID,
-					MeleePos:    g2AttackPos,
-					CurPos:      g2.CurPos,
 					EffectDatas: g2.GetPackEffects(),
 				},
-				NewSkilID:      newSkillID,
-				SkillOnID:      g1SkillOnID,
-				MyHandSkillIDs: hands,
+				NewSkilID:  newSkillID,
+				SkillOnID:  g1SkillOnID,
+				HandSkills: hands,
 			},
 		}
 		p1.SendPacketToPlayer(packMelee)
+
 	}
 
 	if p2, ok := gamer2.(*Player); ok {
@@ -143,20 +149,16 @@ func melee(gamer1, gamer2 Gamer, g1, g2 *Gladiator) {
 			CMD: packet.MELEE_TOCLIENT,
 			Content: &packet.Melee_ToClient{
 				MyAttack: packet.PackMelee{
-					Knockback:   g2Knockback,
 					SkillID:     g2SkillID,
-					CurPos:      g2.CurPos,
 					EffectDatas: g2.GetPackEffects(),
 				},
 				OpponentAttack: packet.PackMelee{
-					Knockback:   g1Knockback,
 					SkillID:     g1SkillID,
-					CurPos:      g1.CurPos,
 					EffectDatas: g1.GetPackEffects(),
 				},
-				NewSkilID:      newSkillID,
-				SkillOnID:      g2SkillOnID,
-				MyHandSkillIDs: hands,
+				NewSkilID:  newSkillID,
+				SkillOnID:  g2SkillOnID,
+				HandSkills: hands,
 			},
 		}
 		p2.SendPacketToPlayer(packMelee)

@@ -153,3 +153,20 @@ func (p *Player) SendPacketToPlayer(pack packet.Pack) {
 		log.Errorf("%s SendPacketToPlayer error: %v", logger.LOG_Room, err)
 	}
 }
+
+// SendPacketToPlayer_SkillFail 送技能施放失敗封包
+func (p *Player) SendPacketToPlayer_SkillFail() {
+	log.Errorf("%s 送技能施放失敗封包", logger.LOG_Player)
+	myPack := packet.Pack{
+		CMD:    packet.PLAYERACTION_TOCLIENT,
+		PackID: -1,
+		Content: &packet.PlayerAction_ToClient{
+			PlayerDBID: p.GetID(),
+			ActionType: packet.ACTION_SKILL_FAIL,
+			ActionContent: &packet.PackAction_SkillFail_ToClient{
+				HandSkills: p.MyGladiator.GetHandSkills(),
+			},
+		},
+	}
+	p.SendPacketToPlayer(myPack)
+}

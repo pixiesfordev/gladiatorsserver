@@ -30,7 +30,9 @@ const (
 	GAMESTATE_TOCLIENT       = "GAMESTATE_TOCLIENT"       // (TCP)遊戲狀態-送Client
 	MELEE_TOCLIENT           = "MELEE_TOCLIENT"           // (TCP)肉搏-送Client
 	BEFORE_MELEE_TOCLIENT    = "BEFORE_MELEE_TOCLIENT"    // (TCP)即將肉搏-送Client
+	LOCK_INSTANT_TOCLIENT    = "LOCK_INSTANT_TOCLIENT"    // (TCP)鎖住遠程技能-送Client
 	HP_TOCLIENT              = "HP_TOCLIENT"              // (TCP)角鬥士生命-送Client
+	KNOCKBACK_TOCLIENT       = "KNOCKBACK_TOCLIENT"       // (TCP)擊退-送Client
 	GLADIATORSTATES_TOCLIENT = "GLADIATORSTATES_TOCLIENT" // (TCP)角鬥士狀態-送Client
 
 	GMACTION          = "GMACTION"          // (TCP)GM指令
@@ -118,26 +120,19 @@ func ReadPack(decoder *json.Decoder) (Pack, error) {
 
 func SendPack(encoder *json.Encoder, packet Pack) error {
 
-	// pack, roundErr := roundDecimalCheck(&packet) // 對指定封包進行四捨五入
-	// if roundErr != nil {
-	// 	log.Errorf("%s 對指定封包進行四捨五入發生錯誤: %v", logger.LOG_Pack, roundErr)
-	// } else {
-	// 	packet = *pack
-	// }
 	err := encoder.Encode(packet)
 
-	// // 寫LOG
-	// log.WithFields(log.Fields{
-	// 	"cmd":     packet.CMD,
-	// 	"content": packet.Content,
-	// }).Infof("%s Send packet: %s", logger.LOG_Pack, packet.CMD)
-
 	if err != nil {
-		// 寫LOG
-		log.WithFields(log.Fields{
-			"error": err.Error(),
-		}).Errorf("%s Send packet encoder error", logger.LOG_Pack)
-
+		if strings.Contains(err.Error(), "use of closed network connection") {
+			// // 連線已關閉，記錄資訊日誌
+			// log.WithFields(log.Fields{
+			// 	"error": err.Error(),
+			// }).Info("目標玩家已斷線-連線關閉")
+		} else {
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Errorf("%s 送封包失敗", logger.LOG_Pack)
+		}
 	}
 	return err
 }

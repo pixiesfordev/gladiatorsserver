@@ -2,6 +2,7 @@ package game
 
 import (
 	"gladiatorsGoModule/gameJson"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -41,6 +42,21 @@ func NewSkill(speller *Gladiator, opponent *Gladiator, jsonSkill gameJson.JsonSk
 			}
 		}
 	}
+	skill.Effects = effects
+	return &skill, nil
+}
+
+// NewBaseKnockSkill 創建基礎擊退技能(肉搏但沒有施放肉搏技能時會使用基本擊退技能)
+func NewBaseKnockSkill(speller *Gladiator, opponent *Gladiator) (*Skill, error) {
+	skill := Skill{
+		Speller: speller,
+	}
+	effects := make([]*Effect, 0)
+	effect, err := NewEffect(gameJson.PDmg, strconv.Itoa(speller.GetStr()), speller, opponent, 1, false)
+	if err != nil {
+		return nil, err
+	}
+	effects = append(effects, effect)
 	skill.Effects = effects
 	return &skill, nil
 }
